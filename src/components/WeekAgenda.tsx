@@ -104,7 +104,7 @@ export function WeekAgenda({ items }: { items: AgendaItem[] }) {
                 {i.time !== undefined && <span className="w-12 shrink-0 pt-3 text-right text-sm font-semibold tabular-nums text-heading">{i.time}</span>}
                 <div className={`min-w-0 flex-1 rounded-2xl px-4 py-3 ${i.tone}`}>
                   <p className="font-bold">{i.title}</p>
-                  <p className="text-sm opacity-90">{i.detail}</p>
+                  <p className="text-sm">{i.detail}</p>
                 </div>
               </li>
             ))}
