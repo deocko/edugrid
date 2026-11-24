@@ -1,0 +1,137 @@
+@import 'tailwindcss';
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
+  Paleta del Manual de Identidad EDUGRID v1.0 (nov 2026)
+  Marino #101D32 · Eléctrico #1769D2 · Cyan #35C5D9 · Cloud #F3F6FA · Blanco #FFFFFF · Texto #243247
+  Los tokens semánticos cambian en modo oscuro para mantener contraste AA.
+*/
+:root {
+  --c-bg: #f3f6fa;
+  --c-surface: #ffffff;
+  --c-surface-2: #eaf0f7;
+  --c-ink: #243247;
+  --c-heading: #101d32;
+  --c-muted: #4b5b72;
+  --c-line: #d3dce8;
+  --c-primary: #1769d2;
+  --c-primary-hover: #1258b3;
+  --c-on-primary: #ffffff;
+  --c-link: #1769d2;
+  --c-accent: #35c5d9;
+  --c-nav: #101d32;
+  --c-nav-ink: #e6ecf4;
+  --c-nav-active: #35c5d9;
+  --c-success: #0f7a4f;
+  --c-success-bg: #e3f5ec;
+  --c-warning: #8a5300;
+  --c-warning-bg: #fdf1dc;
+  --c-danger: #b3261e;
+  --c-danger-bg: #fbe6e4;
+  --c-info: #1258b3;
+  --c-info-bg: #e3eefb;
+  --c-focus: #1769d2;
+  color-scheme: light;
+}
+
+.dark {
+  --c-bg: #0a1322;
+  --c-surface: #101d32;
+  --c-surface-2: #172742;
+  --c-ink: #e3e9f2;
+  --c-heading: #ffffff;
+  --c-muted: #a9b7ca;
+  --c-line: #2b3d5c;
+  --c-primary: #1769d2;
+  --c-primary-hover: #2a7be6;
+  --c-on-primary: #ffffff;
+  --c-link: #7fb5f5;
+  --c-accent: #35c5d9;
+  --c-nav: #0d1829;
+  --c-nav-ink: #dbe3ee;
+  --c-nav-active: #35c5d9;
+  --c-success: #5fd39c;
+  --c-success-bg: #0f3326;
+  --c-warning: #f3be62;
+  --c-warning-bg: #3a2a0c;
+  --c-danger: #ff9d94;
+  --c-danger-bg: #43161a;
+  --c-info: #8cc0f7;
+  --c-info-bg: #12304f;
+  --c-focus: #35c5d9;
+  color-scheme: dark;
+}
+
+@theme inline {
+  --color-navy: #101d32;
+  --color-electric: #1769d2;
+  --color-cyan: #35c5d9;
+  --color-cloud: #f3f6fa;
+  --color-brand-text: #243247;
+
+  --color-bg: var(--c-bg);
+  --color-surface: var(--c-surface);
+  --color-surface-2: var(--c-surface-2);
+  --color-ink: var(--c-ink);
+  --color-heading: var(--c-heading);
+  --color-muted: var(--c-muted);
+  --color-line: var(--c-line);
+  --color-primary: var(--c-primary);
+  --color-primary-hover: var(--c-primary-hover);
+  --color-on-primary: var(--c-on-primary);
+  --color-link: var(--c-link);
+  --color-accent: var(--c-accent);
+  --color-nav: var(--c-nav);
+  --color-nav-ink: var(--c-nav-ink);
+  --color-nav-active: var(--c-nav-active);
+  --color-success: var(--c-success);
+  --color-success-bg: var(--c-success-bg);
+  --color-warning: var(--c-warning);
+  --color-warning-bg: var(--c-warning-bg);
+  --color-danger: var(--c-danger);
+  --color-danger-bg: var(--c-danger-bg);
+  --color-info: var(--c-info);
+  --color-info-bg: var(--c-info-bg);
+
+  --font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--c-bg);
+  color: var(--c-ink);
+  font-family: var(--font-sans);
+  line-height: 1.5;
+}
+
+:focus-visible {
+  outline: 3px solid var(--c-focus);
+  outline-offset: 2px;
+}
+
+@keyframes eg-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.eg-spin {
+  animation: eg-spin 0.9s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .eg-spin {
+    animation-duration: 3s;
+  }
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+}

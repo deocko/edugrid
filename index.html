@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="es-MX">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>EDUGRID — Administra tu Escuela</title>
+    <meta name="description" content="EDUGRID: Una escuela. Todos conectados. Plataforma web de gestión escolar (versión demo)." />
+    <meta name="theme-color" content="#101D32" />
+    <link rel="icon" type="image/svg+xml" href="/edugrid/icons/icon.svg" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/edugrid/icons/favicon-32.png" />
+    <link rel="apple-touch-icon" href="/edugrid/icons/apple-touch-icon.png" />
+    <link rel="manifest" href="/edugrid/manifest.webmanifest" />
+    <script>
+      try {
+        var t = localStorage.getItem('edugrid.tema') || 'sistema'
+        if (t === 'oscuro' || (t === 'sistema' && matchMedia('(prefers-color-scheme: dark)').matches)) document.documentElement.classList.add('dark')
+      } catch (e) {}
+    </script>
+  </head>
+  <body>
+    <noscript>Para usar EDUGRID necesitas activar JavaScript en tu navegador.</noscript>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
