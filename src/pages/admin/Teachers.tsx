@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router'
-import { Badge, Button, Card, Field, Input, Modal, Notice, PageHeader, Table, TD, TH } from '../../components/ui'
+import { Badge, Button, Card, Field, Input, Modal, Notice, PageHeader, Table, Switch, TD, TH } from '../../components/ui'
 import type { Teacher } from '../../data/types'
 import { uid, plural } from '../../lib/format'
 import { groupLabel, subjectName } from '../../lib/scope'
@@ -19,10 +19,7 @@ export function Teachers() {
     <>
       <PageHeader title="Docentes" subtitle={plural(db.teachers.filter((t) => t.active).length, 'docente activo', 'docentes activos')} actions={<Button icon="mas" onClick={() => setEditing('nuevo')}>Registrar docente</Button>} />
       <Card>
-        <label className="mb-3 inline-flex min-h-11 items-center gap-2 text-sm">
-          <input type="checkbox" checked={showInactive} onChange={(e) => setShowInactive(e.target.checked)} className="size-5 accent-[var(--c-primary)]" />
-          Ver docentes dados de baja ({db.teachers.filter((t) => !t.active).length})
-        </label>
+        <Switch className="mb-3" checked={showInactive} onChange={setShowInactive} label={`Mostrar docentes dados de baja (${db.teachers.filter((t) => !t.active).length})`} />
         <Table caption="Catálogo de docentes">
           <thead>
             <tr>

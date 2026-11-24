@@ -245,3 +245,68 @@ export function Avatar({ name, size = 40 }: { name: string; size?: number }) {
     </span>
   )
 }
+
+/**
+ * Interruptor de encendido/apagado (sí/no, activar/desactivar).
+ * Para una sola opción binaria que surte efecto al momento. Para aceptar términos o
+ * elegir varios elementos de una lista se siguen usando casillas.
+ */
+export function Switch({
+  checked,
+  onChange,
+  label,
+  description,
+  disabled,
+  icons,
+  hideLabel,
+  className = '',
+}: {
+  checked: boolean
+  onChange: (next: boolean) => void
+  label: ReactNode
+  description?: ReactNode
+  disabled?: boolean
+  icons?: { off: IconName; on: IconName }
+  hideLabel?: boolean
+  className?: string
+}) {
+  const id = useId()
+  return (
+    <div className={`flex min-h-11 items-center gap-3 ${className}`}>
+      <button
+        type="button"
+        role="switch"
+        id={id}
+        aria-checked={checked}
+        aria-label={hideLabel && typeof label === 'string' ? label : undefined}
+        aria-describedby={description ? `${id}-d` : undefined}
+        disabled={disabled}
+        onClick={() => onChange(!checked)}
+        className={`group relative inline-flex h-7 w-12 shrink-0 items-center rounded-full border-2 transition-colors duration-200 disabled:cursor-not-allowed disabled:opacity-50 ${
+          checked ? 'border-primary bg-primary' : 'border-muted bg-surface-2'
+        }`}
+      >
+        <span
+          aria-hidden="true"
+          className={`inline-flex items-center justify-center rounded-full shadow-sm transition-all duration-200 motion-reduce:transition-none ${
+            checked ? 'size-5 translate-x-[1.375rem] bg-white text-primary' : `translate-x-1 ${icons ? 'size-5 bg-muted text-surface' : 'size-4 bg-muted'}`
+          }`}
+        >
+          {icons && <Icon name={checked ? icons.on : icons.off} size={13} />}
+        </span>
+      </button>
+      {!hideLabel && (
+        <span className="min-w-0">
+          <label htmlFor={id} className="block cursor-pointer text-sm font-medium text-ink">
+            {label}
+          </label>
+          {description && (
+            <span id={`${id}-d`} className="block text-xs text-muted">
+              {description}
+            </span>
+          )}
+        </span>
+      )}
+    </div>
+  )
+}
