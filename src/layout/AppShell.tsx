@@ -6,7 +6,7 @@ import { Avatar, DemoBadge } from '../components/ui'
 import { ROLE_LABEL } from '../lib/permissions'
 import { userKey, visibleAnnouncements } from '../lib/scope'
 import { useApp, type ThemeChoice } from '../state/context'
-import { NAV } from './nav'
+import { moduleForPath, NAV } from './nav'
 
 const THEMES: { value: ThemeChoice; label: string; icon: 'sol' | 'luna' | 'ajustes' }[] = [
   { value: 'claro', label: 'Modo claro', icon: 'sol' },
@@ -37,6 +37,7 @@ export function AppShell() {
   const [moreOpen, setMoreOpen] = useState(false)
   const location = useLocation()
   const items = NAV[session.role]
+  const moduleName = moduleForPath(location.pathname)
   const unread = visibleAnnouncements(db, session).filter((a) => !db.receipts.some((r) => r.announcementId === a.id && r.userKey === userKey(session))).length
   const primary = items.slice(0, 4)
   const rest = items.slice(4)
@@ -119,6 +120,11 @@ export function AppShell() {
         </header>
 
         <main id="contenido" className="mx-auto w-full max-w-6xl flex-1 px-4 pt-5 pb-28 lg:pb-10" key={location.pathname}>
+          {moduleName && (
+            <p className="mb-1 text-sm font-bold text-link" data-modulo>
+              {moduleName}
+            </p>
+          )}
           <Outlet />
           <p className="mt-8 text-center text-xs text-muted lg:hidden">
             Datos de ejemplo (DEMO).{' '}
