@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { Badge, Button, Card, Field, Input, Modal, Notice, PageHeader, Select, Tabs } from '../../components/ui'
 import type { Level } from '../../data/types'
-import { formatDate, uid } from '../../lib/format'
+import { formatDate, uid, plural } from '../../lib/format'
 import { LEVEL_LABEL, LEVELS, groupLabel, levelOfGroup, subjectName, teacherName } from '../../lib/scope'
 import { useApp } from '../../state/context'
 
@@ -59,7 +59,7 @@ function GroupsView() {
                     <p className="text-muted">Titular: {teacherName(db, g.homeroomTeacherId)} · {g.room}</p>
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
-                    <Badge tone="info">{db.students.filter((s) => s.groupId === g.id && s.status === 'activo').length} alumnos</Badge>
+                    <Badge tone="info">{plural(db.students.filter((s) => s.groupId === g.id && s.status === 'activo').length, 'alumno', 'alumnos')}</Badge>
                     <Button variant="fantasma" onClick={() => setEditGroup(g.id)} aria-label={`Materias y docentes de ${groupLabel(db, g)}`}>Materias y docentes</Button>
                   </div>
                 </li>

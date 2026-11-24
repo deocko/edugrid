@@ -2,7 +2,7 @@ import { useMemo, useState, type FormEvent } from 'react'
 import { Link, useSearchParams } from 'react-router'
 import { Badge, Button, Card, EmptyState, Field, Input, Notice, PageHeader, Select, Stat, Table, Tabs, TD, TH } from '../../components/ui'
 import type { Charge, ConceptKind, Level, Payment, PaymentConcept, PaymentMethod, Reminder } from '../../data/types'
-import { demoDate, formatDate, formatMoney, nowISO, todayISO, uid } from '../../lib/format'
+import { demoDate, formatDate, formatMoney, nowISO, todayISO, uid, plural } from '../../lib/format'
 import { METHOD_LABEL, chargeView, studentCharges } from '../../lib/finance'
 import { LEVEL_LABEL, LEVELS, groupLabel, levelOfGroup, studentName } from '../../lib/scope'
 import { useApp } from '../../state/context'
@@ -56,7 +56,7 @@ function Debts() {
       r.student.guardianIds.map((gid) => ({ id: uid('rc'), studentId: r.student.id, guardianId: gid, amount: r.overdue, createdAt: nowISO(), createdBy: session.personId, message: `Te recordamos que ${r.student.firstName} tiene un saldo vencido de ${formatMoney(r.overdue)}. Si ya pagaste, por favor ignora este mensaje.` })),
     )
     if (reminders.length === 0) return
-    await act((repo) => repo.insert('reminders', reminders), { action: 'Envió recordatorios de pago', detail: `${new Set(reminders.map((r) => r.studentId)).size} alumnos` })
+    await act((repo) => repo.insert('reminders', reminders), { action: 'Envió recordatorios de pago', detail: plural(new Set(reminders.map((r) => r.studentId)).size, 'alumno', 'alumnos') })
   }
 
   return (
@@ -255,8 +255,8 @@ function Charges({ initialStudent }: { initialStudent: string }) {
       .filter((s) => s.status === 'activo' && !db.charges.some((c) => c.studentId === s.id && c.description.toLowerCase() === bulkDesc.toLowerCase()))
       .map((s) => ({ id: uid('cg'), studentId: s.id, conceptId: col.id, description: bulkDesc, amount: col.amounts[levelOfGroup(db, s.groupId) ?? 'primaria'], dueDate: bulkDue, createdAt: nowISO() }))
     if (rows.length === 0) return setMsg({ tone: 'exito', text: `Todos los alumnos ya tienen la ${bulkDesc.toLowerCase()}.` })
-    await act((repo) => repo.insert('charges', rows), { action: 'Generó colegiaturas', detail: `${bulkDesc} · ${rows.length} alumnos` })
-    setMsg({ tone: 'exito', text: `Se generó la ${bulkDesc.toLowerCase()} para ${rows.length} alumnos.` })
+    await act((repo) => repo.insert('charges', rows), { action: 'Generó colegiaturas', detail: `${bulkDesc} · ${plural(rows.length, 'alumno', 'alumnos')}` })
+    setMsg({ tone: 'exito', text: `Se generó la ${bulkDesc.toLowerCase()} para ${plural(rows.length, 'alumno', 'alumnos')}.` })
   }
 
   const recent = [...db.charges].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 8)

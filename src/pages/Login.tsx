@@ -7,6 +7,7 @@ import type { Role, Session } from '../data/types'
 import { HOME_BY_ROLE } from '../lib/permissions'
 import { groupLabel, isPreschool, levelOfGroup, studentName } from '../lib/scope'
 import { useStore } from '../state/context'
+import { plural } from '../lib/format'
 
 interface RoleCard {
   role: Role
@@ -32,11 +33,12 @@ export function Login() {
 
   const teacherOptions = db.teachers.filter((t) => t.active).map((t) => {
     const groups = db.groups.filter((g) => g.homeroomTeacherId === t.id).map((g) => groupLabel(db, g))
-    return { id: t.id, label: `${t.firstName} ${t.lastName} · ${t.specialty}${groups.length ? ` (titular de ${groups.join(', ')})` : ''}` }
+    // Etiqueta corta para que el nombre no se corte en el selector
+    return { id: t.id, label: groups.length ? `${t.firstName} ${t.lastName} · ${groups.join(', ')} (titular)` : `${t.firstName} ${t.lastName} · ${t.specialty}` }
   })
   const familyOptions = db.guardians.slice(0, 20).map((g) => {
     const kids = db.students.filter((s) => s.guardianIds.includes(g.id)).length
-    return { id: g.id, label: `${g.firstName} ${g.lastName} · ${kids} ${kids === 1 ? 'hijo' : 'hijos'}` }
+    return { id: g.id, label: `${g.firstName} ${g.lastName} · ${plural(kids, 'hijo', 'hijos')}` }
   })
   const studentOptions = db.students
     .filter((s) => !isPreschool(levelOfGroup(db, s.groupId)))
