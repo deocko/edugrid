@@ -11,7 +11,7 @@ export function Privacy() {
         {!session && (
           <div className="mb-6 flex items-center justify-between gap-3">
             <Logo height={30} />
-            <Link to="/" className="text-sm font-semibold text-link underline">
+            <Link to="/" className="-mr-2 inline-flex min-h-11 items-center gap-1 rounded-lg px-2 text-sm font-semibold text-link no-underline hover:bg-info-bg">
               Volver al inicio
             </Link>
           </div>

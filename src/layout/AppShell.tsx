@@ -8,10 +8,10 @@ import { userKey, visibleAnnouncements } from '../lib/scope'
 import { useApp, type ThemeChoice } from '../state/context'
 import { moduleForPath, NAV } from './nav'
 
-const THEMES: { value: ThemeChoice; label: string; icon: 'sol' | 'luna' | 'ajustes' }[] = [
+const THEMES: { value: ThemeChoice; label: string; icon: 'sol' | 'luna' | 'pantalla' }[] = [
   { value: 'claro', label: 'Tema: claro', icon: 'sol' },
   { value: 'oscuro', label: 'Tema: oscuro', icon: 'luna' },
-  { value: 'sistema', label: 'Tema: según el dispositivo', icon: 'ajustes' },
+  { value: 'sistema', label: 'Tema: según el dispositivo', icon: 'pantalla' },
 ]
 
 function ThemeToggle() {
@@ -57,9 +57,7 @@ export function AppShell() {
       {/* Barra lateral (escritorio) */}
       <aside className="sticky top-0 hidden h-dvh flex-col bg-nav text-nav-ink lg:flex" aria-label="Navegación principal">
         <div className="px-5 pt-5 pb-4">
-          <span className="inline-flex rounded-xl bg-white px-3 py-2">
-            <Logo height={30} plate="never" />
-          </span>
+          <Logo height={30} tone="invertida" />
           <p className="mt-3 text-sm font-semibold text-white">{db.meta.school.name}</p>
           <p className="text-xs text-nav-ink/90">Una escuela. Todos conectados.</p>
         </div>
@@ -71,7 +69,7 @@ export function AppShell() {
                   to={it.to}
                   end={it.end}
                   className={({ isActive }) =>
-                    `flex min-h-11 items-center gap-3 rounded-xl px-3 py-2 text-sm font-semibold no-underline ${isActive ? 'bg-white/10 text-nav-active' : 'text-nav-ink hover:bg-white/5 hover:text-white'}`
+                    `flex min-h-11 items-center gap-3 rounded-xl px-3 py-2 text-sm font-semibold no-underline ${isActive ? 'bg-primary text-nav-active' : 'text-nav-ink hover:bg-white/10 hover:text-white'}`
                   }
                 >
                   <Icon name={it.icon} />
@@ -150,7 +148,7 @@ export function AppShell() {
               >
                 {({ isActive }) => (
                   <>
-                    {isActive && <span className="absolute top-0 h-1 w-8 rounded-b bg-cyan" aria-hidden="true" />}
+                    {isActive && <span className="absolute top-0 h-1 w-8 rounded-b bg-primary dark:bg-link" aria-hidden="true" />}
                     <Icon name={it.icon} size={22} />
                     <span className="max-w-full truncate">{it.short ?? it.label}</span>
                     {it.to === '/avisos' && unread > 0 && session.role !== 'admin' && (

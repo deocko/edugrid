@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link, useParams } from 'react-router'
+import { useParams } from 'react-router'
 import { ReportCardButton } from '../../components/ReportCardButton'
 import { AccessDenied } from '../../components/guards'
 import { ScheduleView } from '../../components/ScheduleView'
@@ -64,7 +64,7 @@ export function ChildPage() {
           <LinkButton to={`/pagos/estado/${student.id}`} className="mt-4" icon="pagos">Ver estado de cuenta</LinkButton>
         </Card>
       )}
-      <p className="mt-4 text-sm"><Link to="/familia" className="font-semibold text-link underline">Volver a mis hijos</Link></p>
+      <div className="mt-4"><LinkButton to="/familia" variant="fantasma" icon="izquierda">Volver a mis hijos</LinkButton></div>
     </>
   )
 }

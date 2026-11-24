@@ -83,7 +83,7 @@ function Debts() {
               {rows.map((r) => (
                 <tr key={r.student.id}>
                   <td className={TD}>
-                    <Link to={`/pagos/estado/${r.student.id}`} className="font-semibold text-link underline">{studentName(r.student)}</Link>
+                    <Link to={`/pagos/estado/${r.student.id}`} className="font-semibold text-link no-underline hover:underline">{studentName(r.student)}</Link>
                     <p className="text-xs text-muted">{groupLabel(db, r.student.groupId)}</p>
                   </td>
                   <td className={`${TD} text-right font-bold whitespace-nowrap text-danger`}>{formatMoney(r.overdue)}</td>
@@ -202,7 +202,7 @@ function RegisterPayment({ initialStudent }: { initialStudent: string }) {
           {recent.map((p) => (
             <li key={p.id} className="flex items-center justify-between gap-2 py-2 text-sm">
               <div className="min-w-0">
-                <Link to={`/pagos/estado/${p.studentId}`} className="font-semibold text-link underline">{studentName(db.students.find((s) => s.id === p.studentId))}</Link>
+                <Link to={`/pagos/estado/${p.studentId}`} className="font-semibold text-link no-underline hover:underline">{studentName(db.students.find((s) => s.id === p.studentId))}</Link>
                 <p className="text-xs text-muted">{formatDate(p.paidAt)} · {METHOD_LABEL[p.method]}</p>
               </div>
               <span className="font-semibold whitespace-nowrap text-heading">{formatMoney(p.amount)}</span>

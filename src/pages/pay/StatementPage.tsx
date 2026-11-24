@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import { Link, useParams } from 'react-router'
+import { useParams } from 'react-router'
 import { AccessDenied } from '../../components/guards'
 import { InvoiceActions } from '../../components/InvoiceActions'
 import { Badge, Button, Card, DemoBadge, EmptyState, LinkButton, PageHeader, type Tone } from '../../components/ui'
@@ -80,7 +80,7 @@ export function StatementPage() {
                               <InvoiceActions invoice={inv} />
                             </span>
                           ) : isAdmin ? (
-                            <Link to={`/facturacion?pago=${p.id}`} className="font-semibold text-link underline">Facturar este pago</Link>
+                            <LinkButton to={`/facturacion?pago=${p.id}`} variant="fantasma" icon="factura">Facturar este pago</LinkButton>
                           ) : (
                             <span className="text-xs text-muted">Sin factura. Solicítala en la escuela.</span>
                           )}
@@ -95,7 +95,7 @@ export function StatementPage() {
         )}
       </Card>
       <p className="mt-4 text-sm no-print">
-        <Link to={isAdmin ? '/pagos' : '/familia/pagos'} className="font-semibold text-link underline">Volver a pagos</Link>
+        <LinkButton to={isAdmin ? '/pagos' : '/familia/pagos'} variant="fantasma" icon="izquierda">Volver a pagos</LinkButton>
       </p>
     </>
   )

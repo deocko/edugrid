@@ -68,10 +68,10 @@ export function StudentHome() {
             ))}
           </ul>
         </Card>
-        <Card title="Tareas por entregar" action={<Link to="/alumno/tareas" className="text-sm font-semibold text-link underline">Ver todas</Link>}>
+        <Card title="Tareas por entregar" action={<Link to="/alumno/tareas" className="-mr-2 inline-flex min-h-11 items-center gap-1 rounded-lg px-2 text-sm font-semibold text-link no-underline hover:bg-info-bg">Ver todas</Link>}>
           <HomeworkList limit={simple ? 3 : 5} />
         </Card>
-        <Card title="Avisos" className="lg:col-span-2" action={<Link to="/avisos" className="text-sm font-semibold text-link underline">Ver todos</Link>}>
+        <Card title="Avisos" className="lg:col-span-2" action={<Link to="/avisos" className="-mr-2 inline-flex min-h-11 items-center gap-1 rounded-lg px-2 text-sm font-semibold text-link no-underline hover:bg-info-bg">Ver todos</Link>}>
           <ul className="divide-y divide-line">
             {news.map((a) => (
               <li key={a.id} className="py-2">

@@ -1,5 +1,5 @@
 import { Link } from 'react-router'
-import { Avatar, Badge, Button, Card, EmptyState, PageHeader } from '../../components/ui'
+import { Avatar, Badge, Button, Card, EmptyState, LinkButton, PageHeader } from '../../components/ui'
 import { attendanceSummary } from '../../lib/attendance'
 import { formatDate, formatMoney, nowISO, todayISO } from '../../lib/format'
 import { studentBalance } from '../../lib/finance'
@@ -51,28 +51,28 @@ export function FamilyHome() {
                 <dl className="mt-4 grid grid-cols-3 gap-2 text-center">
                   <div className="rounded-xl bg-surface-2 p-2">
                     <dt className="text-xs text-muted">Asistencia</dt>
-                    <dd className="text-lg font-bold text-heading">{att.rate}%</dd>
+                    <dd className="text-base font-bold tabular-nums text-heading sm:text-lg">{att.rate}%</dd>
                   </div>
                   <div className="rounded-xl bg-surface-2 p-2">
                     <dt className="text-xs text-muted">{isPreschool(level) ? 'Evaluación' : 'Promedio 1er trim.'}</dt>
-                    <dd className="text-lg font-bold text-heading">{isPreschool(level) ? 'Ver' : (avg?.toFixed(1) ?? '—')}</dd>
+                    <dd className="text-base font-bold tabular-nums text-heading sm:text-lg">{isPreschool(level) ? 'Ver' : (avg?.toFixed(1) ?? '—')}</dd>
                   </div>
                   <div className="rounded-xl bg-surface-2 p-2">
                     <dt className="text-xs text-muted">Saldo</dt>
-                    <dd className={`text-lg font-bold ${bal.overdue > 0 ? 'text-danger' : 'text-heading'}`}>{formatMoney(bal.balance)}</dd>
+                    <dd className={`text-base font-bold tabular-nums sm:text-lg ${bal.overdue > 0 ? 'text-danger' : 'text-heading'}`}>{formatMoney(bal.balance)}</dd>
                   </div>
                 </dl>
                 {bal.overdue > 0 && <p className="mt-2 text-sm font-semibold text-danger">Tienes {formatMoney(bal.overdue)} vencido.</p>}
-                <Link to={`/familia/hijo/${k.id}`} className="mt-4 inline-flex min-h-11 items-center font-semibold text-link underline">
-                  Ver calificaciones, asistencia y tareas de {k.firstName}
-                </Link>
+                <LinkButton to={`/familia/hijo/${k.id}`} variant="secundario" icon="ojo" className="mt-4 w-full">
+                  Ver todo de {k.firstName}
+                </LinkButton>
               </Card>
             )
           })}
         </div>
       )}
       <div className="mt-4 grid gap-4 lg:grid-cols-2">
-        <Card title="Avisos sin leer" action={<Link to="/avisos" className="text-sm font-semibold text-link underline">Ir a avisos</Link>}>
+        <Card title="Avisos sin leer" action={<Link to="/avisos" className="-mr-2 inline-flex min-h-11 items-center gap-1 rounded-lg px-2 text-sm font-semibold text-link no-underline hover:bg-info-bg">Ir a avisos</Link>}>
           {unread.length === 0 ? (
             <p className="text-sm text-muted">Estás al día. No tienes avisos pendientes.</p>
           ) : (
@@ -86,7 +86,7 @@ export function FamilyHome() {
             </ul>
           )}
         </Card>
-        <Card title="Próximas fechas" action={<Link to="/familia/calendario" className="text-sm font-semibold text-link underline">Ver calendario</Link>}>
+        <Card title="Próximas fechas" action={<Link to="/familia/calendario" className="-mr-2 inline-flex min-h-11 items-center gap-1 rounded-lg px-2 text-sm font-semibold text-link no-underline hover:bg-info-bg">Ver calendario</Link>}>
           <ul className="divide-y divide-line">
             {upcoming.map((e) => (
               <li key={e.id} className="py-2">

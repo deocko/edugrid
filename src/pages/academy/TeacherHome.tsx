@@ -38,7 +38,7 @@ export function TeacherHome() {
                     <p className="font-semibold text-heading">{subjectName(db, c.subjectId)}</p>
                     <p className="text-sm text-muted">{c.start} – {c.end} · {groupLabel(db, c.groupId)}</p>
                   </div>
-                  <Link to={`/docente/asistencia?grupo=${c.groupId}`} className="text-sm font-semibold text-link underline">Pasar lista</Link>
+                  <LinkButton to={`/docente/asistencia?grupo=${c.groupId}`} variant="secundario" icon="asistencia">Pasar lista</LinkButton>
                 </li>
               ))}
             </ul>
@@ -68,7 +68,7 @@ export function TeacherHome() {
             </ul>
           )}
         </Card>
-        <Card title="Avisos recientes" action={<Link to="/avisos" className="text-sm font-semibold text-link underline">Ver todos</Link>}>
+        <Card title="Avisos recientes" action={<Link to="/avisos" className="-mr-2 inline-flex min-h-11 items-center gap-1 rounded-lg px-2 text-sm font-semibold text-link no-underline hover:bg-info-bg">Ver todos</Link>}>
           <ul className="divide-y divide-line">
             {news.map((a) => (
               <li key={a.id} className="py-2">
