@@ -9,9 +9,9 @@ import { useApp, type ThemeChoice } from '../state/context'
 import { moduleForPath, NAV } from './nav'
 
 const THEMES: { value: ThemeChoice; label: string; icon: 'sol' | 'luna' | 'ajustes' }[] = [
-  { value: 'claro', label: 'Modo claro', icon: 'sol' },
-  { value: 'oscuro', label: 'Modo oscuro', icon: 'luna' },
-  { value: 'sistema', label: 'Según el dispositivo', icon: 'ajustes' },
+  { value: 'claro', label: 'Tema: claro', icon: 'sol' },
+  { value: 'oscuro', label: 'Tema: oscuro', icon: 'luna' },
+  { value: 'sistema', label: 'Tema: según el dispositivo', icon: 'ajustes' },
 ]
 
 function ThemeToggle() {
@@ -24,8 +24,8 @@ function ThemeToggle() {
       type="button"
       onClick={() => setTheme(next.value)}
       className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-xl text-heading hover:bg-surface-2"
-      aria-label={`${current.label}. Cambiar a ${next.label.toLowerCase()}`}
-      title={current.label}
+      aria-label={current.label}
+      title={`${current.label} (toca para cambiar)`}
     >
       <Icon name={current.icon} />
     </button>

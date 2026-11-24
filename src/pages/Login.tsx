@@ -19,7 +19,7 @@ interface RoleCard {
 const CARDS: RoleCard[] = [
   { role: 'admin', title: 'Entrar como Administrador', description: 'Dirección y administración: alumnos, pagos, avisos y facturación.', icon: 'escudo' },
   { role: 'docente', title: 'Entrar como Docente', description: 'Pasa lista, captura calificaciones y deja tareas a tus grupos.', icon: 'docente' },
-  { role: 'familia', title: 'Entrar como Papá', description: 'Consulta calificaciones, asistencia y pagos de tus hijos.', icon: 'hijo' },
+  { role: 'familia', title: 'Entrar como Familia', description: 'Consulta calificaciones, asistencia y pagos de tus hijos.', icon: 'hijo' },
   { role: 'alumno', title: 'Entrar como Alumno', description: 'Revisa tu horario, tus tareas y tus calificaciones.', icon: 'libro' },
 ]
 

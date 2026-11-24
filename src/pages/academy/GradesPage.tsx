@@ -118,6 +118,9 @@ export function GradesPage() {
           title={`${subjectName(db, subjectId)} · ${groupLabel(db, groupId)}`}
           action={closure ? <Badge tone="exito">Cerrado el {formatDateTime(closure.closedAt)}</Badge> : <Badge tone="aviso">Periodo abierto</Badge>}
         >
+          {records.length === 0 && !closure && (
+            <div className="mb-3"><Notice tone="info" icon="calificaciones">Aún no hay calificaciones capturadas en este trimestre.</Notice></div>
+          )}
           {preschool && <p className="mb-3 text-sm text-muted">En preescolar se registra el nivel de logro de cada niña o niño.</p>}
           <ul className="divide-y divide-line">
             {students.map((s) => (

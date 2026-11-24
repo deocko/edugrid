@@ -3,7 +3,7 @@ import type { Role } from '../data/types'
 export const ROLE_LABEL: Record<Role, string> = {
   admin: 'Dirección / Administración',
   docente: 'Docente',
-  familia: 'Papá / Mamá',
+  familia: 'Familia',
   alumno: 'Alumno',
 }
 

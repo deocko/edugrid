@@ -99,7 +99,7 @@ step('La bitácora registró todo el ciclo')
 await logout()
 
 // 4. Papá: solo ve a sus hijos
-await page.getByRole('button', { name: 'Entrar como Papá' }).click()
+await page.getByRole('button', { name: 'Entrar como Familia' }).click()
 await page.waitForURL(/#\/familia$/)
 const body = await page.textContent('main')
 if (body.includes('Ana Prueba')) throw new Error('Un papá ve a una alumna que no es su hija')

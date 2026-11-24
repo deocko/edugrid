@@ -25,7 +25,7 @@ export function InvoicesPage() {
     <>
       <PageHeader
         title="Facturación"
-        subtitle={<span className="inline-flex flex-wrap items-center gap-2">CFDI 4.0 en modo demostración <DemoBadge /></span>}
+        subtitle={<span className="inline-flex flex-wrap items-center gap-2">Facturas electrónicas (CFDI 4.0) en modo demostración <DemoBadge /></span>}
         actions={
           <>
             <Button icon="factura" onClick={() => setPicker(true)}>Facturar un pago</Button>
@@ -41,6 +41,14 @@ export function InvoicesPage() {
           <strong>Configuración incompleta:</strong> falta cargar el certificado del SAT (CSD) y contratar un PAC real. Mientras tanto se usa el PAC DEMO. <Link to="/facturacion/configuracion" className="text-link underline">Ver configuración</Link>
         </Notice>
       </div>
+      <Card title="Palabras que vas a ver" className="mb-4">
+        <dl className="grid gap-x-6 gap-y-2 text-sm sm:grid-cols-2">
+          <div><dt className="inline font-semibold text-heading">CFDI: </dt><dd className="inline">factura electrónica.</dd></div>
+          <div><dt className="inline font-semibold text-heading">CSD: </dt><dd className="inline">certificado del SAT con el que la escuela firma sus facturas.</dd></div>
+          <div><dt className="inline font-semibold text-heading">PAC: </dt><dd className="inline">proveedor que timbra la factura (le pone el folio fiscal).</dd></div>
+          <div><dt className="inline font-semibold text-heading">PUE: </dt><dd className="inline">pago en una sola exhibición.</dd></div>
+        </dl>
+      </Card>
       <Card title={`Facturas emitidas (${list.length})`}>
         {list.length === 0 ? (
           <EmptyState icon="factura" title="Aún no hay facturas" action={<Button variant="secundario" onClick={() => setPicker(true)}>Facturar un pago</Button>}>
@@ -176,7 +184,7 @@ function EmitForm({ payment, onDone }: { payment: Payment; onDone: () => void })
             </Select>
           )}
         </Field>
-        <Field label="Uso del CFDI">
+        <Field label="Uso de la factura (CFDI)">
           {(id) => (
             <Select id={id} value={uso} onChange={(e) => setUso(e.target.value)}>
               {Object.entries(USOS_CFDI).map(([k, v]) => <option key={k} value={k}>{k} · {v}</option>)}
@@ -184,7 +192,7 @@ function EmitForm({ payment, onDone }: { payment: Payment; onDone: () => void })
           )}
         </Field>
       </div>
-      <p className="text-xs text-muted">Las colegiaturas están exentas de IVA. Si el concepto es educativo, se agrega el complemento de instituciones educativas (IEDU) con los datos del alumno.</p>
+      <p className="text-xs text-muted">Forma de pago: PUE (pago en una sola exhibición). Las colegiaturas están exentas de IVA. Si el concepto es educativo, se agrega el complemento de instituciones educativas (IEDU) con los datos del alumno.</p>
       {error && <Notice tone="peligro">{error}</Notice>}
       <div className="flex justify-end">
         <Button type="submit" icon="factura" disabled={busy}>{busy ? 'Timbrando (demo)…' : 'Emitir factura demo'}</Button>

@@ -189,7 +189,7 @@ function RegisterPayment({ initialStudent }: { initialStudent: string }) {
             <Notice tone="exito" icon="check">
               Pago de {formatMoney(done.amount)} registrado.{' '}
               <Link to={`/pagos/estado/${done.studentId}`} className="font-semibold underline">Ver estado de cuenta</Link> ·{' '}
-              <Link to={`/facturacion?pago=${done.id}`} className="font-semibold underline">Facturar (CFDI demo)</Link>
+              <Link to={`/facturacion?pago=${done.id}`} className="font-semibold underline">Facturar (factura electrónica demo)</Link>
             </Notice>
           )}
           <div className="flex justify-end">
