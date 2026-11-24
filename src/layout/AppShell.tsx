@@ -1,4 +1,4 @@
-import { useSyncExternalStore } from 'react'
+import { useEffect, useSyncExternalStore } from 'react'
 import { Link, NavLink, Outlet, useLocation } from 'react-router'
 import { Icon } from '../components/Icon'
 import { Avatar, DemoBadge, Switch } from '../components/ui'
@@ -36,6 +36,11 @@ function ThemeSwitch() {
 export function AppShell() {
   const { session, db, logout } = useApp()
   const location = useLocation()
+  // Al cambiar de página (o al regresar con «atrás») se empieza siempre desde arriba;
+  // los cambios de pestaña dentro de la misma página (?vista=…) conservan la posición.
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' })
+  }, [location.pathname])
   const items = NAV[session.role]
   const moduleName = moduleForPath(location.pathname)
   const unread = visibleAnnouncements(db, session).filter((a) => !db.receipts.some((r) => r.announcementId === a.id && r.userKey === userKey(session))).length

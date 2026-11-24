@@ -4,6 +4,13 @@ import { App } from './App'
 import './index.css'
 import { StoreProvider } from './state/StoreProvider'
 
+// El navegador no debe recordar a media página la posición al regresar: cada página empieza arriba.
+try {
+  if ('scrollRestoration' in history) history.scrollRestoration = 'manual'
+} catch {
+  // algunos navegadores incrustados no lo permiten
+}
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <StoreProvider>
