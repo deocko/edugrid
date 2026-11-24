@@ -11,16 +11,17 @@ import { plural } from '../lib/format'
 
 interface RoleCard {
   role: Role
+  name: string
   title: string
   description: string
   icon: IconName
 }
 
 const CARDS: RoleCard[] = [
-  { role: 'admin', title: 'Entrar como Administrador', description: 'Dirección y administración: alumnos, pagos, avisos y facturación.', icon: 'escudo' },
-  { role: 'docente', title: 'Entrar como Docente', description: 'Pasa lista, captura calificaciones y deja tareas a tus grupos.', icon: 'docente' },
-  { role: 'familia', title: 'Entrar como Familia', description: 'Consulta calificaciones, asistencia y pagos de tus hijos.', icon: 'hijo' },
-  { role: 'alumno', title: 'Entrar como Alumno', description: 'Revisa tu horario, tus tareas y tus calificaciones.', icon: 'libro' },
+  { role: 'admin', name: 'Administrador', title: 'Entrar como Administrador', description: 'Dirección y administración: alumnos, pagos, avisos y facturación.', icon: 'escudo' },
+  { role: 'docente', name: 'Docente', title: 'Entrar como Docente', description: 'Pasa lista, captura calificaciones y deja tareas a tus grupos.', icon: 'docente' },
+  { role: 'familia', name: 'Familia', title: 'Entrar como Familia', description: 'Consulta calificaciones, asistencia y pagos de tus hijos.', icon: 'hijo' },
+  { role: 'alumno', name: 'Alumno', title: 'Entrar como Alumno', description: 'Revisa tu horario, tus tareas y tus calificaciones.', icon: 'libro' },
 ]
 
 export function Login() {
@@ -95,13 +96,13 @@ export function Login() {
 
         <div className="grid gap-4 sm:grid-cols-2">
           {CARDS.map((c) => (
-            <section key={c.role} className="flex min-w-0 flex-col gap-3 rounded-2xl border border-line bg-surface p-5 shadow-sm">
+            <section key={c.role} className="flex min-w-0 flex-col gap-3 rounded-2xl border border-line bg-surface p-5 sm:p-6">
               <div className="flex items-start gap-3">
                 <span className="rounded-xl bg-info-bg p-2.5 text-info">
                   <Icon name={c.icon} size={24} />
                 </span>
                 <div className="min-w-0">
-                  <h2 className="text-lg font-bold text-heading">{c.title}</h2>
+                  <h2 className="text-lg font-bold text-heading">{c.name}</h2>
                   <p className="text-sm text-muted">{c.description}</p>
                 </div>
               </div>
@@ -115,7 +116,7 @@ export function Login() {
                   </option>
                 ))}
               </Select>
-              <Button onClick={() => void enter(c.role)} disabled={busy !== null} className="mt-auto w-full" icon="derecha">
+              <Button onClick={() => void enter(c.role)} disabled={busy !== null} className="mt-auto w-full">
                 {busy === c.role ? 'Entrando…' : c.title}
               </Button>
             </section>

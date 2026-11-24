@@ -101,7 +101,7 @@ export function Students() {
                 return (
                   <tr key={s.id}>
                     <td className={TD}>
-                      <Link to={`/alumnos/${s.id}`} className="font-semibold text-link underline">
+                      <Link to={`/alumnos/${s.id}`} className="font-semibold text-link no-underline hover:underline">
                         {studentName(s)}
                       </Link>
                       <p className="text-xs text-muted">{s.enrollmentId}</p>

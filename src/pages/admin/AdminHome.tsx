@@ -95,7 +95,7 @@ export function AdminHome() {
       </div>
 
       <div className="mt-4 grid gap-4 lg:grid-cols-2">
-        <Card title="Últimos avisos" action={<Link to="/avisos" className="text-sm font-semibold text-link underline">Ver todos</Link>}>
+        <Card title="Últimos avisos" action={<Link to="/avisos" className="-mr-2 inline-flex min-h-11 items-center gap-1 rounded-lg px-2 text-sm font-semibold text-link no-underline hover:bg-info-bg">Ver todos</Link>}>
           <ul className="divide-y divide-line">
             {latest.map((a) => (
               <li key={a.id} className="py-2.5">
@@ -107,11 +107,11 @@ export function AdminHome() {
             ))}
           </ul>
         </Card>
-        <Card title="Inscripciones recientes" action={<Link to="/admin/alumnos" className="text-sm font-semibold text-link underline">Ver alumnos</Link>}>
+        <Card title="Inscripciones recientes" action={<Link to="/admin/alumnos" className="-mr-2 inline-flex min-h-11 items-center gap-1 rounded-lg px-2 text-sm font-semibold text-link no-underline hover:bg-info-bg">Ver alumnos</Link>}>
           <ul className="divide-y divide-line">
             {newest.map((s) => (
               <li key={s.id} className="flex items-center justify-between gap-2 py-2.5">
-                <Link to={`/alumnos/${s.id}`} className="font-semibold text-link underline">
+                <Link to={`/alumnos/${s.id}`} className="font-semibold text-link no-underline hover:underline">
                   {studentName(s)}
                 </Link>
                 <span className="text-xs text-muted">{formatDate(s.createdAt)}</span>
