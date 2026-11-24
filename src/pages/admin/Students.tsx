@@ -5,6 +5,7 @@ import type { Guardian, Level, Student } from '../../data/types'
 import { formatMoney, nowISO, uid, plural } from '../../lib/format'
 import { studentBalance } from '../../lib/finance'
 import { LEVEL_LABEL, LEVELS, groupLabel, levelOfGroup, studentName } from '../../lib/scope'
+import { newQrCode } from '../../lib/qr'
 import { useApp } from '../../state/context'
 
 const CURP_RE = /^[A-Z]{4}\d{6}[HM][A-Z]{5}[A-Z0-9]\d$/
@@ -152,7 +153,7 @@ function EnrollForm({ onDone }: { onDone: (s: Student) => void }) {
         : null
     if (newGuardian) guardianId = newGuardian.id
     const seq = db.students.length + 1
-    const student: Student = { id: uid('al'), firstName: form.firstName.trim(), lastName: form.lastName.trim(), birthDate: form.birthDate, curp: curp || 'PENDIENTE', groupId: form.groupId, guardianIds: [guardianId], enrollmentId: `DEMO-${String(seq).padStart(4, '0')}`, status: 'activo', createdAt: now }
+    const student: Student = { id: uid('al'), firstName: form.firstName.trim(), lastName: form.lastName.trim(), birthDate: form.birthDate, curp: curp || 'PENDIENTE', groupId: form.groupId, guardianIds: [guardianId], enrollmentId: `DEMO-${String(seq).padStart(4, '0')}`, status: 'activo', createdAt: now, qrCode: newQrCode(db.students.map((x) => x.qrCode)) }
     await act(
       async (repo) => {
         if (newGuardian) await repo.insert('guardians', [newGuardian])
