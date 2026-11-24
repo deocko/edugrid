@@ -127,7 +127,7 @@ function Conversation({ thread, title, onBack }: { thread: ChatThread; title: { 
             <li key={m.id} className={`flex ${mine ? 'justify-end' : 'justify-start'}`}>
               <div className={`max-w-[85%] rounded-2xl px-3 py-2 ${mine ? 'rounded-br-md bg-primary text-on-primary' : 'rounded-bl-md bg-surface-2 text-ink'}`}>
                 <p className="whitespace-pre-wrap break-words">{m.text}</p>
-                <p className={`mt-1 text-[11px] ${mine ? 'text-white/85' : 'text-muted'}`}>
+                <p className={`mt-1 text-[11px] ${mine ? 'text-white' : 'text-muted'}`}>
                   {formatDateTime(m.at)}
                   {mine && (m.readAt ? ' · Visto' : ' · Enviado')}
                 </p>

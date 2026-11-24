@@ -81,6 +81,7 @@ for (const theme of themes) {
   for (const width of widths) {
     for (const [who, list] of Object.entries(routes)) {
       for (const path of list) {
+        if (process.env.QA_FILTER && !path.includes(process.env.QA_FILTER)) continue
         const { ctx, page, errors } = await open(who, theme, width, path)
         const tag = `${theme} ${width}px ${who} ${path}`
         const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)
