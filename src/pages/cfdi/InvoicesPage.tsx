@@ -33,9 +33,12 @@ export function InvoicesPage() {
           </>
         }
       />
-      <div className="mb-4">
+      <div className="mb-4 space-y-2">
         <Notice tone="aviso" icon="alerta">
-          <strong>Modo demo:</strong> las facturas se generan con datos ficticios y un timbre de prueba. No se envían al SAT ni a ningún PAC y no tienen validez fiscal.
+          <strong>Modo de pruebas:</strong> las facturas se generan con datos ficticios y un timbre de prueba. No se envían al SAT ni a ningún PAC y no tienen validez fiscal.
+        </Notice>
+        <Notice tone="info" icon="ajustes">
+          <strong>Configuración incompleta:</strong> falta cargar el certificado del SAT (CSD) y contratar un PAC real. Mientras tanto se usa el PAC DEMO. <Link to="/facturacion/configuracion" className="text-link underline">Ver configuración</Link>
         </Notice>
       </div>
       <Card title={`Facturas emitidas (${list.length})`}>
