@@ -89,7 +89,9 @@ function Conversation({ thread, title, onBack }: { thread: ChatThread; title: { 
     })
   }, [unread.length]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  useEffect(() => endRef.current?.scrollIntoView({ block: 'nearest' }), [messages.length])
+  useEffect(() => {
+    endRef.current?.scrollIntoView({ block: 'nearest' })
+  }, [messages.length])
 
   const send = async (e: FormEvent) => {
     e.preventDefault()

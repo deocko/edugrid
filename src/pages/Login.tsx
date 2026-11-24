@@ -38,7 +38,8 @@ export function Login() {
     // Etiqueta corta para que el nombre no se corte en el selector
     return { id: t.id, label: groups.length ? `${t.firstName} ${t.lastName} · ${groups.join(', ')} (titular)` : `${t.firstName} ${t.lastName} · ${t.specialty}` }
   })
-  const familyOptions = db.guardians.slice(0, 20).map((g) => {
+  // Las primeras 20 familias de la semilla y las que se den de alta en la demo
+  const familyOptions = db.guardians.filter((g, i) => i < 20 || g.id.startsWith('tu-')).map((g) => {
     const kids = db.students.filter((s) => s.guardianIds.includes(g.id)).length
     return { id: g.id, label: `${g.firstName} ${g.lastName} · ${plural(kids, 'hijo', 'hijos')}` }
   })

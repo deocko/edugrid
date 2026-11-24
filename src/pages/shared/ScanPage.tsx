@@ -28,9 +28,10 @@ export function ScanPage() {
   dbRef.current = db
 
   const register = useCallback(
-    async (raw: string) => {
-      if (busy.current) return
-      busy.current = true
+    async (raw: string, fromCamera = false) => {
+      // La pausa solo aplica a la cámara, para que no lea el mismo código varias veces seguidas
+      if (fromCamera && busy.current) return
+      if (fromCamera) busy.current = true
       try {
         const r = evaluateScan(dbRef.current, session, raw, place)
         if (!r.ok) {
@@ -52,8 +53,7 @@ export function ScanPage() {
         })
         setCode('')
       } finally {
-        // Pausa breve para que la cámara no lea el mismo código dos veces seguidas
-        setTimeout(() => { busy.current = false }, 1500)
+        if (fromCamera) setTimeout(() => { busy.current = false }, 1500)
       }
     },
     [act, log, place, session],
@@ -99,7 +99,7 @@ export function ScanPage() {
           canvas.height = h
           ctx.drawImage(v, 0, 0, w, h)
           const found = jsQR(ctx.getImageData(0, 0, w, h).data, w, h, { inversionAttempts: 'dontInvert' })
-          if (found?.data) void register(found.data)
+          if (found?.data) void register(found.data, true)
         }
         timer = window.setTimeout(tick, 250)
       }
