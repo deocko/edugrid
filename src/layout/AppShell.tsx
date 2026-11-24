@@ -1,11 +1,11 @@
-import { useState, useSyncExternalStore } from 'react'
+import { useSyncExternalStore } from 'react'
 import { Link, NavLink, Outlet, useLocation } from 'react-router'
 import { Icon } from '../components/Icon'
 import { Avatar, DemoBadge, Switch } from '../components/ui'
 import { ROLE_LABEL } from '../lib/permissions'
 import { userKey, visibleAnnouncements } from '../lib/scope'
 import { useApp } from '../state/context'
-import { inSettings, moduleForPath, NAV } from './nav'
+import { hubFor, inHub, moduleForPath, NAV } from './nav'
 import { ByEdugrid, SchoolLogo } from '../brand/SchoolBrand'
 import { brandingOf } from '../lib/branding'
 
@@ -35,7 +35,6 @@ function ThemeSwitch() {
 
 export function AppShell() {
   const { session, db, logout } = useApp()
-  const [moreOpen, setMoreOpen] = useState(false)
   const location = useLocation()
   const items = NAV[session.role]
   const moduleName = moduleForPath(location.pathname)
@@ -43,6 +42,7 @@ export function AppShell() {
   const notes = db.notifications.filter((n) => n.userKey === userKey(session) && !n.readAt).length
   const primary = items.slice(0, 4)
   const rest = items.slice(4)
+  const hub = hubFor(session.role)
 
   const badge = (to: string) =>
     to === '/avisos' && unread > 0 && session.role !== 'admin' ? (
@@ -150,7 +150,7 @@ export function AppShell() {
 
       {/* Navegación inferior (móvil y tableta) */}
       <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-surface pb-[env(safe-area-inset-bottom)] lg:hidden no-print" aria-label="Navegación principal">
-        <ul className="mx-auto grid max-w-xl" style={{ gridTemplateColumns: `repeat(${primary.length + (rest.length || session.role === 'admin' ? 1 : 0)}, minmax(0, 1fr))` }}>
+        <ul className="mx-auto grid max-w-xl" style={{ gridTemplateColumns: `repeat(${primary.length + (rest.length ? 1 : 0)}, minmax(0, 1fr))` }}>
           {primary.map((it) => (
             <li key={it.to}>
               <NavLink
@@ -171,49 +171,23 @@ export function AppShell() {
               </NavLink>
             </li>
           ))}
-          {session.role === 'admin' ? (
+          {rest.length > 0 && (
             <li>
               <NavLink
-                to="/admin/ajustes"
-                className={`relative flex min-h-14 flex-col items-center justify-center gap-0.5 px-0 py-1.5 text-[11px] font-semibold no-underline ${inSettings(location.pathname) ? 'text-link' : 'text-muted'}`}
-                aria-current={inSettings(location.pathname) ? 'page' : undefined}
+                to={hub.to}
+                className={`relative flex min-h-14 flex-col items-center justify-center gap-0.5 px-0 py-1.5 text-[11px] font-semibold no-underline ${inHub(session.role, location.pathname) ? 'text-link' : 'text-muted'}`}
+                aria-current={inHub(session.role, location.pathname) ? 'page' : undefined}
               >
-                {inSettings(location.pathname) && <span className="absolute top-0 h-1 w-8 rounded-b bg-primary dark:bg-link" aria-hidden="true" />}
-                <Icon name="ajustes" size={22} />
-                <span className="max-w-full text-[9.5px] tracking-tight whitespace-nowrap min-[360px]:text-[10px] min-[400px]:text-[11px] min-[400px]:tracking-normal">Configuración</span>
+                {inHub(session.role, location.pathname) && <span className="absolute top-0 h-1 w-8 rounded-b bg-primary dark:bg-link" aria-hidden="true" />}
+                <Icon name={session.role === 'admin' ? 'ajustes' : 'menu'} size={22} />
+                <span className="max-w-full text-[9.5px] tracking-tight whitespace-nowrap min-[360px]:text-[10px] min-[400px]:text-[11px] min-[400px]:tracking-normal">{hub.label}</span>
+                {session.role !== 'admin' && unread > 0 && hub.items.some((i) => i.to === '/avisos') && (
+                  <span className="absolute top-1 right-[calc(50%-20px)] min-w-4 rounded-full bg-cyan px-1 text-[10px] leading-4 font-bold text-navy">{unread}</span>
+                )}
               </NavLink>
             </li>
-          ) : (
-            rest.length > 0 && (
-              <li>
-                <button type="button" onClick={() => setMoreOpen((v) => !v)} aria-expanded={moreOpen} className="flex min-h-14 w-full flex-col items-center justify-center gap-0.5 px-1 py-1.5 text-[11px] font-semibold text-muted">
-                  <Icon name={moreOpen ? 'cerrar' : 'menu'} size={22} />
-                  Más
-                </button>
-              </li>
-            )
           )}
         </ul>
-        {moreOpen && session.role !== 'admin' && (
-          <div className="absolute inset-x-0 bottom-full border-t border-line bg-surface p-3 shadow-lg">
-            <ul className="mx-auto grid max-w-xl grid-cols-2 gap-2 sm:grid-cols-3">
-              {rest.map((it) => (
-                <li key={it.to}>
-                  <NavLink to={it.to} onClick={() => setMoreOpen(false)} className="flex min-h-11 items-center gap-2 rounded-xl bg-surface-2 px-3 py-2 text-sm font-semibold text-heading no-underline">
-                    <Icon name={it.icon} />
-                    {it.label}
-                  </NavLink>
-                </li>
-              ))}
-              <li>
-                <NavLink to="/privacidad" onClick={() => setMoreOpen(false)} className="flex min-h-11 items-center gap-2 rounded-xl bg-surface-2 px-3 py-2 text-sm font-semibold text-heading no-underline">
-                  <Icon name="escudo" />
-                  Privacidad
-                </NavLink>
-              </li>
-            </ul>
-          </div>
-        )}
       </nav>
     </div>
   )

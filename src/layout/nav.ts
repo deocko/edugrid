@@ -88,8 +88,40 @@ export const ADMIN_SETTINGS: SettingsItem[] = [
   { to: '/privacidad', label: 'Privacidad', icon: 'candado', description: 'Aviso de privacidad', color: 'turquesa' },
 ]
 
-/** ¿La ruta pertenece a Configuración? (para marcar la pestaña activa en el celular) */
-export const inSettings = (pathname: string) => pathname === '/admin/ajustes' || ADMIN_SETTINGS.some((i) => pathname === i.to || pathname.startsWith(`${i.to}/`))
+/** Lo que no cabe en la barra inferior del celular, en tarjetas: docente, familia y alumno. */
+export const MORE_ITEMS: Record<Exclude<Role, 'admin'>, SettingsItem[]> = {
+  docente: [
+    { to: '/docente/asistencia', label: 'Asistencia', icon: 'asistencia', description: 'Pase de lista del día', color: 'verde' },
+    { to: '/docente/calificaciones', label: 'Calificaciones', icon: 'calificaciones', description: 'Captura por materia y trimestre', color: 'morado' },
+    { to: '/avisos', label: 'Avisos', icon: 'avisos', description: 'Mensajes a tus grupos', color: 'naranja' },
+    { to: '/docente/tareas', label: 'Tareas', icon: 'tareas', description: 'Deja y revisa tareas', color: 'rosa' },
+    { to: '/docente/horario', label: 'Horario', icon: 'horario', description: 'Tus clases de la semana', color: 'turquesa' },
+    { to: '/privacidad', label: 'Privacidad', icon: 'candado', description: 'Aviso de privacidad', color: 'gris' },
+  ],
+  familia: [
+    { to: '/familia/calendario', label: 'Calendario', icon: 'calendario', description: 'Eventos, tareas y entradas', color: 'naranja' },
+    { to: '/familia/pagos', label: 'Pagos', icon: 'pagos', description: 'Colegiaturas y estado de cuenta', color: 'ambar' },
+    { to: '/familia/tarjetas', label: 'Mis tarjetas', icon: 'tarjeta', description: 'Tarjetas para pagar en la app', color: 'morado' },
+    { to: '/privacidad', label: 'Privacidad', icon: 'candado', description: 'Aviso de privacidad', color: 'turquesa' },
+  ],
+  alumno: [
+    { to: '/alumno/qr', label: 'Mi credencial', icon: 'qr', description: 'Tu código QR para entrar', color: 'azul' },
+    { to: '/avisos', label: 'Avisos', icon: 'avisos', description: 'Lo que manda tu escuela', color: 'naranja' },
+    { to: '/privacidad', label: 'Privacidad', icon: 'candado', description: 'Aviso de privacidad', color: 'turquesa' },
+  ],
+}
+
+/** Pantalla de tarjetas de cada perfil: «Configuración» para dirección y «Más» para los demás. */
+export const hubFor = (role: Role) =>
+  role === 'admin'
+    ? { to: '/admin/ajustes', label: 'Configuración', title: 'Configuración', subtitle: 'Todo lo que administra la dirección, en un solo lugar.', items: ADMIN_SETTINGS }
+    : { to: '/mas', label: 'Más', title: 'Más opciones', subtitle: 'Todo lo que no cabe en la barra de abajo, en un solo lugar.', items: MORE_ITEMS[role] }
+
+/** ¿La ruta pertenece a la pantalla de tarjetas? (para marcar la pestaña activa en el celular) */
+export const inHub = (role: Role, pathname: string) => {
+  const hub = hubFor(role)
+  return pathname === hub.to || hub.items.some((i) => pathname === i.to || pathname.startsWith(`${i.to}/`))
+}
 
 /** Módulo de EDUGRID al que pertenece cada vista (se muestra arriba del título). */
 const MODULES: [prefix: string, name: string][] = [

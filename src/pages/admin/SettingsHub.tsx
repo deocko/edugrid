@@ -1,15 +1,23 @@
 import { Link } from 'react-router'
 import { Icon } from '../../components/Icon'
 import { PageHeader } from '../../components/ui'
-import { ADMIN_SETTINGS } from '../../layout/nav'
+import { hubFor } from '../../layout/nav'
+import { userKey, visibleAnnouncements } from '../../lib/scope'
+import { useApp } from '../../state/context'
 
-/** Configuración de la dirección: una tarjeta por sección de la escuela. */
+/**
+ * Pantalla de tarjetas de cada perfil: «Configuración» de la dirección y «Más» de docente,
+ * familia y alumno. Una tarjeta pastel por sección.
+ */
 export function SettingsHub() {
+  const { db, session } = useApp()
+  const hub = hubFor(session.role)
+  const unread = session.role === 'admin' ? 0 : visibleAnnouncements(db, session).filter((a) => !db.receipts.some((r) => r.announcementId === a.id && r.userKey === userKey(session))).length
   return (
     <>
-      <PageHeader title="Configuración" subtitle="Todo lo que administra la dirección, en un solo lugar." />
+      <PageHeader title={hub.title} subtitle={hub.subtitle} />
       <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-        {ADMIN_SETTINGS.map((it) => (
+        {hub.items.map((it) => (
           <li key={it.to}>
             <Link
               to={it.to}
@@ -26,6 +34,9 @@ export function SettingsHub() {
               </span>
               <span className="font-bold leading-tight">{it.label}</span>
               <span className="max-w-[85%] text-xs text-muted">{it.description}</span>
+              {it.to === '/avisos' && unread > 0 && (
+                <span className="absolute top-3 right-3 rounded-full bg-cyan px-2 text-xs font-bold text-navy" aria-label={`${unread} sin leer`}>{unread}</span>
+              )}
             </Link>
           </li>
         ))}

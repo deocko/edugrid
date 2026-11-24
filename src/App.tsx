@@ -79,6 +79,7 @@ export function App() {
           <Route path="/admin/entradas" element={<RequireRole roles={['admin']}><ScanPage /></RequireRole>} />
           <Route path="/admin/docentes" element={<RequireRole roles={['admin']}><Teachers /></RequireRole>} />
           <Route path="/admin/escuela" element={<RequireRole roles={['admin']}><SchoolStructure /></RequireRole>} />
+          <Route path="/mas" element={<RequireRole roles={['docente', 'familia', 'alumno']}><SettingsHub /></RequireRole>} />
           <Route path="/admin/ajustes" element={<RequireRole roles={['admin']}><SettingsHub /></RequireRole>} />
           <Route path="/admin/calificaciones" element={<RequireRole roles={['admin']}><GradesPage /></RequireRole>} />
           <Route path="/admin/calendario" element={<RequireRole roles={['admin']}><AdminCalendar /></RequireRole>} />

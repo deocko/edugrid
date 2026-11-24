@@ -215,6 +215,27 @@ if ((await bottom.getByRole('link', { name: 'Configuración' }).getAttribute('ar
 await page.setViewportSize({ width: 1280, height: 900 })
 step('En el celular, «Configuración» reemplaza a «Más» y muestra las tarjetas de cada sección')
 
+// 13. Docente, familia y alumno: «Más» abre una pantalla con tarjetas
+const HUBS = {
+  docente: ['Asistencia', 'Calificaciones', 'Avisos', 'Tareas', 'Horario', 'Privacidad'],
+  familia: ['Calendario', 'Pagos', 'Mis tarjetas', 'Privacidad'],
+  regina: ['Mi credencial', 'Avisos', 'Privacidad'],
+}
+await page.setViewportSize({ width: 390, height: 844 })
+for (const [who, cards] of Object.entries(HUBS)) {
+  await as(who, '/')
+  const nav = page.getByRole('navigation', { name: 'Navegación principal' }).last()
+  await nav.getByRole('link', { name: /^Más/ }).click()
+  await page.getByRole('heading', { level: 1, name: 'Más opciones' }).waitFor()
+  for (const t of cards) if (!(await page.locator('main').getByRole('link', { name: new RegExp(`^${t}`) }).count())) fail(`${who}: falta la tarjeta «${t}»`)
+  await page.screenshot({ path: `${OUT}/mas-${who}.png`, fullPage: true })
+  await page.locator('main').getByRole('link', { name: new RegExp(`^${cards[0]}`) }).click()
+  await page.getByRole('heading', { level: 1 }).waitFor()
+  if ((await nav.getByRole('link', { name: /^Más/ }).getAttribute('aria-current')) !== 'page') fail(`${who}: «Más» no queda marcada al entrar a una sección`)
+}
+await page.setViewportSize({ width: 1280, height: 900 })
+step('Docente, familia y alumno: «Más» abre tarjetas pastel con sus secciones')
+
 if (errors.length) fail(`Errores en la página: ${errors.join(' | ')}`)
 await browser.close()
 console.log('Correcciones del mensaje 8: todo en orden.')
