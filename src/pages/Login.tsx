@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { Isotipo, Logo } from '../brand/Logo'
 import { Icon, type IconName } from '../components/Icon'
-import { Button, DemoBadge, Select } from '../components/ui'
+import { Button, DemoBadge, Notice, Select } from '../components/ui'
 import type { Role, Session } from '../data/types'
 import { HOME_BY_ROLE } from '../lib/permissions'
 import { groupLabel, isPreschool, levelOfGroup, studentName } from '../lib/scope'
@@ -29,6 +29,7 @@ export function Login() {
   const [choice, setChoice] = useState<Record<Role, string>>({ admin: 'adm1', docente: 't14', familia: 'tu0', alumno: 'al1' })
   const [busy, setBusy] = useState<Role | null>(null)
   const [resetDone, setResetDone] = useState(false)
+  const [confirmReset, setConfirmReset] = useState(false)
   if (!db) return null
 
   const teacherOptions = db.teachers.filter((t) => t.active).map((t) => {
@@ -123,6 +124,12 @@ export function Login() {
           ))}
         </div>
 
+        {resetDone && (
+          <div className="mt-6" role="status">
+            <Notice tone="exito" icon="check">Listo: los datos demo se restablecieron. Todo volvió a como estaba al inicio.</Notice>
+          </div>
+        )}
+
         <div className="mt-8 flex flex-col items-start gap-3 border-t border-line pt-6 text-sm text-muted sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-2">
             <span className="inline-flex rounded-md bg-white p-0.5">
@@ -135,14 +142,28 @@ export function Login() {
               </Link>
             </span>
           </div>
-          <Button
-            variant="secundario"
-            onClick={() => {
-              void resetDemo().then(() => setResetDone(true))
-            }}
-          >
-            {resetDone ? 'Datos demo restablecidos' : 'Restablecer datos demo'}
-          </Button>
+          {confirmReset ? (
+            <div role="alertdialog" aria-labelledby="reset-pregunta" className="flex flex-col gap-2 rounded-xl border border-line bg-surface p-3 sm:items-end">
+              <p id="reset-pregunta" className="font-semibold text-heading">¿Seguro que quieres restablecer los datos demo?</p>
+              <p className="text-xs">Se borran los cambios que hiciste y se vuelven a cargar los datos de ejemplo.</p>
+              <div className="flex gap-2">
+                <Button variant="secundario" onClick={() => setConfirmReset(false)}>Cancelar</Button>
+                <Button
+                  variant="peligro"
+                  onClick={() => {
+                    setConfirmReset(false)
+                    void resetDemo().then(() => setResetDone(true))
+                  }}
+                >
+                  Sí, restablecer
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <Button variant="secundario" onClick={() => { setResetDone(false); setConfirmReset(true) }}>
+              Restablecer datos demo
+            </Button>
+          )}
         </div>
       </main>
     </div>
