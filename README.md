@@ -18,6 +18,17 @@ EDUGRID es una plataforma web de gestión escolar para escuelas privadas en Méx
 | **Pay** | Administración y familias | Conceptos (inscripción, colegiatura, otros), cargos por alumno, colegiatura masiva del mes, registro de pagos (efectivo, transferencia, tarjeta; solo registro), adeudos, estado de cuenta y recordatorios. |
 | **CFDI** | Administración | Facturas CFDI 4.0 en **modo demo** (XML + PDF con marca DEMO), cancelación con motivo, configuración del emisor y adaptador PAC listo para conectar un PAC real. |
 
+## Comunicación escuela-familia
+
+- **Credencial QR:** cada alumno tiene una credencial QR (Familia → QR, o Alumno → Mi credencial QR). El QR solo lleva un código opaco, sin nombre ni datos personales. La dirección puede generar una credencial nueva si se pierde.
+- **Entradas y salidas:** la dirección (Admin → Entradas y salidas) o la docente (Escanear QR, solo sus grupos) escanean con la cámara o escriben el código. La primera lectura del día es la entrada y la siguiente, la salida. Una segunda lectura en menos de un minuto no se duplica.
+- **Avisos al momento:** cada entrada y salida llega a la familia como notificación (campana), queda en «Día a día» del alumno y en el calendario.
+- **Novedades con foto:** la docente envía a la familia cómo va su hija o hijo (llegó bien, comió bien, logro del día…) con foto opcional. La foto se reduce en el navegador y solo la ven su familia, sus docentes y la dirección.
+- **Chat:** conversaciones privadas entre cada docente y las familias de sus grupos, con acuse «Visto».
+- **Admin:** Familias (alta de mamá, papá o tutor con uno o varios hijos), Aulas (cupo y grupo que la ocupa) y Clases (materias, docentes y horario sin empalmes). Avisos sigue en Connect.
+
+> En esta demo las notificaciones aparecen dentro de la app. Las notificaciones push al celular necesitan un servidor (por ejemplo Supabase) y se conectarán con el adaptador de datos real.
+
 ## Cuentas demo
 
 No hay contraseñas. En la pantalla de inicio elige **Entrar como Administrador / Docente / Familia / Alumno** y, si quieres, la cuenta:
@@ -57,6 +68,7 @@ npm run build && npx vite preview --port 4173 &
 node scripts/qa.mjs            # 390/768/1024/1440 px, claro y oscuro, contraste AA, tablas, redacción, permisos
 node scripts/consistencia.mjs  # mismos datos en todas las vistas (Mateo, asistencia, horario, tareas, avisos...)
 node scripts/e2e.mjs           # flujo completo: inscripción → pago → factura demo
+node scripts/e2e-comunicacion.mjs  # QR con cámara simulada, novedades con foto, chat, familias, aulas y clases (requiere ffmpeg)
 ```
 
 ## Despliegue en GitHub Pages
