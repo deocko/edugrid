@@ -26,7 +26,7 @@ async function text(who, path, prep) {
   await page.waitForLoadState('networkidle')
   if (prep) await prep(page)
   await page.waitForTimeout(150)
-  const t = await page.innerText('body')
+  const t = await page.innerText('main')
   await ctx.close()
   return t
 }
