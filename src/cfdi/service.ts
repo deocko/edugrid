@@ -1,3 +1,4 @@
+import { nowISO } from '../lib/format'
 import type { Database, Invoice, Payment } from '../data/types'
 import { levelOfGroup, studentName } from '../lib/scope'
 import { RFC_PUBLICO_GENERAL } from './catalogs'
@@ -14,7 +15,7 @@ export interface ReceptorInput {
 
 const FORMA: Record<Payment['method'], string> = { efectivo: '01', transferencia: '03', tarjeta: '04' }
 
-const localNow = () => new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 19)
+const localNow = () => nowISO()
 
 /** Arma el CFDI, lo manda timbrar al PAC configurado y devuelve la factura lista para guardar. */
 export async function emitInvoice(db: Database, payment: Payment, receptor: ReceptorInput, id: string): Promise<Invoice> {
@@ -79,4 +80,4 @@ export function download(blob: Blob, filename: string) {
   setTimeout(() => URL.revokeObjectURL(url), 1000)
 }
 
-export const invoiceFileName = (inv: Invoice, ext: 'xml' | 'pdf') => `CFDI-DEMO-${inv.serie}${inv.folio}-${inv.uuid.slice(0, 8)}.${ext}`
+export const invoiceFileName = (inv: Invoice, ext: 'xml' | 'pdf') => `${inv.serie}-${inv.folio}-${inv.uuid.slice(0, 8)}.${ext}`

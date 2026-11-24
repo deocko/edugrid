@@ -1,6 +1,6 @@
 // Boleta de calificaciones en PDF (DEMO, sin validez oficial ante la SEP).
 import type { Database } from '../data/types'
-import { formatDate } from './format'
+import { formatDate, todayISO } from './format'
 import { CYAN, NAVY, TEXT, drawBrandHeader, drawDemoWatermark } from './pdfBrand'
 import { averageFor, formatScore, groupLabel, isPreschool, levelOfGroup, studentName, subjectName, teacherName } from './scope'
 import { attendanceSummary } from './attendance'
@@ -102,6 +102,6 @@ export async function buildReportCardPdf(db: Database, studentId: string): Promi
   doc.text('Dirección', 55, sy + 5, { align: 'center' })
   doc.text('Madre, padre o tutor', W - 55, sy + 5, { align: 'center' })
   doc.setFontSize(7)
-  doc.text(`Generado el ${formatDate(new Date().toISOString())} por EDUGRID · ${db.meta.school.name} (escuela ficticia, datos DEMO).`, 14, H - 12)
+  doc.text(`Generado el ${formatDate(todayISO())} por EDUGRID · ${db.meta.school.name} (escuela ficticia, datos DEMO).`, 14, H - 12)
   return doc.output('blob')
 }

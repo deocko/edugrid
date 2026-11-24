@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { REGIMENES, RFC_RE } from '../../cfdi/catalogs'
+import { REGIMENES, RFC_DEMO_RE, RFC_RE } from '../../cfdi/catalogs'
 import { getPacAdapter } from '../../cfdi/pac'
 import { Button, Card, DemoBadge, Field, Input, Notice, PageHeader, Select } from '../../components/ui'
 import { useApp } from '../../state/context'
@@ -12,7 +12,7 @@ export function CfdiConfigPage() {
 
   const save = async (e: FormEvent) => {
     e.preventDefault()
-    if (!RFC_RE.test(form.rfcEmisor.toUpperCase())) return setMsg({ tone: 'peligro', text: 'El RFC del emisor no tiene un formato válido.' })
+    if (!RFC_RE.test(form.rfcEmisor.toUpperCase()) && !RFC_DEMO_RE.test(form.rfcEmisor.toUpperCase())) return setMsg({ tone: 'peligro', text: 'El RFC del emisor no tiene un formato válido.' })
     if (!/^\d{5}$/.test(form.codigoPostal)) return setMsg({ tone: 'peligro', text: 'El código postal debe tener 5 dígitos.' })
     await act((repo) => repo.updateMeta({ cfdiConfig: { ...cfg, ...form, rfcEmisor: form.rfcEmisor.toUpperCase(), razonSocial: form.razonSocial.toUpperCase() } }), { action: 'Actualizó configuración fiscal (demo)', detail: `RFC ${form.rfcEmisor.toUpperCase()} · régimen ${form.regimenFiscal}` })
     setMsg({ tone: 'exito', text: 'Configuración guardada. Solo se guardan datos públicos del emisor; nunca credenciales.' })

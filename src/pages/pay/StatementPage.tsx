@@ -76,7 +76,7 @@ export function StatementPage() {
                           </span>
                           {inv ? (
                             <span className="flex flex-wrap items-center gap-2">
-                              <Badge tone={inv.status === 'vigente' ? 'info' : 'peligro'}>Factura {inv.serie}{inv.folio}{inv.status === 'cancelada' ? ' cancelada' : ''}</Badge>
+                              <Badge tone={inv.status === 'vigente' ? 'info' : 'peligro'}>Factura {inv.serie}-{inv.folio}{inv.status === 'cancelada' ? ' cancelada' : ''}</Badge>
                               <InvoiceActions invoice={inv} />
                             </span>
                           ) : isAdmin ? (
