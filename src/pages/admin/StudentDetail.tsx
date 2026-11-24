@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
-import { Link, useParams } from 'react-router'
+import { useParams } from 'react-router'
 import { ReportCardButton } from '../../components/ReportCardButton'
 import { AccessDenied } from '../../components/guards'
 import { AttendanceList, GradesTable } from '../../components/StudentRecords'
@@ -8,6 +8,9 @@ import type { Student } from '../../data/types'
 import { ageFrom, formatDate, formatMoney, nowISO } from '../../lib/format'
 import { studentBalance } from '../../lib/finance'
 import { LEVEL_LABEL, LEVELS, canSeeStudent, groupLabel, levelOfGroup, studentName, teacherName } from '../../lib/scope'
+import { DayLog } from '../../components/DayLog'
+import { QrCode } from '../../components/QrCode'
+import { formatQrCode, newQrCode, qrPayload } from '../../lib/qr'
 import { useApp } from '../../state/context'
 
 export function StudentDetail() {
@@ -102,14 +105,18 @@ export function StudentDetail() {
         <Card title="Asistencia reciente">
           <AttendanceList db={db} studentId={student.id} limit={6} />
         </Card>
+        {isAdmin && <QrCard studentId={student.id} />}
+        <Card title="Día a día" className={isAdmin ? 'lg:col-span-2' : 'lg:col-span-3'}>
+          <DayLog db={db} studentId={student.id} days={3} />
+        </Card>
         <Card title="Calificaciones" className="lg:col-span-2" action={<ReportCardButton studentId={student.id} />}>
           <GradesTable db={db} studentId={student.id} />
         </Card>
       </div>
       <p className="mt-4 text-sm">
-        <Link to={isAdmin ? '/admin/alumnos' : '/docente'} className="font-semibold text-link underline">
+        <LinkButton to={isAdmin ? '/admin/alumnos' : '/docente'} variant="fantasma" icon="izquierda">
           Volver
-        </Link>
+        </LinkButton>
       </p>
     </>
   )
@@ -195,5 +202,37 @@ function Withdraw({ student, onDone }: { student: Student; onDone: () => void })
         <Button type="submit" variant={active ? 'peligro' : 'primario'}>{active ? 'Confirmar baja' : 'Reactivar alumno'}</Button>
       </div>
     </form>
+  )
+}
+
+/** Credencial QR del alumno; la dirección puede generar una nueva si se perdió. */
+function QrCard({ studentId }: { studentId: string }) {
+  const { db, act } = useApp()
+  const [confirm, setConfirm] = useState(false)
+  const student = db.students.find((s) => s.id === studentId)
+  if (!student) return null
+  const regenerate = async () => {
+    const code = newQrCode(db.students.map((s) => s.qrCode))
+    await act((repo) => repo.update('students', student.id, { qrCode: code }), { action: 'Generó credencial QR nueva', detail: `${studentName(student)} · la anterior dejó de funcionar` })
+    setConfirm(false)
+  }
+  return (
+    <Card title="Credencial QR">
+      <div className="flex flex-col items-center gap-2 text-center">
+        <div className="rounded-xl bg-white p-2"><QrCode value={qrPayload(student.qrCode)} size={150} label={`Código QR de ${studentName(student)}`} /></div>
+        <p className="font-mono text-lg font-bold tracking-widest text-heading">{formatQrCode(student.qrCode)}</p>
+        {confirm ? (
+          <div className="space-y-2">
+            <p className="text-sm">La credencial actual dejará de funcionar. ¿Continuar?</p>
+            <div className="flex justify-center gap-2">
+              <Button variant="secundario" onClick={() => setConfirm(false)}>Cancelar</Button>
+              <Button variant="peligro" onClick={() => void regenerate()}>Sí, generar nueva</Button>
+            </div>
+          </div>
+        ) : (
+          <Button variant="secundario" icon="qr" onClick={() => setConfirm(true)}>Generar credencial nueva</Button>
+        )}
+      </div>
+    </Card>
   )
 }

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-import { useParams } from 'react-router'
+import { useParams, useSearchParams } from 'react-router'
+import { DayLog } from '../../components/DayLog'
 import { ReportCardButton } from '../../components/ReportCardButton'
 import { AccessDenied } from '../../components/guards'
 import { ScheduleView } from '../../components/ScheduleView'
@@ -10,12 +11,13 @@ import { studentBalance } from '../../lib/finance'
 import { canSeeStudent, groupLabel, studentName, subjectName } from '../../lib/scope'
 import { useApp } from '../../state/context'
 
-type View = 'calificaciones' | 'asistencia' | 'tareas' | 'horario' | 'pagos'
+type View = 'dia' | 'calificaciones' | 'asistencia' | 'tareas' | 'horario' | 'pagos'
 
 export function ChildPage() {
   const { id = '' } = useParams()
   const { db, session, log } = useApp()
-  const [view, setView] = useState<View>('calificaciones')
+  const [params] = useSearchParams()
+  const [view, setView] = useState<View>(params.get('vista') === 'dia' ? 'dia' : 'calificaciones')
   const student = db.students.find((s) => s.id === id)
   const allowed = canSeeStudent(db, session, id)
   const logged = useRef('')
@@ -33,7 +35,8 @@ export function ChildPage() {
   return (
     <>
       <PageHeader title={studentName(student)} subtitle={groupLabel(db, student.groupId)} />
-      <Tabs label="Información del alumno" value={view} onChange={setView} options={[{ value: 'calificaciones', label: 'Calificaciones' }, { value: 'asistencia', label: 'Asistencia' }, { value: 'tareas', label: 'Tareas' }, { value: 'horario', label: 'Horario' }, { value: 'pagos', label: 'Pagos' }]} />
+      <Tabs label="Información del alumno" value={view} onChange={setView} options={[{ value: 'dia', label: 'Día a día' }, { value: 'calificaciones', label: 'Calificaciones' }, { value: 'asistencia', label: 'Asistencia' }, { value: 'tareas', label: 'Tareas' }, { value: 'horario', label: 'Horario' }, { value: 'pagos', label: 'Pagos' }]} />
+      {view === 'dia' && <Card title={`Día a día de ${student.firstName}`} action={<LinkButton to="/familia/qr" variant="secundario" icon="qr">Ver su QR</LinkButton>}><DayLog db={db} studentId={student.id} /></Card>}
       {view === 'calificaciones' && <Card title="Boleta del ciclo 2026-2027" action={<ReportCardButton studentId={student.id} />}><GradesTable db={db} studentId={student.id} /></Card>}
       {view === 'asistencia' && <Card title={`Asistencia de ${student.firstName}`}><AttendanceList db={db} studentId={student.id} limit={20} /></Card>}
       {view === 'tareas' && (
