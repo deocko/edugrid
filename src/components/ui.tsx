@@ -232,7 +232,8 @@ export function Modal({ open, onClose, title, children }: { open: boolean; onClo
   )
 }
 
-export function Avatar({ name, size = 40 }: { name: string; size?: number }) {
+export function Avatar({ name, size = 40, src }: { name: string; size?: number; src?: string | null }) {
+  if (src) return <img src={src} alt="" width={size} height={size} style={{ width: size, height: size }} className="shrink-0 rounded-full object-cover ring-2 ring-cyan/60" />
   const initials = name
     .split(' ')
     .filter(Boolean)
@@ -240,7 +241,7 @@ export function Avatar({ name, size = 40 }: { name: string; size?: number }) {
     .map((p) => p[0]?.toUpperCase())
     .join('')
   return (
-    <span aria-hidden="true" style={{ width: size, height: size }} className="inline-flex shrink-0 items-center justify-center rounded-full bg-navy text-sm font-bold text-white ring-2 ring-cyan/60">
+    <span aria-hidden="true" style={{ width: size, height: size, fontSize: Math.max(12, Math.round(size * 0.34)) }} className="inline-flex shrink-0 items-center justify-center rounded-full bg-navy font-bold text-white ring-2 ring-cyan/60">
       {initials}
     </span>
   )

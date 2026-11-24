@@ -9,6 +9,7 @@ import { ageFrom, formatDate, formatMoney, nowISO } from '../../lib/format'
 import { studentBalance } from '../../lib/finance'
 import { LEVEL_LABEL, LEVELS, canSeeStudent, groupLabel, levelOfGroup, studentName, teacherName } from '../../lib/scope'
 import { DayLog } from '../../components/DayLog'
+import { StudentPhoto } from '../../components/StudentPhoto'
 import { QrCode } from '../../components/QrCode'
 import { formatQrCode, newQrCode, qrPayload } from '../../lib/qr'
 import { useApp } from '../../state/context'
@@ -66,6 +67,7 @@ export function StudentDetail() {
       </Modal>
       <div className="grid gap-4 lg:grid-cols-3">
         <Card title="Datos generales">
+          <StudentPhoto student={student} />
           <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-2 text-sm">
             <dt className="text-muted">Nacimiento</dt>
             <dd className="text-heading">{formatDate(student.birthDate)}</dd>

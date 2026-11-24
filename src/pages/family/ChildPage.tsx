@@ -8,8 +8,10 @@ import { AttendanceList, GradesTable } from '../../components/StudentRecords'
 import { Card, EmptyState, LinkButton, PageHeader, Tabs } from '../../components/ui'
 import { formatDate, formatMoney, todayISO } from '../../lib/format'
 import { studentBalance } from '../../lib/finance'
-import { canSeeStudent, groupLabel, studentName, subjectName } from '../../lib/scope'
+import { canSeeStudent, groupLabel, studentName } from '../../lib/scope'
 import { useApp } from '../../state/context'
+import { SubjectTag } from '../../components/Subject'
+import { subjectStripe } from '../../lib/subjects'
 
 type View = 'dia' | 'calificaciones' | 'asistencia' | 'tareas' | 'horario' | 'pagos'
 
@@ -47,9 +49,11 @@ export function ChildPage() {
             <ul className="divide-y divide-line">
               {homework.map((h) => (
                 <li key={h.id} className="py-3">
-                  <p className="font-semibold text-heading">{h.title}</p>
-                  <p className="text-sm text-muted">{subjectName(db, h.subjectId)} · entrega {formatDate(h.dueDate)}{h.dueDate < todayISO() ? ' (ya pasó)' : ''}</p>
-                  {h.description && <p className="mt-1 text-sm">{h.description}</p>}
+                  <div className={subjectStripe(db, h.subjectId)}>
+                    <p className="font-semibold text-heading">{h.title}</p>
+                    <p className="text-sm text-muted"><SubjectTag db={db} id={h.subjectId} /> · entrega {formatDate(h.dueDate)}{h.dueDate < todayISO() ? ' (ya pasó)' : ''}</p>
+                    {h.description && <p className="mt-1 text-sm">{h.description}</p>}
+                  </div>
                 </li>
               ))}
             </ul>

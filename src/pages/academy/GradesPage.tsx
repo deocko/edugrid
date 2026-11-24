@@ -5,6 +5,7 @@ import { formatDateTime, nowISO, uid, plural } from '../../lib/format'
 import { PRESCHOOL_SCALE, groupLabel, isPreschool, levelOfGroup, studentName, subjectName } from '../../lib/scope'
 import { useApp } from '../../state/context'
 import { useManagedGroups, useManagedSubjects } from './useTeacherGroups'
+import { SubjectDot } from '../../components/Subject'
 
 export function GradesPage() {
   const { db, session, act } = useApp()
@@ -115,7 +116,7 @@ export function GradesPage() {
         <EmptyState icon="alumnos" title="Este grupo aún no tiene alumnos" />
       ) : (
         <Card
-          title={`${subjectName(db, subjectId)} · ${groupLabel(db, groupId)}`}
+          title={<span className="inline-flex flex-wrap items-center gap-2"><SubjectDot db={db} id={subjectId} size={12} />{subjectName(db, subjectId)} · {groupLabel(db, groupId)}</span>}
           action={closure ? <Badge tone="exito">Cerrado el {formatDateTime(closure.closedAt)}</Badge> : <Badge tone="aviso">Periodo abierto</Badge>}
         >
           {records.length === 0 && !closure && (

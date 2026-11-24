@@ -5,6 +5,7 @@ import { DAYS, uid } from '../../lib/format'
 import { groupLabel, subjectName, teacherName } from '../../lib/scope'
 import { useApp } from '../../state/context'
 import { GroupAssignments } from './SchoolStructure'
+import { SubjectTag } from '../../components/Subject'
 
 const BLOCKS: [string, string][] = [['08:00', '08:50'], ['08:50', '09:40'], ['09:40', '10:30'], ['11:00', '11:50'], ['11:50', '12:40'], ['12:40', '13:30'], ['13:30', '14:20']]
 const overlaps = (a: { start: string; end: string }, b: { start: string; end: string }) => a.start < b.end && b.start < a.end
@@ -40,7 +41,7 @@ export function Classes() {
             <ul className="divide-y divide-line">
               {assignments.map((a) => (
                 <li key={a.id} className="flex justify-between gap-2 py-2.5">
-                  <span className="font-semibold text-heading">{subjectName(db, a.subjectId)}</span>
+                  <SubjectTag db={db} id={a.subjectId} className="font-semibold text-heading" />
                   <span className="text-right text-sm text-muted">{teacherName(db, a.teacherId)} · {slots.filter((s) => s.subjectId === a.subjectId).length} h/sem</span>
                 </li>
               ))}
@@ -61,7 +62,7 @@ export function Classes() {
                     <ul className="divide-y divide-line">
                       {day.map((s) => (
                         <li key={s.id} className="flex items-center justify-between gap-2 py-1.5">
-                          <span className="min-w-0 text-sm"><strong className="tabular-nums">{s.start}–{s.end}</strong> · {subjectName(db, s.subjectId)} <span className="text-muted">· {teacherName(db, s.teacherId)}</span></span>
+                          <span className="min-w-0 text-sm"><strong className="tabular-nums">{s.start}–{s.end}</strong> · <SubjectTag db={db} id={s.subjectId} /> <span className="text-muted">· {teacherName(db, s.teacherId)}</span></span>
                           <Button variant="fantasma" icon="cerrar" onClick={() => void remove(s)} aria-label={`Quitar ${subjectName(db, s.subjectId)} del ${DAYS[s.day]} a las ${s.start}`} />
                         </li>
                       ))}

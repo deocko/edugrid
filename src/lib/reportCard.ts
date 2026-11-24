@@ -2,6 +2,7 @@
 import type { Database } from '../data/types'
 import { formatDate, todayISO } from './format'
 import { CYAN, NAVY, TEXT, drawBrandHeader, drawDemoWatermark } from './pdfBrand'
+import { subjectHex } from './subjects'
 import { averageFor, formatScore, groupLabel, isPreschool, levelOfGroup, studentName, subjectName, teacherName } from './scope'
 import { attendanceSummary } from './attendance'
 
@@ -60,8 +61,12 @@ export async function buildReportCardPdf(db: Database, studentId: string): Promi
       doc.setFillColor(243, 246, 250)
       doc.rect(14, y, W - 28, 8, 'F')
     }
+    const hex = subjectHex(db, a.subjectId)
+    doc.setFillColor(parseInt(hex.slice(1, 3), 16), parseInt(hex.slice(3, 5), 16), parseInt(hex.slice(5, 7), 16))
+    doc.rect(14, y, 1.6, 8, 'F')
+    doc.circle(18.2, y + 4, 1.3, 'F')
     doc.setTextColor(...TEXT)
-    doc.text(subjectName(db, a.subjectId), 16, y + 5.3)
+    doc.text(subjectName(db, a.subjectId), 21, y + 5.3)
     periods.forEach((p, i) => {
       const r = db.gradeRecords.find((g) => g.studentId === student.id && g.subjectId === a.subjectId && g.periodId === p.id)
       const closed = db.closures.some((c) => c.groupId === student.groupId && c.subjectId === a.subjectId && c.periodId === p.id)

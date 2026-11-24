@@ -135,3 +135,21 @@ body {
     display: none !important;
   }
 }
+
+/*
+  Colores de materias. Cada materia tiene uno, igual en todas las pantallas y en la boleta.
+  --s: franja y punto (contraste ≥3:1 con la superficie) · --s-ink: texto sobre el fondo tenue (≥4.5:1).
+*/
+.subj-azul { --s: #1769d2; --s-ink: #0f4f9e; --s-dk: #6aa8f0; --s-ink-dk: #b9d6fa; }
+.subj-rojo { --s: #d1343a; --s-ink: #9b1c22; --s-dk: #f07a7e; --s-ink-dk: #fbc6c8; }
+.subj-verde { --s: #1f8f52; --s-ink: #146b3c; --s-dk: #5fcf8f; --s-ink-dk: #bdeccf; }
+.subj-naranja { --s: #d4690f; --s-ink: #8f4405; --s-dk: #f5a35e; --s-ink-dk: #fcd9b8; }
+.subj-morado { --s: #7a4fd0; --s-ink: #5a33a8; --s-dk: #b096f0; --s-ink-dk: #ddd1fa; }
+.subj-turquesa { --s: #0e8fa0; --s-ink: #0a6470; --s-dk: #4fc9d9; --s-ink-dk: #bdeef4; }
+.subj-rosa { --s: #c93a82; --s-ink: #951c5d; --s-dk: #ef86bb; --s-ink-dk: #f9cde3; }
+.subj-ambar { --s: #b98400; --s-ink: #6f4e00; --s-dk: #e8bd45; --s-ink-dk: #f7e3a8; }
+.subj-indigo { --s: #3f51b5; --s-ink: #2c3a8c; --s-dk: #8d9bea; --s-ink-dk: #d3d9f8; }
+.subj-gris { --s: #64748b; --s-ink: #3f4b5c; --s-dk: #a3b0c2; --s-ink-dk: #dbe2eb; }
+.dark [class*='subj-'], .dark[class*='subj-'] { --s: var(--s-dk); --s-ink: var(--s-ink-dk); }
+[class*='subj-'] { --s-bg: color-mix(in srgb, var(--s) 10%, var(--c-surface)); }
+.dark [class*='subj-'] { --s-bg: color-mix(in srgb, var(--s) 20%, var(--c-surface)); }

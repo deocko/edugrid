@@ -5,8 +5,10 @@ import { GradesTable } from '../../components/StudentRecords'
 import { Card, EmptyState, PageHeader, Stat } from '../../components/ui'
 import { attendanceSummary } from '../../lib/attendance'
 import { DAYS, demoDate, formatDate, todayISO } from '../../lib/format'
-import { averageFor, groupLabel, levelOfGroup, subjectName, visibleAnnouncements } from '../../lib/scope'
+import { averageFor, groupLabel, levelOfGroup, visibleAnnouncements } from '../../lib/scope'
 import { useApp } from '../../state/context'
+import { SubjectTag } from '../../components/Subject'
+import { subjectCard, subjectStripe } from '../../lib/subjects'
 
 /** El alumno solo ve lo suyo: la sesión apunta a su propio registro. */
 function useMe() {
@@ -27,10 +29,12 @@ function HomeworkList({ limit }: { limit?: number }) {
   return (
     <ul className={simple ? 'space-y-3' : 'divide-y divide-line'}>
       {list.map((h) => (
-        <li key={h.id} className={simple ? 'rounded-2xl border-l-8 border-cyan bg-surface-2 p-4' : 'py-3'}>
-          <p className={`font-bold text-heading ${simple ? 'text-lg' : ''}`}>{h.title}</p>
-          <p className={`text-muted ${simple ? 'text-base' : 'text-sm'}`}>{subjectName(db, h.subjectId)} · entregar el {formatDate(h.dueDate)}</p>
-          {!simple && h.description && <p className="mt-1 text-sm">{h.description}</p>}
+        <li key={h.id} className={simple ? `rounded-2xl p-4 ${subjectCard(db, h.subjectId)} border-l-8` : 'py-3'}>
+          <div className={simple ? '' : subjectStripe(db, h.subjectId)}>
+            <p className={`font-bold text-heading ${simple ? 'text-lg' : ''}`}>{h.title}</p>
+            <p className={`text-muted ${simple ? 'text-base' : 'text-sm'}`}><SubjectTag db={db} id={h.subjectId} /> · entregar el {formatDate(h.dueDate)}</p>
+            {!simple && h.description && <p className="mt-1 text-sm">{h.description}</p>}
+          </div>
         </li>
       ))}
     </ul>
@@ -61,8 +65,8 @@ export function StudentHome() {
         <Card title={`Tus clases del ${DAYS[day]?.toLowerCase()}`}>
           <ul className={simple ? 'space-y-2' : 'divide-y divide-line'}>
             {classes.map((c) => (
-              <li key={c.id} className={simple ? 'flex items-center gap-3 rounded-xl bg-surface-2 p-3' : 'flex items-center justify-between gap-2 py-2'}>
-                <span className={`font-semibold text-heading ${simple ? 'text-lg' : ''}`}>{subjectName(db, c.subjectId)}</span>
+              <li key={c.id} className={simple ? `flex items-center gap-3 rounded-xl p-3 ${subjectCard(db, c.subjectId)}` : 'flex items-center justify-between gap-2 py-2'}>
+                <SubjectTag db={db} id={c.subjectId} className={`font-semibold text-heading ${simple ? 'text-lg' : ''}`} />
                 <span className="ml-auto text-sm text-muted">{c.start}</span>
               </li>
             ))}

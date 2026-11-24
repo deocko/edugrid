@@ -1,6 +1,7 @@
 import type { Database, ScheduleSlot } from '../data/types'
 import { DAYS, demoDate } from '../lib/format'
 import { groupLabel, subjectName, teacherName } from '../lib/scope'
+import { subjectCard } from '../lib/subjects'
 import { EmptyState } from './ui'
 
 const RECESS = { start: '10:30', end: '11:00' }
@@ -44,7 +45,7 @@ export function ScheduleView({ db, slots, show }: { db: Database; slots: Schedul
               <ul className="space-y-2">
                 {withBreaks(list).map((item) =>
                   item.kind === 'clase' ? (
-                    <li key={item.slot.id} className="rounded-xl border-l-4 border-cyan bg-surface-2 px-3 py-2 text-sm">
+                    <li key={item.slot.id} className={`rounded-xl px-3 py-2 text-sm ${subjectCard(db, item.slot.subjectId)}`}>
                       <p className="text-xs font-semibold text-muted">{item.slot.start} – {item.slot.end}</p>
                       <p className="font-semibold break-words text-heading">{subjectName(db, item.slot.subjectId)}</p>
                       <p className="text-xs break-words text-muted">{show === 'docente' ? groupLabel(db, item.slot.groupId) : teacherName(db, item.slot.teacherId)}</p>

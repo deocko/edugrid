@@ -53,10 +53,14 @@ export interface Group {
   room: string
 }
 
+export type SubjectColor = 'azul' | 'rojo' | 'verde' | 'naranja' | 'morado' | 'turquesa' | 'rosa' | 'ambar' | 'indigo' | 'gris'
+
 export interface Subject {
   id: string
   name: string
   level: Level
+  /** Color con el que se reconoce la materia en todas las pantallas y en la boleta. */
+  color: SubjectColor
 }
 
 export interface TeachingAssignment {
@@ -115,6 +119,8 @@ export interface Student {
   withdrawReason?: string
   /** Código opaco de su credencial QR (no contiene datos personales). */
   qrCode: string
+  /** Foto del alumno (JPEG reducido, data URL). La sube la dirección. */
+  photo?: string | null
 }
 
 export type AttendanceStatus = 'presente' | 'retardo' | 'falta' | 'justificada'
