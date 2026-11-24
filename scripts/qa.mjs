@@ -25,7 +25,7 @@ const routes = {
   login: ['/'],
   admin: ['/admin', '/admin/alumnos', '/admin/alumnos?alta=1', '/alumnos/al1', '/admin/docentes', '/admin/escuela', '/admin/permisos', '/admin/bitacora', '/avisos', '/pagos', '/pagos?registrar=1&alumno=al2', '/pagos?vista=cargos', '/pagos?vista=conceptos', '/pagos/estado/al2', '/facturacion', '/facturacion/configuracion', '/docente/calificaciones', '/admin/entradas', '/admin/familias', '/admin/aulas', '/admin/clases', '/notificaciones', '/admin/configuracion'],
   docente: ['/docente', '/docente/asistencia', '/docente/calificaciones', '/docente/tareas', '/docente/horario', '/avisos', '/docente/entradas', '/docente/novedades', '/docente/chat', '/docente/chat?c=ch1'],
-  familia: ['/familia', '/familia/hijo/al1', '/familia/hijo/al1?vista=dia', '/familia/pagos', '/familia/calendario', '/avisos', '/pagos/estado/al2', '/privacidad', '/familia/qr', '/familia/chat', '/familia/chat?c=ch1', '/notificaciones'],
+  familia: ['/familia', '/familia/hijo/al1', '/familia/hijo/al1?vista=dia', '/familia/pagos', '/familia/calendario', '/avisos', '/pagos/estado/al2', '/privacidad', '/familia/qr', '/familia/chat', '/familia/chat?c=ch1', '/notificaciones', '/familia/tarjetas'],
   alumnoPrim: ['/alumno', '/alumno/horario', '/alumno/tareas', '/alumno/calificaciones', '/alumno/qr'],
   alumnoSec: ['/alumno', '/alumno/calificaciones', '/avisos'],
 }
@@ -35,6 +35,7 @@ const denied = [
   ['familia', '/pagos/estado/al3'],
   ['familia', '/admin'],
   ['docente', '/admin/configuracion'],
+  ['docente', '/familia/tarjetas'],
   ['docente', '/alumnos/al3'],
   ['docente', '/pagos'],
   ['alumnoSec', '/familia/hijo/al1'],
