@@ -331,8 +331,8 @@ function Concepts() {
           <thead>
             <tr>
               <th className={TH}>Concepto</th>
-              {LEVELS.map((l) => <th key={l} className={`${TH} hidden text-right md:table-cell`}>{LEVEL_LABEL[l]}</th>)}
-              <th className={`${TH} text-right md:hidden`}>Desde</th>
+              {LEVELS.map((l) => <th key={l} className={`${TH} hidden text-right xl:table-cell`}>{LEVEL_LABEL[l]}</th>)}
+              <th className={`${TH} text-right xl:hidden`}>Desde</th>
             </tr>
           </thead>
           <tbody>
@@ -342,8 +342,8 @@ function Concepts() {
                   <p className="font-semibold text-heading">{c.name}</p>
                   <p className="text-xs text-muted">{KIND_LABEL[c.kind]} · Clave SAT {c.satProductCode}</p>
                 </td>
-                {LEVELS.map((l) => <td key={l} className={`${TD} hidden text-right whitespace-nowrap md:table-cell`}>{formatMoney(c.amounts[l])}</td>)}
-                <td className={`${TD} text-right whitespace-nowrap md:hidden`}>{formatMoney(Math.min(...Object.values(c.amounts)))}</td>
+                {LEVELS.map((l) => <td key={l} className={`${TD} hidden text-right whitespace-nowrap xl:table-cell`}>{formatMoney(c.amounts[l])}</td>)}
+                <td className={`${TD} text-right whitespace-nowrap xl:hidden`}>{formatMoney(Math.min(...Object.values(c.amounts)))}</td>
               </tr>
             ))}
           </tbody>
