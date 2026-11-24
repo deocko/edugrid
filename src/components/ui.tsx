@@ -127,15 +127,15 @@ export function Notice({ tone = 'info', icon = 'alerta', children }: { tone?: To
 export function Stat({ label, value, hint, icon, tone = 'neutro' }: { label: string; value: ReactNode; hint?: ReactNode; icon?: IconName; tone?: Tone }) {
   return (
     <div className="min-w-0 rounded-2xl border border-line bg-surface p-4 sm:p-5">
-      <div className="flex items-center justify-between gap-2">
-        <p className="text-sm font-medium text-muted">{label}</p>
+      <div className="flex min-h-10 items-start justify-between gap-2">
+        <p className="text-sm leading-5 font-medium text-muted">{label}</p>
         {icon && (
           <span className={`rounded-lg p-1.5 ${TONE[tone]}`}>
             <Icon name={icon} size={18} />
           </span>
         )}
       </div>
-      <p className="mt-2 text-xl font-bold tabular-nums break-words text-heading sm:text-2xl">{value}</p>
+      <p className="mt-2 text-base font-bold tabular-nums break-words text-heading min-[360px]:text-lg min-[400px]:text-xl sm:text-2xl">{value}</p>
       {hint && <p className="mt-1 text-xs text-muted">{hint}</p>}
     </div>
   )

@@ -52,17 +52,17 @@ export function FamilyHome() {
                 </div>
                 <TodayLine db={db} studentId={k.id} />
                 <dl className="mt-4 grid grid-cols-3 gap-2 text-center">
-                  <div className="rounded-xl bg-surface-2 p-2">
-                    <dt className="text-xs text-muted">Asistencia</dt>
-                    <dd className="text-base font-bold tabular-nums text-heading sm:text-lg">{att.rate}%</dd>
+                  <div className="flex flex-col rounded-xl bg-surface-2 px-1.5 py-2">
+                    <dt className="flex-1 text-xs text-muted">Asistencia</dt>
+                    <dd className="mt-1 text-[0.8125rem] font-bold tabular-nums min-[360px]:text-sm min-[400px]:text-base text-heading sm:text-lg">{att.rate}%</dd>
                   </div>
-                  <div className="rounded-xl bg-surface-2 p-2">
-                    <dt className="text-xs text-muted">{isPreschool(level) ? 'Evaluación' : 'Promedio 1er trim.'}</dt>
-                    <dd className="text-base font-bold tabular-nums text-heading sm:text-lg">{isPreschool(level) ? 'Ver' : (avg?.toFixed(1) ?? '—')}</dd>
+                  <div className="flex flex-col rounded-xl bg-surface-2 px-1.5 py-2">
+                    <dt className="flex-1 text-xs text-muted">{isPreschool(level) ? 'Evaluación' : 'Promedio 1er trim.'}</dt>
+                    <dd className="mt-1 text-[0.8125rem] font-bold tabular-nums min-[360px]:text-sm min-[400px]:text-base text-heading sm:text-lg">{isPreschool(level) ? 'Ver' : (avg?.toFixed(1) ?? '—')}</dd>
                   </div>
-                  <div className="rounded-xl bg-surface-2 p-2">
-                    <dt className="text-xs text-muted">Saldo</dt>
-                    <dd className={`text-base font-bold tabular-nums sm:text-lg ${bal.overdue > 0 ? 'text-danger' : 'text-heading'}`}>{formatMoney(bal.balance)}</dd>
+                  <div className="flex flex-col rounded-xl bg-surface-2 px-1.5 py-2">
+                    <dt className="flex-1 text-xs text-muted">Saldo</dt>
+                    <dd className={`mt-1 text-[0.8125rem] font-bold tabular-nums min-[360px]:text-sm min-[400px]:text-base sm:text-lg ${bal.overdue > 0 ? 'text-danger' : 'text-heading'}`}>{formatMoney(bal.balance)}</dd>
                   </div>
                 </dl>
                 {bal.overdue > 0 && <p className="mt-2 text-sm font-semibold text-danger">Tienes {formatMoney(bal.overdue)} vencido.</p>}

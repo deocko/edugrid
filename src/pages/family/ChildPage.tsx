@@ -60,9 +60,9 @@ export function ChildPage() {
       {view === 'pagos' && (
         <Card title="Resumen de pagos">
           <dl className="grid grid-cols-1 gap-2 text-sm sm:grid-cols-3">
-            <div className="rounded-xl bg-surface-2 p-3"><dt className="text-muted">Total del ciclo</dt><dd className="text-lg font-bold text-heading">{formatMoney(bal.total)}</dd></div>
-            <div className="rounded-xl bg-surface-2 p-3"><dt className="text-muted">Pagado</dt><dd className="text-lg font-bold text-heading">{formatMoney(bal.paid)}</dd></div>
-            <div className="rounded-xl bg-surface-2 p-3"><dt className="text-muted">Por pagar</dt><dd className={`text-lg font-bold ${bal.overdue ? 'text-danger' : 'text-heading'}`}>{formatMoney(bal.balance)}</dd></div>
+            <div className="flex flex-col rounded-xl bg-surface-2 p-3"><dt className="flex-1 text-muted">Total del ciclo</dt><dd className="text-lg font-bold text-heading">{formatMoney(bal.total)}</dd></div>
+            <div className="flex flex-col rounded-xl bg-surface-2 p-3"><dt className="flex-1 text-muted">Pagado</dt><dd className="text-lg font-bold text-heading">{formatMoney(bal.paid)}</dd></div>
+            <div className="flex flex-col rounded-xl bg-surface-2 p-3"><dt className="flex-1 text-muted">Por pagar</dt><dd className={`text-lg font-bold ${bal.overdue ? 'text-danger' : 'text-heading'}`}>{formatMoney(bal.balance)}</dd></div>
           </dl>
           <LinkButton to={`/pagos/estado/${student.id}`} className="mt-4" icon="pagos">Ver estado de cuenta</LinkButton>
         </Card>
