@@ -189,7 +189,7 @@ function SubjectsView() {
   )
 }
 
-function GroupAssignments({ groupId, onDone }: { groupId: string; onDone: () => void }) {
+export function GroupAssignments({ groupId, onDone }: { groupId: string; onDone: () => void }) {
   const { db, act } = useApp()
   const group = db.groups.find((g) => g.id === groupId)
   const level = levelOfGroup(db, groupId)
