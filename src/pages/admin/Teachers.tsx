@@ -2,7 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router'
 import { Badge, Button, Card, Field, Input, Modal, Notice, PageHeader, Table, TD, TH } from '../../components/ui'
 import type { Teacher } from '../../data/types'
-import { uid } from '../../lib/format'
+import { uid, plural } from '../../lib/format'
 import { groupLabel, subjectName } from '../../lib/scope'
 import { useApp } from '../../state/context'
 
@@ -17,7 +17,7 @@ export function Teachers() {
 
   return (
     <>
-      <PageHeader title="Docentes" subtitle={`${db.teachers.filter((t) => t.active).length} docentes activos`} actions={<Button icon="mas" onClick={() => setEditing('nuevo')}>Registrar docente</Button>} />
+      <PageHeader title="Docentes" subtitle={plural(db.teachers.filter((t) => t.active).length, 'docente activo', 'docentes activos')} actions={<Button icon="mas" onClick={() => setEditing('nuevo')}>Registrar docente</Button>} />
       <Card>
         <label className="mb-3 inline-flex min-h-11 items-center gap-2 text-sm">
           <input type="checkbox" checked={showInactive} onChange={(e) => setShowInactive(e.target.checked)} className="size-5 accent-[var(--c-primary)]" />
@@ -53,7 +53,7 @@ export function Teachers() {
                   </td>
                   <td className={TD}>
                     {homeroom.length > 0 && <p className="text-sm">Titular: {homeroom.map((g) => groupLabel(db, g)).join(', ')}</p>}
-                    <p className="text-xs text-muted">{subjects.length ? `${subjects.join(', ')} · ${groups.size} grupos` : 'Sin materias asignadas'}</p>
+                    <p className="text-xs text-muted">{subjects.length ? `${subjects.join(', ')} · ${plural(groups.size, 'grupo', 'grupos')}` : 'Sin materias asignadas'}</p>
                   </td>
                   <td className={`${TD} hidden text-sm md:table-cell`}>
                     <p className="break-all">{t.email}</p>

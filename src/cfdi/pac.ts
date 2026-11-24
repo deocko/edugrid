@@ -13,6 +13,8 @@
  * Supabase) que guarde el CSD y las llaves del PAC de forma segura.
  */
 
+import { nowISO } from '../lib/format'
+
 export interface ResultadoTimbrado {
   uuid: string
   fechaTimbrado: string
@@ -55,7 +57,7 @@ export interface PacAdapter {
 
 const randomHex = (n: number) => Array.from(crypto.getRandomValues(new Uint8Array(n)), (b) => b.toString(16).padStart(2, '0')).join('')
 const randomB64 = (bytes: number) => btoa(String.fromCharCode(...crypto.getRandomValues(new Uint8Array(bytes))))
-const nowLocal = () => new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 19)
+const nowLocal = () => nowISO()
 
 /** PAC de demostración: no se conecta a nada. Genera un timbre ficticio marcado como DEMO. */
 export class DemoPacAdapter implements PacAdapter {

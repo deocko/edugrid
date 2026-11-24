@@ -44,3 +44,21 @@ export const NAV: Record<Role, NavItem[]> = {
     { to: '/avisos', label: 'Avisos', icon: 'avisos' },
   ],
 }
+
+/** Módulo de EDUGRID al que pertenece cada vista (se muestra arriba del título). */
+const MODULES: [prefix: string, name: string][] = [
+  ['/familia/pagos', 'EDUGRID Pay'],
+  ['/pagos', 'EDUGRID Pay'],
+  ['/facturacion', 'EDUGRID Pay'],
+  ['/avisos', 'EDUGRID Connect'],
+  ['/admin', 'EDUGRID Admin'],
+  ['/alumnos/', 'EDUGRID Admin'],
+  ['/docente', 'EDUGRID Academy'],
+  ['/familia', 'EDUGRID Family'],
+  ['/alumno', 'EDUGRID Student'],
+]
+
+export function moduleForPath(pathname: string): string | null {
+  const hit = MODULES.find(([p]) => pathname === p || pathname.startsWith(p.endsWith('/') ? p : `${p}/`))
+  return hit ? hit[1] : null
+}

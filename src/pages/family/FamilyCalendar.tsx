@@ -1,6 +1,7 @@
-import { Card, EmptyState, PageHeader } from '../../components/ui'
+import { useState } from 'react'
+import { Card, EmptyState, PageHeader, Tabs } from '../../components/ui'
 import { formatDate, todayISO } from '../../lib/format'
-import { audienceLabel, subjectName, visibleEvents, visibleStudents } from '../../lib/scope'
+import { audienceLabel, groupLabel, studentName, subjectName, visibleEvents, visibleStudents } from '../../lib/scope'
 import { useApp } from '../../state/context'
 
 interface Item {
@@ -19,15 +20,20 @@ export function FamilyCalendar() {
   const { db, session } = useApp()
   const kids = visibleStudents(db, session)
   const today = todayISO()
+  const [who, setWho] = useState('todos')
+  const shown = who === 'todos' ? kids : kids.filter((k) => k.id === who)
   const items: Item[] = [
     ...visibleEvents(db, session).filter((e) => (e.endDate ?? e.date) >= today).map((e) => ({ date: e.date, title: e.title, detail: `${e.description}${e.endDate ? ` Hasta el ${formatDate(e.endDate)}.` : ''} · ${audienceLabel(db, e.audience)}`, kind: 'evento' as const })),
-    ...kids.flatMap((k) => db.homework.filter((h) => h.groupId === k.groupId && h.dueDate >= today).map((h) => ({ date: h.dueDate, title: `Entrega: ${h.title}`, detail: `${k.firstName} · ${subjectName(db, h.subjectId)}`, kind: 'tarea' as const }))),
+    ...shown.flatMap((k) => db.homework.filter((h) => h.groupId === k.groupId && h.dueDate >= today).map((h) => ({ date: h.dueDate, title: `${k.firstName}: ${h.title}`, detail: `Tarea de ${subjectName(db, h.subjectId)} · ${groupLabel(db, k.groupId)}`, kind: 'tarea' as const }))),
   ].sort((a, b) => a.date.localeCompare(b.date))
   const months = [...new Set(items.map((i) => i.date.slice(0, 7)))]
 
   return (
     <>
       <PageHeader title="Calendario" subtitle="Eventos de la escuela y entregas de tareas de tus hijos." />
+      {kids.length > 1 && (
+        <Tabs label="Ver calendario de" value={who} onChange={setWho} options={[{ value: 'todos', label: 'Todos' }, ...kids.map((k) => ({ value: k.id, label: studentName(k) }))]} />
+      )}
       {items.length === 0 ? (
         <EmptyState icon="calendario" title="No hay fechas próximas" />
       ) : (

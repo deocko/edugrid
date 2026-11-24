@@ -46,7 +46,10 @@ export function GradesTable({ db, studentId }: { db: Database; studentId: string
           <tr>
             <th className={TH}>Materia</th>
             {periods.map((p) => (
-              <th key={p.id} className={`${TH} text-center`}>{p.name}</th>
+              <th key={p.id} className={`${TH} text-center`}>
+                <span aria-hidden="true" className="sm:hidden">{p.name.replace('trimestre', 'trim.')}</span>
+                <span className="sr-only sm:not-sr-only">{p.name}</span>
+              </th>
             ))}
           </tr>
         </thead>

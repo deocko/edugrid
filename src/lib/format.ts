@@ -14,12 +14,23 @@ export const formatDateLong = (iso: string) => {
 export const formatDateTime = (iso: string) =>
   parse(iso).toLocaleString('es-MX', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
 
-export const todayISO = () => {
+/**
+ * Día simulado de la demo. Todas las pantallas usan esta fecha como "hoy" para que
+ * los datos no se contradigan según el día en que alguien abra la demo.
+ */
+export const DEMO_TODAY = '2026-11-24'
+
+export const todayISO = () => DEMO_TODAY
+
+/** Fecha simulada con la hora local actual (nunca en el futuro respecto al día de la demo). */
+export const nowISO = () => {
   const d = new Date()
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+  const p = (n: number) => String(n).padStart(2, '0')
+  return `${DEMO_TODAY}T${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`
 }
 
-export const nowISO = () => new Date().toISOString().slice(0, 19)
+/** Fecha simulada como objeto Date (mediodía local). */
+export const demoDate = () => new Date(`${DEMO_TODAY}T12:00:00`)
 
 export const uid = (prefix: string) => `${prefix}-${crypto.randomUUID().slice(0, 8)}`
 
@@ -40,3 +51,6 @@ export const initials = (name: string) =>
     .slice(0, 2)
     .map((p) => p[0]?.toUpperCase() ?? '')
     .join('')
+
+/** Cantidad con su palabra en singular o plural: plural(1, 'grupo', 'grupos') → "1 grupo". */
+export const plural = (n: number, singular: string, pluralForm: string) => `${n} ${n === 1 ? singular : pluralForm}`

@@ -1,6 +1,6 @@
 import { Link } from 'react-router'
 import { Badge, Card, DemoBadge, LinkButton, PageHeader, Stat } from '../../components/ui'
-import { formatDate, formatMoney, todayISO } from '../../lib/format'
+import { formatDate, formatMoney, todayISO, plural } from '../../lib/format'
 import { chargeView } from '../../lib/finance'
 import { LEVEL_LABEL, LEVELS, audienceLabel, levelOfGroup, studentName } from '../../lib/scope'
 import { useApp } from '../../state/context'
@@ -51,10 +51,10 @@ export function AdminHome() {
       />
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Stat label="Alumnos activos" value={active.length} hint={`${db.groups.length} grupos en 5 niveles`} icon="alumnos" tone="info" />
+        <Stat label="Alumnos activos" value={active.length} hint={`${plural(db.groups.length, 'grupo', 'grupos')} en 5 niveles`} icon="alumnos" tone="info" />
         <Stat label="Asistencia (5 días)" value={`${presentRate}%`} hint="Presentes y retardos" icon="asistencia" tone="exito" />
         <Stat label="Cobrado este mes" value={formatMoney(collected)} hint={`de ${formatMoney(expected)} esperado`} icon="pagos" tone="info" />
-        <Stat label="Adeudo vencido" value={formatMoney(overdueTotal)} hint={`${debtors} alumnos con atraso`} icon="alerta" tone="peligro" />
+        <Stat label="Adeudo vencido" value={formatMoney(overdueTotal)} hint={`${plural(debtors, 'alumno', 'alumnos')} con atraso`} icon="alerta" tone="peligro" />
       </div>
 
       <div className="mt-4 grid gap-4 lg:grid-cols-3">
@@ -101,7 +101,7 @@ export function AdminHome() {
               <li key={a.id} className="py-2.5">
                 <p className="font-semibold text-heading">{a.title}</p>
                 <p className="text-xs text-muted">
-                  {formatDate(a.createdAt)} · {audienceLabel(db, a.audience)} · {db.receipts.filter((r) => r.announcementId === a.id).length} lecturas
+                  {formatDate(a.createdAt)} · {audienceLabel(db, a.audience)} · {plural(db.receipts.filter((r) => r.announcementId === a.id).length, 'lectura', 'lecturas')}
                 </p>
               </li>
             ))}

@@ -19,7 +19,8 @@ const adultsF = ['Laura','Gabriela','Adriana','Verónica','Claudia','Mónica','A
 const adultsM = ['Jorge','Ricardo','Arturo','Fernando','Javier','Eduardo','Héctor','Raúl','Óscar','Manuel','Sergio','Alberto','Roberto','Miguel','Gerardo']
 const surnames = ['Méndez','Ortega','Salinas','Herrera','Cervantes','Ibarra','Villalobos','Escobedo','Navarro','Robles','Aguilar','Quintero','Montes','Bautista','Carrillo','Zamora','Fuentes','Delgado','Lozano','Paredes','Rosales','Valdez','Cordero','Espinoza','Galindo','Treviño','Medina','Arellano','Sandoval','Barrera']
 
-const today = new Date('2026-11-23T12:00:00')
+// Día simulado de la demo: martes 24 de noviembre de 2026 (igual que DEMO_TODAY en src/lib/format.ts)
+const today = new Date('2026-11-24T12:00:00')
 
 // Niveles, grados y grupos
 const levelDefs = [
@@ -114,8 +115,10 @@ const mkStudent = (group, fam, forced) => {
   const grade = grades.find((x) => x.id === group.gradeId)
   const def = levelDefs.find((d) => d.level === grade.level)
   const female = forced ? forced.female : rnd() > 0.5
-  const fn = forced ? forced.name : female ? pick(girls) : pick(boys)
   const ln = `${fam.last} ${fam.second}`
+  let fn = forced ? forced.name : female ? pick(girls) : pick(boys)
+  // Nombres completos únicos: dos alumnos distintos nunca se llaman igual
+  while (!forced && students.some((x) => x.firstName === fn && x.lastName === ln)) fn = female ? pick(girls) : pick(boys)
   const age = def.age + grade.order - 1
   const by = 2026 - age - (rnd() > 0.6 ? 1 : 0)
   const bd = `${by}-${pad(1 + Math.floor(rnd() * 12))}-${pad(1 + Math.floor(rnd() * 28))}`
@@ -131,13 +134,13 @@ const famFor = () => {
   if (rnd() > 0.35) ids.push(mkGuardian(false, last).id)
   return { last, second, guardianIds: ids }
 }
-// Familia demo principal (2 hijos: primaria y secundaria)
+// Familia demo principal: Regina (4° de primaria A) y Mateo (2° de primaria A)
 const demoFam = { last: 'Méndez', second: 'Ortega', guardianIds: [] }
-const demoMom = { id: 'tu0', firstName: 'Laura', lastName: 'Ortega Salinas', relation: 'Madre', email: 'familia.demo@demo.edugrid.mx', phone: '55 1000 0000', rfc: 'OESL850412AB1', taxName: 'LAURA ORTEGA SALINAS', taxZip: '03100', taxRegime: '605', consentAt: '2026-08-10T10:00:00' }
+const demoMom = { id: 'tu0', firstName: 'Laura', lastName: 'Ortega Salinas', relation: 'Madre', email: 'familia.demo@demo.edugrid.mx', phone: '55 1000 0000', rfc: 'OESL850412AB1', taxName: 'LAURA ORTEGA SALINAS', taxZip: '03100', taxRegime: '612', consentAt: '2026-08-10T10:00:00' }
 guardians.push(demoMom); demoFam.guardianIds = ['tu0']
 const grp = (lvl, n) => groups.find((g) => g.id === `gr-${lvl}-${n}A`)
 mkStudent(grp('primaria', 4), demoFam, { name: 'Regina', female: true })
-mkStudent(grp('secundaria', 2), demoFam, { name: 'Mateo', female: false })
+mkStudent(grp('primaria', 2), demoFam, { name: 'Mateo', female: false })
 // Resto de grupos: 4 alumnos por grupo (algunos hermanos)
 const families = []
 for (const g of groups) {
@@ -156,47 +159,70 @@ const schoolDays = []
 for (let d = new Date(today); schoolDays.length < 10; d.setDate(d.getDate() - 1)) {
   const wd = d.getDay()
   if (wd === 0 || wd === 6) continue
-  if (iso(d) === '2026-11-16' || iso(d) === '2026-11-23') continue // asueto y día actual
+  if (iso(d) === '2026-11-16' || iso(d) === iso(today)) continue // asueto y día actual (aún sin pase de lista)
   schoolDays.push(iso(d))
+}
+// Asistencia fija de la familia demo para que coincida en todas las vistas:
+// Regina: 8 asistencias, 1 retardo y 1 falta (90%). Mateo: 9 asistencias y 1 retardo (100%).
+const fixedAttendance = {
+  al1: { [schoolDays[2]]: 'falta', [schoolDays[6]]: 'retardo' },
+  al2: { [schoolDays[4]]: 'retardo' },
 }
 for (const st of students) for (const day of schoolDays) {
   const r = rnd()
-  const status = r < 0.86 ? 'presente' : r < 0.92 ? 'retardo' : r < 0.97 ? 'falta' : 'justificada'
+  const fixed = fixedAttendance[st.id]
+  const status = fixed ? (fixed[day] ?? 'presente') : r < 0.86 ? 'presente' : r < 0.92 ? 'retardo' : r < 0.97 ? 'falta' : 'justificada'
   const g = groups.find((x) => x.id === st.groupId)
   attendance.push({ id: `as${attendance.length + 1}`, groupId: g.id, studentId: st.id, date: day, status, recordedBy: g.homeroomTeacherId })
 }
 
 // Calificaciones: 1er trimestre completo y cerrado
+const REGINA_P1 = { 'Español': 8.8, 'Matemáticas': 8.2, 'Ciencias Naturales': 8.6, 'Historia': 8.0, 'Inglés': 8.4, 'Educación Física': 9.0 }
 const gradeRecords = [], closures = []
 for (const g of groups) {
   const level = grades.find((x) => x.id === g.gradeId).level
   const preschool = level === 'maternal' || level === 'kinder'
   for (const a of assignments.filter((x) => x.groupId === g.id)) {
     for (const st of students.filter((x) => x.groupId === g.id)) {
-      const score = preschool ? 2 + Math.floor(rnd() * 3) : Math.min(10, Math.max(6, Math.round((7 + rnd() * 3.4) * 10) / 10))
+      let score = preschool ? 2 + Math.floor(rnd() * 3) : Math.min(10, Math.max(6, Math.round((7 + rnd() * 3.4) * 10) / 10))
+      // Regina (caso de referencia de la revisión): promedio 8.5 en el 1er trimestre
+      const fixed = st.id === 'al1' ? REGINA_P1[subjects.find((x) => x.id === a.subjectId)?.name] : undefined
+      if (fixed !== undefined) score = fixed
       gradeRecords.push({ id: `cal${gradeRecords.length + 1}`, studentId: st.id, groupId: g.id, subjectId: a.subjectId, periodId: 'p1', score, updatedAt: '2026-11-12T18:00:00' })
     }
     closures.push({ id: `ci${closures.length + 1}`, groupId: g.id, subjectId: a.subjectId, periodId: 'p1', closedAt: '2026-11-13T19:00:00', closedBy: a.teacherId })
   }
 }
 
-// Tareas
+// Tareas: propias de cada grado, con vencimientos repartidos (máximo 2 por día por grupo)
 const homework = []
-const hwTitles = {
-  'Matemáticas': ['Ejercicios de fracciones, página 48', 'Problemas de ecuaciones lineales', 'Repaso para examen'],
-  'Español': ['Lectura del cuento y resumen', 'Redacta una carta formal'],
-  'Lectura y Redacción': ['Ensayo argumentativo de una cuartilla'],
-  'Ciencias Naturales': ['Maqueta del sistema solar'], 'Ciencias': ['Reporte de práctica de laboratorio'], 'Física': ['Problemas de movimiento rectilíneo'],
-  'Historia': ['Línea del tiempo de la Revolución Mexicana'], 'Inglés': ['Lista de vocabulario de la unidad 4'],
-  'Lenguaje y comunicación': ['Traer un cuento favorito para compartir'], 'Pensamiento matemático': ['Contar objetos en casa y dibujarlos'],
-  'Exploración del mundo': ['Traer una hoja de árbol'], 'Artes': ['Dibujo de la familia'], 'Desarrollo personal y social': ['Practicar guardar los juguetes'],
+const hwByLevel = {
+  maternal: { 'Lenguaje y comunicación': ['Traer un cuento favorito para compartir'], 'Exploración del mundo': ['Traer una hoja de árbol'] },
+  kinder: { 'Lenguaje y comunicación': ['Traer un cuento favorito para compartir'], 'Pensamiento matemático': ['Contar objetos en casa y dibujarlos'], 'Artes': ['Dibujo de la familia'] },
+  'primaria-1': { 'Español': ['Lectura en voz alta con un adulto', 'Copiar 5 palabras con m y p'], 'Matemáticas': ['Sumas sencillas hasta el 20'], 'Ciencias Naturales': ['Dibujar los cinco sentidos'] },
+  'primaria-2': { 'Español': ['Lectura en voz alta: 10 minutos diarios', 'Ortografía: palabras con r y rr'], 'Matemáticas': ['Sumas y restas con llevar', 'Tablas del 2 y del 5'], 'Ciencias Naturales': ['Dibujar las partes de una planta'] },
+  'primaria-3': { 'Español': ['Lectura de comprensión, página 32', 'Ortografía: uso de mayúsculas'], 'Matemáticas': ['Multiplicaciones de una cifra', 'Problemas de suma y resta'], 'Ciencias Naturales': ['Cuidado del agua en casa'], 'Historia': ['Entrevista a un abuelo sobre su infancia'] },
+  'primaria-4': { 'Español': ['Lectura de comprensión: «El ratón del supermercado»', 'Ortografía: palabras con b y v'], 'Matemáticas': ['Multiplicaciones de dos cifras, página 48', 'Problemas de reparto con división'], 'Ciencias Naturales': ['Maqueta del sistema digestivo'], 'Historia': ['Línea del tiempo de los pueblos mesoamericanos'] },
+  'primaria-5': { 'Español': ['Resumen de un texto informativo', 'Ortografía: acentuación de palabras agudas'], 'Matemáticas': ['Fracciones equivalentes, página 54', 'Problemas con decimales'], 'Ciencias Naturales': ['Esquema del aparato respiratorio'], 'Historia': ['Línea del tiempo de la Independencia'] },
+  'primaria-6': { 'Español': ['Reseña de un libro', 'Ortografía: uso de la h'], 'Matemáticas': ['Porcentajes en ofertas del súper', 'Área y perímetro de figuras'], 'Ciencias Naturales': ['Cartel sobre el reciclaje'], 'Historia': ['Línea del tiempo de la Revolución Mexicana'] },
+  secundaria: { 'Español': ['Redacta una carta formal', 'Lectura de un cuento latinoamericano'], 'Matemáticas': ['Problemas de ecuaciones lineales', 'Repaso para examen del bloque'], 'Ciencias': ['Reporte de práctica de laboratorio'], 'Historia': ['Línea del tiempo de la Revolución Mexicana'], 'Inglés': ['Lista de vocabulario de la unidad 4'] },
+  preparatoria: { 'Lectura y Redacción': ['Ensayo argumentativo de una cuartilla'], 'Matemáticas': ['Problemas de funciones cuadráticas'], 'Física': ['Problemas de movimiento rectilíneo'], 'Historia': ['Ensayo sobre el México contemporáneo'], 'Inglés': ['Presentación oral de la unidad 4'] },
 }
-for (const g of groups) for (const a of assignments.filter((x) => x.groupId === g.id)) {
-  const sub = subjects.find((x) => x.id === a.subjectId)
-  const list = hwTitles[sub.name]
-  if (!list) continue
-  list.slice(0, 2).forEach((title, i) => {
-    homework.push({ id: `ta${homework.length + 1}`, groupId: g.id, subjectId: sub.id, title, description: 'Entregar en clase. Cualquier duda, pregunta a tu maestra o maestro.', assignedDate: i === 0 ? '2026-11-18' : '2026-11-20', dueDate: i === 0 ? '2026-11-25' : '2026-11-27', teacherId: a.teacherId })
+// Días de entrega a partir del día simulado (sin fines de semana ni el viernes 27, día de Consejo Técnico)
+const dueDays = ['2026-11-25', '2026-11-26', '2026-11-30', '2026-12-01', '2026-12-02', '2026-12-03', '2026-12-04']
+for (const g of groups) {
+  const grade = grades.find((x) => x.id === g.gradeId)
+  const key = grade.level === 'primaria' ? `primaria-${grade.order}` : grade.level
+  const table = hwByLevel[key] ?? {}
+  const items = []
+  for (const a of assignments.filter((x) => x.groupId === g.id)) {
+    const sub = subjects.find((x) => x.id === a.subjectId)
+    for (const title of table[sub.name] ?? []) items.push({ a, sub, title })
+  }
+  // Reparte: máximo 2 tareas por día para el grupo
+  items.forEach((it, idx) => {
+    const due = dueDays[(Math.floor(idx / 2) + (grade.order % 2)) % dueDays.length]
+    homework.push({ id: `ta${homework.length + 1}`, groupId: g.id, subjectId: it.sub.id, title: it.title, description: 'Entregar en clase. Cualquier duda, pregunta a tu maestra o maestro.', assignedDate: '2026-11-20', dueDate: due, teacherId: it.a.teacherId })
   })
 }
 
@@ -244,7 +270,7 @@ const concepts = [
 const charges = [], payments = []
 const months = [['Septiembre', '2026-09-10'], ['Octubre', '2026-10-10'], ['Noviembre', '2026-11-10'], ['Diciembre', '2026-12-10']]
 const methods = ['efectivo', 'transferencia', 'tarjeta']
-const pay = (ch, amount, date) => payments.push({ id: `pg${payments.length + 1}`, chargeId: ch.id, studentId: ch.studentId, amount, method: pick(methods), paidAt: date, reference: rnd() > 0.5 ? `REF-DEMO-${1000 + payments.length}` : '', registeredBy: 'adm2', invoiceId: null })
+const pay = (ch, amount, date) => payments.push({ id: `pg${payments.length + 1}`, chargeId: ch.id, studentId: ch.studentId, amount, method: pick(methods), paidAt: date, reference: '', registeredBy: 'adm2', invoiceId: null })
 for (const st of students) {
   const level = grades.find((x) => x.id === groups.find((g) => g.id === st.groupId).gradeId).level
   const add = (conceptId, description, dueDate) => { const c = concepts.find((x) => x.id === conceptId); const ch = { id: `cg${charges.length + 1}`, studentId: st.id, conceptId, description, amount: c.amounts[level], dueDate, createdAt: '2026-08-01T09:00:00' }; charges.push(ch); return ch }
@@ -258,6 +284,8 @@ for (const st of students) {
     else if (i === 2 && r < 0.7 && !late) pay(ch, Math.round(ch.amount / 2), '2026-11-08')
   })
 }
+// Referencias: todos los pagos llevan REF-DEMO consecutiva, en orden de fecha, sin huecos
+;[...payments].sort((a, b) => a.paidAt.localeCompare(b.paidAt) || Number(a.id.slice(2)) - Number(b.id.slice(2))).forEach((p, i) => { p.reference = `REF-DEMO-${1000 + i}` })
 const reminders = []
 
 const audit = [
@@ -266,9 +294,9 @@ const audit = [
 
 const db = {
   meta: {
-    seedVersion: 1,
+    seedVersion: 2,
     school: { id: 'esc1', name: 'Colegio Demo EDUGRID', shortName: 'Colegio Demo', cct: 'DEMO-CCT-0000', rvoe: 'DEMO-RVOE-0000', address: 'Av. Ejemplo 123, Col. Demostración, Ciudad de México (DEMO)', phone: '55 0000 0000', email: 'contacto@demo.edugrid.mx', demo: true },
-    cfdiConfig: { rfcEmisor: 'CDE260101DM0', razonSocial: 'COLEGIO DEMO EDUGRID', regimenFiscal: '601', codigoPostal: '03100', serie: 'DEMO', nextFolio: 1, pacProvider: 'demo', demo: true },
+    cfdiConfig: { rfcEmisor: 'DEMO123456T78', razonSocial: 'COLEGIO DEMO EDUGRID S.A. DE C.V.', regimenFiscal: '601', codigoPostal: '03100', serie: 'CFDI-DEMO', nextFolio: 1, pacProvider: 'demo', demo: true },
   },
   staff, cycles, periods, grades, groups, subjects, teachers, assignments, schedule, guardians, students,
   attendance, gradeRecords, closures, homework, announcements, receipts, events, concepts, charges, payments, reminders, invoices: [], audit,

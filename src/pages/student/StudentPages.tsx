@@ -4,7 +4,7 @@ import { ScheduleView } from '../../components/ScheduleView'
 import { GradesTable } from '../../components/StudentRecords'
 import { Card, EmptyState, PageHeader, Stat } from '../../components/ui'
 import { attendanceSummary } from '../../lib/attendance'
-import { DAYS, formatDate, todayISO } from '../../lib/format'
+import { DAYS, demoDate, formatDate, todayISO } from '../../lib/format'
 import { averageFor, groupLabel, levelOfGroup, subjectName, visibleAnnouncements } from '../../lib/scope'
 import { useApp } from '../../state/context'
 
@@ -40,7 +40,7 @@ function HomeworkList({ limit }: { limit?: number }) {
 export function StudentHome() {
   const { db, session, me, simple } = useMe()
   if (!me) return <EmptyState icon="alerta" title="No encontramos tu información" />
-  const wd = new Date().getDay()
+  const wd = demoDate().getDay()
   const day = wd >= 1 && wd <= 5 ? wd : 1
   const classes = db.schedule.filter((s) => s.groupId === me.groupId && s.day === day).sort((a, b) => a.start.localeCompare(b.start))
   const news = visibleAnnouncements(db, session).slice(0, 3)

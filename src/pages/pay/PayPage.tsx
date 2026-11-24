@@ -2,10 +2,16 @@ import { useMemo, useState, type FormEvent } from 'react'
 import { Link, useSearchParams } from 'react-router'
 import { Badge, Button, Card, EmptyState, Field, Input, Notice, PageHeader, Select, Stat, Table, Tabs, TD, TH } from '../../components/ui'
 import type { Charge, ConceptKind, Level, Payment, PaymentConcept, PaymentMethod, Reminder } from '../../data/types'
-import { formatDate, formatMoney, nowISO, todayISO, uid } from '../../lib/format'
+import { demoDate, formatDate, formatMoney, nowISO, todayISO, uid, plural } from '../../lib/format'
 import { METHOD_LABEL, chargeView, studentCharges } from '../../lib/finance'
 import { LEVEL_LABEL, LEVELS, groupLabel, levelOfGroup, studentName } from '../../lib/scope'
 import { useApp } from '../../state/context'
+
+/** Siguiente referencia REF-DEMO consecutiva, para que todos los pagos tengan una. */
+const nextReference = (refs: string[]) => {
+  const nums = refs.map((r) => /^REF-DEMO-(\d+)$/.exec(r)?.[1]).filter((n): n is string => !!n).map(Number)
+  return `REF-DEMO-${nums.length ? Math.max(...nums) + 1 : 1000}`
+}
 
 type View = 'adeudos' | 'pago' | 'cargos' | 'conceptos'
 
@@ -50,7 +56,7 @@ function Debts() {
       r.student.guardianIds.map((gid) => ({ id: uid('rc'), studentId: r.student.id, guardianId: gid, amount: r.overdue, createdAt: nowISO(), createdBy: session.personId, message: `Te recordamos que ${r.student.firstName} tiene un saldo vencido de ${formatMoney(r.overdue)}. Si ya pagaste, por favor ignora este mensaje.` })),
     )
     if (reminders.length === 0) return
-    await act((repo) => repo.insert('reminders', reminders), { action: 'Envió recordatorios de pago', detail: `${new Set(reminders.map((r) => r.studentId)).size} alumnos` })
+    await act((repo) => repo.insert('reminders', reminders), { action: 'Envió recordatorios de pago', detail: plural(new Set(reminders.map((r) => r.studentId)).size, 'alumno', 'alumnos') })
   }
 
   return (
@@ -131,7 +137,7 @@ function RegisterPayment({ initialStudent }: { initialStudent: string }) {
     const value = amount === '' ? charge.balance : Number(amount)
     if (!(value > 0)) return setError('Escribe un monto mayor a cero.')
     if (value > charge.balance + 0.001) return setError(`El monto no puede ser mayor al saldo del cargo (${formatMoney(charge.balance)}).`)
-    const p: Payment = { id: uid('pg'), chargeId: charge.id, studentId, amount: Math.round(value * 100) / 100, method, paidAt: date, reference: reference.trim(), registeredBy: session.personId, invoiceId: null }
+    const p: Payment = { id: uid('pg'), chargeId: charge.id, studentId, amount: Math.round(value * 100) / 100, method, paidAt: date, reference: reference.trim() || nextReference(db.payments.map((x) => x.reference)), registeredBy: session.personId, invoiceId: null }
     await act((repo) => repo.insert('payments', [p]), { action: 'Registró pago', detail: `${studentName(db.students.find((s) => s.id === studentId))} · ${charge.description} · ${formatMoney(p.amount)} · ${METHOD_LABEL[method]}` })
     setDone(p)
     setAmount('')
@@ -176,14 +182,14 @@ function RegisterPayment({ initialStudent }: { initialStudent: string }) {
               )}
             </Field>
             <Field label="Fecha de pago">{(id) => <Input id={id} type="date" max={todayISO()} value={date} onChange={(e) => setDate(e.target.value)} />}</Field>
-            <Field label="Referencia (opcional)">{(id) => <Input id={id} value={reference} onChange={(e) => setReference(e.target.value)} placeholder="Folio o número de operación" />}</Field>
+            <Field label="Referencia (opcional)">{(id) => <Input id={id} value={reference} onChange={(e) => setReference(e.target.value)} placeholder="Si la dejas vacía se asigna REF-DEMO" />}</Field>
           </div>
           {error && <Notice tone="peligro">{error}</Notice>}
           {done && (
             <Notice tone="exito" icon="check">
               Pago de {formatMoney(done.amount)} registrado.{' '}
               <Link to={`/pagos/estado/${done.studentId}`} className="font-semibold underline">Ver estado de cuenta</Link> ·{' '}
-              <Link to={`/facturacion?pago=${done.id}`} className="font-semibold underline">Facturar (CFDI demo)</Link>
+              <Link to={`/facturacion?pago=${done.id}`} className="font-semibold underline">Facturar (factura electrónica demo)</Link>
             </Notice>
           )}
           <div className="flex justify-end">
@@ -218,7 +224,7 @@ function Charges({ initialStudent }: { initialStudent: string }) {
   const [amount, setAmount] = useState('')
   const [dueDate, setDueDate] = useState('')
   const [msg, setMsg] = useState<{ tone: 'exito' | 'peligro'; text: string } | null>(null)
-  const nextMonth = new Date()
+  const nextMonth = demoDate()
   nextMonth.setMonth(nextMonth.getMonth() + 1)
   const bulkMonth = MONTHS[nextMonth.getMonth()] ?? ''
   const bulkYear = nextMonth.getFullYear()
@@ -249,8 +255,8 @@ function Charges({ initialStudent }: { initialStudent: string }) {
       .filter((s) => s.status === 'activo' && !db.charges.some((c) => c.studentId === s.id && c.description.toLowerCase() === bulkDesc.toLowerCase()))
       .map((s) => ({ id: uid('cg'), studentId: s.id, conceptId: col.id, description: bulkDesc, amount: col.amounts[levelOfGroup(db, s.groupId) ?? 'primaria'], dueDate: bulkDue, createdAt: nowISO() }))
     if (rows.length === 0) return setMsg({ tone: 'exito', text: `Todos los alumnos ya tienen la ${bulkDesc.toLowerCase()}.` })
-    await act((repo) => repo.insert('charges', rows), { action: 'Generó colegiaturas', detail: `${bulkDesc} · ${rows.length} alumnos` })
-    setMsg({ tone: 'exito', text: `Se generó la ${bulkDesc.toLowerCase()} para ${rows.length} alumnos.` })
+    await act((repo) => repo.insert('charges', rows), { action: 'Generó colegiaturas', detail: `${bulkDesc} · ${plural(rows.length, 'alumno', 'alumnos')}` })
+    setMsg({ tone: 'exito', text: `Se generó la ${bulkDesc.toLowerCase()} para ${plural(rows.length, 'alumno', 'alumnos')}.` })
   }
 
   const recent = [...db.charges].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 8)
@@ -325,8 +331,8 @@ function Concepts() {
           <thead>
             <tr>
               <th className={TH}>Concepto</th>
-              {LEVELS.map((l) => <th key={l} className={`${TH} hidden text-right md:table-cell`}>{LEVEL_LABEL[l]}</th>)}
-              <th className={`${TH} text-right md:hidden`}>Desde</th>
+              {LEVELS.map((l) => <th key={l} className={`${TH} hidden text-right xl:table-cell`}>{LEVEL_LABEL[l]}</th>)}
+              <th className={`${TH} text-right xl:hidden`}>Desde</th>
             </tr>
           </thead>
           <tbody>
@@ -336,8 +342,8 @@ function Concepts() {
                   <p className="font-semibold text-heading">{c.name}</p>
                   <p className="text-xs text-muted">{KIND_LABEL[c.kind]} · Clave SAT {c.satProductCode}</p>
                 </td>
-                {LEVELS.map((l) => <td key={l} className={`${TD} hidden text-right whitespace-nowrap md:table-cell`}>{formatMoney(c.amounts[l])}</td>)}
-                <td className={`${TD} text-right whitespace-nowrap md:hidden`}>{formatMoney(Math.min(...Object.values(c.amounts)))}</td>
+                {LEVELS.map((l) => <td key={l} className={`${TD} hidden text-right whitespace-nowrap xl:table-cell`}>{formatMoney(c.amounts[l])}</td>)}
+                <td className={`${TD} text-right whitespace-nowrap xl:hidden`}>{formatMoney(Math.min(...Object.values(c.amounts)))}</td>
               </tr>
             ))}
           </tbody>

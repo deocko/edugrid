@@ -2,11 +2,12 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { Isotipo, Logo } from '../brand/Logo'
 import { Icon, type IconName } from '../components/Icon'
-import { Button, DemoBadge, Select } from '../components/ui'
+import { Button, DemoBadge, Notice, Select } from '../components/ui'
 import type { Role, Session } from '../data/types'
 import { HOME_BY_ROLE } from '../lib/permissions'
 import { groupLabel, isPreschool, levelOfGroup, studentName } from '../lib/scope'
 import { useStore } from '../state/context'
+import { plural } from '../lib/format'
 
 interface RoleCard {
   role: Role
@@ -18,7 +19,7 @@ interface RoleCard {
 const CARDS: RoleCard[] = [
   { role: 'admin', title: 'Entrar como Administrador', description: 'Dirección y administración: alumnos, pagos, avisos y facturación.', icon: 'escudo' },
   { role: 'docente', title: 'Entrar como Docente', description: 'Pasa lista, captura calificaciones y deja tareas a tus grupos.', icon: 'docente' },
-  { role: 'familia', title: 'Entrar como Papá', description: 'Consulta calificaciones, asistencia y pagos de tus hijos.', icon: 'hijo' },
+  { role: 'familia', title: 'Entrar como Familia', description: 'Consulta calificaciones, asistencia y pagos de tus hijos.', icon: 'hijo' },
   { role: 'alumno', title: 'Entrar como Alumno', description: 'Revisa tu horario, tus tareas y tus calificaciones.', icon: 'libro' },
 ]
 
@@ -28,15 +29,17 @@ export function Login() {
   const [choice, setChoice] = useState<Record<Role, string>>({ admin: 'adm1', docente: 't14', familia: 'tu0', alumno: 'al1' })
   const [busy, setBusy] = useState<Role | null>(null)
   const [resetDone, setResetDone] = useState(false)
+  const [confirmReset, setConfirmReset] = useState(false)
   if (!db) return null
 
   const teacherOptions = db.teachers.filter((t) => t.active).map((t) => {
     const groups = db.groups.filter((g) => g.homeroomTeacherId === t.id).map((g) => groupLabel(db, g))
-    return { id: t.id, label: `${t.firstName} ${t.lastName} · ${t.specialty}${groups.length ? ` (titular de ${groups.join(', ')})` : ''}` }
+    // Etiqueta corta para que el nombre no se corte en el selector
+    return { id: t.id, label: groups.length ? `${t.firstName} ${t.lastName} · ${groups.join(', ')} (titular)` : `${t.firstName} ${t.lastName} · ${t.specialty}` }
   })
   const familyOptions = db.guardians.slice(0, 20).map((g) => {
     const kids = db.students.filter((s) => s.guardianIds.includes(g.id)).length
-    return { id: g.id, label: `${g.firstName} ${g.lastName} · ${kids} ${kids === 1 ? 'hijo' : 'hijos'}` }
+    return { id: g.id, label: `${g.firstName} ${g.lastName} · ${plural(kids, 'hijo', 'hijos')}` }
   })
   const studentOptions = db.students
     .filter((s) => !isPreschool(levelOfGroup(db, s.groupId)))
@@ -121,6 +124,12 @@ export function Login() {
           ))}
         </div>
 
+        {resetDone && (
+          <div className="mt-6" role="status">
+            <Notice tone="exito" icon="check">Listo: los datos demo se restablecieron. Todo volvió a como estaba al inicio.</Notice>
+          </div>
+        )}
+
         <div className="mt-8 flex flex-col items-start gap-3 border-t border-line pt-6 text-sm text-muted sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-2">
             <span className="inline-flex rounded-md bg-white p-0.5">
@@ -133,14 +142,28 @@ export function Login() {
               </Link>
             </span>
           </div>
-          <Button
-            variant="secundario"
-            onClick={() => {
-              void resetDemo().then(() => setResetDone(true))
-            }}
-          >
-            {resetDone ? 'Datos demo restablecidos' : 'Restablecer datos demo'}
-          </Button>
+          {confirmReset ? (
+            <div role="alertdialog" aria-labelledby="reset-pregunta" className="flex flex-col gap-2 rounded-xl border border-line bg-surface p-3 sm:items-end">
+              <p id="reset-pregunta" className="font-semibold text-heading">¿Seguro que quieres restablecer los datos demo?</p>
+              <p className="text-xs">Se borran los cambios que hiciste y se vuelven a cargar los datos de ejemplo.</p>
+              <div className="flex gap-2">
+                <Button variant="secundario" onClick={() => setConfirmReset(false)}>Cancelar</Button>
+                <Button
+                  variant="peligro"
+                  onClick={() => {
+                    setConfirmReset(false)
+                    void resetDemo().then(() => setResetDone(true))
+                  }}
+                >
+                  Sí, restablecer
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <Button variant="secundario" onClick={() => { setResetDone(false); setConfirmReset(true) }}>
+              Restablecer datos demo
+            </Button>
+          )}
         </div>
       </main>
     </div>

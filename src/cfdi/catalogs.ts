@@ -30,6 +30,8 @@ export const MOTIVOS_CANCELACION: Record<string, string> = {
 }
 
 export const RFC_PUBLICO_GENERAL = 'XAXX010101000'
+/** RFC ficticio de la demo (no corresponde a ningún contribuyente). */
+export const RFC_DEMO_RE = /^DEMO\d{6}[A-Z\d]{3}$/
 export const RFC_RE = /^([A-ZÑ&]{3,4})(\d{2})(0[1-9]|1[0-2])(0[1-9]|[12]\d|3[01])([A-Z\d]{2})([A\d])$/
 
 export const NIVEL_IEDU: Record<string, string> = {

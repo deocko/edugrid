@@ -16,10 +16,10 @@ mkdirSync(OUT, { recursive: true })
 
 const sessions = {
   admin: { role: 'admin', personId: 'adm1', name: 'Mtra. Patricia Ruiz' },
-  docente: { role: 'docente', personId: 't14', name: 'Docente demo' },
+  docente: { role: 'docente', personId: 't14', name: 'Carmen Escobedo Salinas' },
   familia: { role: 'familia', personId: 'tu0', name: 'Laura Ortega Salinas' },
   alumnoPrim: { role: 'alumno', personId: 'al1', name: 'Alumno primaria' },
-  alumnoSec: { role: 'alumno', personId: 'al2', name: 'Alumno secundaria' },
+  alumnoSec: { role: 'alumno', personId: 'al41', name: 'Alumno secundaria' },
 }
 const routes = {
   login: ['/'],
@@ -39,6 +39,16 @@ const denied = [
   ['alumnoSec', '/familia/hijo/al1'],
   ['alumnoSec', '/facturacion'],
 ]
+
+// Errores de redacción que no deben aparecer en ninguna vista
+const TEXT_RULES = [
+  [/\d(alumnos?|grupos?|hijos?|materias?|docentes?|tareas?|pagos?|cargos?|avisos?)\b/i, 'número pegado a la palabra'],
+  [/\b1 (alumnos|grupos|hijos|materias|docentes|tareas|pagos|cargos|avisos|faltas|retardos|días)\b/, 'plural con 1'],
+  [/\bArte\b/, '«Arte» en lugar de «Artes»'],
+  [/Entrar como Papá/, 'debe decir «Entrar como Familia»'],
+  [/Cambiar a modo/, 'texto del tema sin simplificar'],
+]
+if (process.env.QA_ROUTES_4A) TEXT_RULES.push([/ecuaciones lineales|carta formal/i, 'tarea de secundaria en primaria'])
 
 const widths = [390, 768, 1024, 1440]
 const themes = ['claro', 'oscuro']
@@ -81,6 +91,20 @@ for (const theme of themes) {
           return out.slice(0, 5)
         })
         for (const c of cut) problems.push(`${tag}: texto cortado ${c}`)
+        // Tablas que no caben y obligan a desplazar horizontalmente
+        const wide = await page.evaluate(() => [...document.querySelectorAll('table')].filter((t) => t.offsetParent && t.scrollWidth > (t.parentElement?.clientWidth ?? 0) + 1).map((t) => `${t.scrollWidth}px en ${t.parentElement?.clientWidth}px: ${t.querySelector('th')?.textContent ?? ''}`))
+        for (const w of wide) problems.push(`${tag}: tabla con desplazamiento horizontal ${w}`)
+        // Redacción: texto visible y árbol de accesibilidad
+        if (theme === 'claro' && width === 1440) {
+          const visible = await page.innerText('body')
+          const aria = await page.locator('body').ariaSnapshot()
+          for (const [label, src] of [['texto', visible], ['accesibilidad', aria]]) {
+            for (const [re, why] of TEXT_RULES) {
+              const m = src.match(re)
+              if (m) problems.push(`${tag}: ${why} en ${label}: «${m[0]}»`)
+            }
+          }
+        }
         await page.addScriptTag({ content: axeSource })
         const axe = await page.evaluate(async () => {
           const r = await window.axe.run(document, { runOnly: { type: 'rule', values: ['color-contrast', 'label', 'button-name', 'link-name', 'image-alt', 'html-has-lang', 'duplicate-id-aria'] } })

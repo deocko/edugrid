@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { Badge, Button, Card, EmptyState, Field, Input, Modal, Notice, PageHeader, Select, Tabs, Textarea } from '../../components/ui'
 import type { Announcement, Audience, Database, Level } from '../../data/types'
-import { formatDateTime, nowISO, uid } from '../../lib/format'
+import { formatDateTime, nowISO, uid, plural } from '../../lib/format'
 import { LEVEL_LABEL, LEVELS, audienceLabel, groupLabel, levelOfGroup, teacherGroupIds, userKey, visibleAnnouncements } from '../../lib/scope'
 import { useApp } from '../../state/context'
 
@@ -75,7 +75,7 @@ export function ConnectPage() {
                     )}
                     {author && (
                       <>
-                        <span className="text-sm text-muted">Leído por {readers.length} de {recipients.length} familias</span>
+                        <span className="text-sm text-muted">Leído por {readers.length} de {plural(recipients.length, 'familia', 'familias')}</span>
                         <Button variant="fantasma" icon="ojo" onClick={() => setDetail(a)}>Ver acuses</Button>
                       </>
                     )}

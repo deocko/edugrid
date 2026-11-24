@@ -2,7 +2,7 @@ import { useMemo, useState, type FormEvent } from 'react'
 import { Link, useSearchParams } from 'react-router'
 import { Badge, Button, Card, EmptyState, Field, Input, Modal, Notice, PageHeader, Select, Table, TD, TH } from '../../components/ui'
 import type { Guardian, Level, Student } from '../../data/types'
-import { formatMoney, nowISO, uid } from '../../lib/format'
+import { formatMoney, nowISO, uid, plural } from '../../lib/format'
 import { studentBalance } from '../../lib/finance'
 import { LEVEL_LABEL, LEVELS, groupLabel, levelOfGroup, studentName } from '../../lib/scope'
 import { useApp } from '../../state/context'
@@ -33,7 +33,7 @@ export function Students() {
     <>
       <PageHeader
         title="Alumnos"
-        subtitle={`${db.students.filter((s) => s.status === 'activo').length} alumnos inscritos en el ciclo actual`}
+        subtitle={`${plural(db.students.filter((s) => s.status === 'activo').length, 'alumno inscrito', 'alumnos inscritos')} en el ciclo actual`}
         actions={
           <Button icon="mas" onClick={() => setParams({ alta: '1' })}>
             Inscribir alumno

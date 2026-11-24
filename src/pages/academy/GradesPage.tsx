@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { Badge, Button, Card, EmptyState, Field, Input, Modal, Notice, PageHeader, Select } from '../../components/ui'
 import type { GradeRecord } from '../../data/types'
-import { formatDateTime, nowISO, uid } from '../../lib/format'
+import { formatDateTime, nowISO, uid, plural } from '../../lib/format'
 import { PRESCHOOL_SCALE, groupLabel, isPreschool, levelOfGroup, studentName, subjectName } from '../../lib/scope'
 import { useApp } from '../../state/context'
 import { useManagedGroups, useManagedSubjects } from './useTeacherGroups'
@@ -48,7 +48,7 @@ export function GradesPage() {
   const save = async () => {
     const rows = validate()
     if (!rows) return
-    await act((repo) => repo.upsert('gradeRecords', rows), { action: 'Capturó calificaciones', detail: `${groupLabel(db, groupId)} · ${subjectName(db, subjectId)} · ${rows.length} alumnos` })
+    await act((repo) => repo.upsert('gradeRecords', rows), { action: 'Capturó calificaciones', detail: `${groupLabel(db, groupId)} · ${subjectName(db, subjectId)} · ${plural(rows.length, 'alumno', 'alumnos')}` })
     setDraft({})
     setMsg({ tone: 'exito', text: 'Calificaciones guardadas. Las familias las verán como preliminares hasta que cierres el periodo.' })
   }
@@ -118,6 +118,9 @@ export function GradesPage() {
           title={`${subjectName(db, subjectId)} · ${groupLabel(db, groupId)}`}
           action={closure ? <Badge tone="exito">Cerrado el {formatDateTime(closure.closedAt)}</Badge> : <Badge tone="aviso">Periodo abierto</Badge>}
         >
+          {records.length === 0 && !closure && (
+            <div className="mb-3"><Notice tone="info" icon="calificaciones">Aún no hay calificaciones capturadas en este trimestre.</Notice></div>
+          )}
           {preschool && <p className="mb-3 text-sm text-muted">En preescolar se registra el nivel de logro de cada niña o niño.</p>}
           <ul className="divide-y divide-line">
             {students.map((s) => (

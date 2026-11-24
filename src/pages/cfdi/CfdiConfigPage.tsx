@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { REGIMENES, RFC_RE } from '../../cfdi/catalogs'
+import { REGIMENES, RFC_DEMO_RE, RFC_RE } from '../../cfdi/catalogs'
 import { getPacAdapter } from '../../cfdi/pac'
 import { Button, Card, DemoBadge, Field, Input, Notice, PageHeader, Select } from '../../components/ui'
 import { useApp } from '../../state/context'
@@ -12,7 +12,7 @@ export function CfdiConfigPage() {
 
   const save = async (e: FormEvent) => {
     e.preventDefault()
-    if (!RFC_RE.test(form.rfcEmisor.toUpperCase())) return setMsg({ tone: 'peligro', text: 'El RFC del emisor no tiene un formato válido.' })
+    if (!RFC_RE.test(form.rfcEmisor.toUpperCase()) && !RFC_DEMO_RE.test(form.rfcEmisor.toUpperCase())) return setMsg({ tone: 'peligro', text: 'El RFC del emisor no tiene un formato válido.' })
     if (!/^\d{5}$/.test(form.codigoPostal)) return setMsg({ tone: 'peligro', text: 'El código postal debe tener 5 dígitos.' })
     await act((repo) => repo.updateMeta({ cfdiConfig: { ...cfg, ...form, rfcEmisor: form.rfcEmisor.toUpperCase(), razonSocial: form.razonSocial.toUpperCase() } }), { action: 'Actualizó configuración fiscal (demo)', detail: `RFC ${form.rfcEmisor.toUpperCase()} · régimen ${form.regimenFiscal}` })
     setMsg({ tone: 'exito', text: 'Configuración guardada. Solo se guardan datos públicos del emisor; nunca credenciales.' })
@@ -26,7 +26,7 @@ export function CfdiConfigPage() {
 
   return (
     <>
-      <PageHeader title="Configuración de facturación" subtitle={<span className="inline-flex flex-wrap items-center gap-2">Datos del emisor, certificado y PAC <DemoBadge /></span>} />
+      <PageHeader title="Configuración de facturación" subtitle={<span className="inline-flex flex-wrap items-center gap-2">Datos de la escuela, certificado del SAT (CSD) y proveedor que timbra (PAC) <DemoBadge /></span>} />
       <div className="grid gap-4 lg:grid-cols-3">
         <Card title="Datos del emisor" className="lg:col-span-2">
           <form onSubmit={(e) => void save(e)} className="grid gap-3 sm:grid-cols-2" noValidate>
@@ -51,7 +51,8 @@ export function CfdiConfigPage() {
           </form>
         </Card>
         <div className="space-y-4">
-          <Card title="Certificado de Sello Digital (CSD)">
+          <Card title="Certificado del SAT (CSD)">
+            <p className="mb-3 text-sm">Es el certificado que el SAT le da a la escuela para firmar sus facturas.</p>
             <Notice tone="aviso" icon="candado">En la demo no se cargan ni se guardan archivos .cer, .key ni contraseñas.</Notice>
             <div className="mt-3 space-y-2 text-sm">
               <Field label="Archivo .cer">{(id) => <Input id={id} type="file" disabled aria-describedby="csd-nota" />}</Field>
@@ -59,11 +60,11 @@ export function CfdiConfigPage() {
               <p id="csd-nota" className="text-xs text-muted">Cuando se conecte un PAC real, el CSD se guardará cifrado en un servidor seguro, nunca en el navegador.</p>
             </div>
           </Card>
-          <Card title="Proveedor de timbrado (PAC)">
+          <Card title="Proveedor que timbra la factura (PAC)">
             <Field label="PAC">
               {(id) => (
                 <Select id={id} value={cfg.pacProvider} disabled>
-                  <option value="demo">PAC de demostración (sin conexión)</option>
+                  <option value="demo">PAC DEMO (sin conexión)</option>
                 </Select>
               )}
             </Field>
@@ -71,11 +72,14 @@ export function CfdiConfigPage() {
           </Card>
         </div>
       </div>
-      <Card title="¿Cómo funciona la facturación real?" className="mt-4">
+      <div className="mt-4">
+        <Notice tone="info" icon="ajustes"><strong>Configuración incompleta:</strong> falta cargar el certificado del SAT (CSD) y contratar un PAC real. Mientras tanto, todo funciona en modo de pruebas.</Notice>
+      </div>
+      <Card title="¿Cómo funciona la facturación electrónica real?" className="mt-4">
         <ol className="list-decimal space-y-2 pl-5 text-sm">
-          <li>El timbrado <strong>no se hace directo con el SAT</strong>: se hace a través de un <strong>PAC</strong> (Proveedor Autorizado de Certificación) autorizado por el SAT.</li>
-          <li>La escuela necesita su <strong>CSD vigente</strong> (Certificado de Sello Digital, distinto de la e.firma) y un <strong>contrato con el PAC</strong>.</li>
-          <li>EDUGRID arma el XML CFDI 4.0, lo sella con el CSD y lo manda al PAC, que le agrega el folio fiscal (UUID) y lo reporta al SAT.</li>
+          <li>El timbrado <strong>no se hace directo con el SAT</strong>: se hace a través de un <strong>PAC</strong>, el proveedor autorizado por el SAT que timbra la factura.</li>
+          <li>La escuela necesita su <strong>CSD vigente</strong> (el certificado del SAT para firmar facturas; es distinto de la e.firma) y un <strong>contrato con el PAC</strong>.</li>
+          <li>EDUGRID arma la factura electrónica (XML CFDI 4.0), la sella con el CSD y la manda al PAC, que le agrega el folio fiscal (UUID) y la reporta al SAT.</li>
           <li>Para cancelar se indica el motivo (01 a 04) y, según el monto y el tiempo, el receptor puede tener que aceptar la cancelación.</li>
         </ol>
       </Card>

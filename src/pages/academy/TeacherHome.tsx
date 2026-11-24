@@ -1,6 +1,6 @@
 import { Link } from 'react-router'
 import { Badge, Card, EmptyState, LinkButton, PageHeader, Stat } from '../../components/ui'
-import { DAYS, formatDate, todayISO } from '../../lib/format'
+import { DAYS, demoDate, formatDate, todayISO } from '../../lib/format'
 import { groupLabel, subjectName, teacherGroupIds, visibleAnnouncements } from '../../lib/scope'
 import { useApp } from '../../state/context'
 
@@ -8,7 +8,7 @@ export function TeacherHome() {
   const { db, session } = useApp()
   const groupIds = teacherGroupIds(db, session.personId)
   const groups = db.groups.filter((g) => groupIds.has(g.id))
-  const wd = new Date().getDay()
+  const wd = demoDate().getDay()
   const day = wd >= 1 && wd <= 5 ? wd : 1
   const classes = db.schedule.filter((s) => s.teacherId === session.personId && s.day === day).sort((a, b) => a.start.localeCompare(b.start))
   const today = todayISO()

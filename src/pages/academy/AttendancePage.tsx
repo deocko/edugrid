@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router'
 import { ATT_LABEL } from '../../lib/attendance'
 import { Button, Card, EmptyState, Field, Input, Notice, PageHeader, Select } from '../../components/ui'
 import type { AttendanceRecord, AttendanceStatus } from '../../data/types'
-import { formatDateLong, todayISO } from '../../lib/format'
+import { formatDateLong, todayISO, plural } from '../../lib/format'
 import { groupLabel, studentName } from '../../lib/scope'
 import { useApp } from '../../state/context'
 import { useManagedGroups } from './useTeacherGroups'
@@ -38,9 +38,9 @@ export function AttendancePage() {
       const old = db.attendance.find((a) => a.studentId === r.studentId && a.date === date)
       if (old) r.id = old.id
     }
-    await act((repo) => repo.upsert('attendance', rows), { action: 'Guardó asistencia', detail: `${groupLabel(db, groupId)} · ${date} · ${rows.filter((r) => r.status === 'falta').length} faltas` })
+    await act((repo) => repo.upsert('attendance', rows), { action: 'Guardó asistencia', detail: `${groupLabel(db, groupId)} · ${date} · ${plural(rows.filter((r) => r.status === 'falta').length, 'falta', 'faltas')}` })
     setDraft({})
-    setSaved(`Asistencia guardada para ${students.length} alumnos.`)
+    setSaved(`Asistencia guardada para ${plural(students.length, 'alumno', 'alumnos')}.`)
   }
 
   if (groups.length === 0) return <EmptyState icon="alumnos" title="No tienes grupos asignados" />
@@ -66,7 +66,7 @@ export function AttendancePage() {
         <EmptyState icon="alumnos" title="Este grupo aún no tiene alumnos" />
       ) : (
         <Card
-          title={`${students.length} alumnos`}
+          title={plural(students.length, 'alumno', 'alumnos')}
           action={
             <Button variant="secundario" icon="check" onClick={() => setDraft(Object.fromEntries(students.map((s) => [s.id, 'presente'])))}>
               Todos presentes
