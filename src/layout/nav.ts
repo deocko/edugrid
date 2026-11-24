@@ -1,5 +1,5 @@
 import type { IconName } from '../components/Icon'
-import type { Role } from '../data/types'
+import type { Role, SubjectColor } from '../data/types'
 
 export interface NavItem {
   to: string
@@ -64,6 +64,8 @@ export interface SettingsItem {
   label: string
   icon: IconName
   description: string
+  /** Tono pastel de la tarjeta (usa la misma paleta accesible de las materias). */
+  color: SubjectColor
 }
 
 /**
@@ -71,19 +73,19 @@ export interface SettingsItem {
  * y muestra una tarjeta por sección.
  */
 export const ADMIN_SETTINGS: SettingsItem[] = [
-  { to: '/admin/familias', label: 'Familias', icon: 'hijo', description: 'Tutores, datos fiscales y hermanos' },
-  { to: '/admin/docentes', label: 'Docentes', icon: 'docente', description: 'Catálogo, grupos y materias' },
-  { to: '/admin/calificaciones', label: 'Calificaciones', icon: 'calificaciones', description: 'Captura y cierre por trimestre' },
-  { to: '/admin/calendario', label: 'Calendario', icon: 'calendario', description: 'Eventos, trimestres y tareas' },
-  { to: '/admin/clases', label: 'Clases', icon: 'horario', description: 'Horario de cada grupo' },
-  { to: '/admin/aulas', label: 'Aulas', icon: 'aula', description: 'Salones, cupo y espacios' },
-  { to: '/admin/escuela', label: 'Ciclos y grupos', icon: 'estructura', description: 'Ciclos, grados, grupos y materias' },
-  { to: '/pagos', label: 'Pagos', icon: 'pagos', description: 'Cargos, cobros y adeudos' },
-  { to: '/facturacion', label: 'Facturación', icon: 'factura', description: 'CFDI de demostración' },
-  { to: '/admin/configuracion', label: 'Marca y entradas', icon: 'ajustes', description: 'Logo, colores y lugares de entrada' },
-  { to: '/admin/permisos', label: 'Permisos', icon: 'escudo', description: 'Qué ve cada perfil' },
-  { to: '/admin/bitacora', label: 'Bitácora', icon: 'bitacora', description: 'Accesos y cambios' },
-  { to: '/privacidad', label: 'Privacidad', icon: 'candado', description: 'Aviso de privacidad' },
+  { to: '/admin/familias', label: 'Familias', icon: 'hijo', description: 'Tutores, datos fiscales y hermanos', color: 'rosa' },
+  { to: '/admin/docentes', label: 'Docentes', icon: 'docente', description: 'Catálogo, grupos y materias', color: 'azul' },
+  { to: '/admin/calificaciones', label: 'Calificaciones', icon: 'calificaciones', description: 'Captura y cierre por trimestre', color: 'morado' },
+  { to: '/admin/calendario', label: 'Calendario', icon: 'calendario', description: 'Eventos, trimestres y tareas', color: 'naranja' },
+  { to: '/admin/clases', label: 'Clases', icon: 'horario', description: 'Horario de cada grupo', color: 'turquesa' },
+  { to: '/admin/aulas', label: 'Aulas', icon: 'aula', description: 'Salones, cupo y espacios', color: 'verde' },
+  { to: '/admin/escuela', label: 'Ciclos y grupos', icon: 'estructura', description: 'Ciclos, grados, grupos y materias', color: 'indigo' },
+  { to: '/pagos', label: 'Pagos', icon: 'pagos', description: 'Cargos, cobros y adeudos', color: 'ambar' },
+  { to: '/facturacion', label: 'Facturación', icon: 'factura', description: 'CFDI de demostración', color: 'rojo' },
+  { to: '/admin/configuracion', label: 'Marca y entradas', icon: 'ajustes', description: 'Logo, colores y lugares de entrada', color: 'azul' },
+  { to: '/admin/permisos', label: 'Permisos', icon: 'escudo', description: 'Qué ve cada perfil', color: 'morado' },
+  { to: '/admin/bitacora', label: 'Bitácora', icon: 'bitacora', description: 'Accesos y cambios', color: 'gris' },
+  { to: '/privacidad', label: 'Privacidad', icon: 'candado', description: 'Aviso de privacidad', color: 'turquesa' },
 ]
 
 /** ¿La ruta pertenece a Configuración? (para marcar la pestaña activa en el celular) */

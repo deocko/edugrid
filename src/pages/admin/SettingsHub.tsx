@@ -13,16 +13,15 @@ export function SettingsHub() {
           <li key={it.to}>
             <Link
               to={it.to}
-              className="group relative isolate flex h-full min-h-32 flex-col gap-2 rounded-2xl border border-line bg-linear-to-br from-surface to-surface-2 p-3 text-heading no-underline shadow-sm transition hover:-translate-y-0.5 hover:border-primary hover:shadow-md focus-visible:border-primary sm:p-4"
+              className={`subj-${it.color} group relative isolate flex h-full min-h-32 flex-col gap-2 rounded-2xl border border-[color-mix(in_srgb,var(--s)_22%,var(--c-line))] bg-[var(--s-bg)] p-3 text-heading no-underline shadow-sm transition hover:-translate-y-0.5 hover:border-[var(--s)] hover:shadow-md focus-visible:border-[var(--s)] sm:p-4`}
             >
               {/* Ícono grande de fondo, recortado en la esquina: solo decoración */}
               <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 overflow-hidden rounded-2xl">
-                <div className="absolute -right-5 -bottom-6 text-primary opacity-[0.09] transition duration-300 group-hover:scale-110 group-hover:-rotate-6 group-hover:opacity-[0.14] dark:text-link dark:opacity-[0.12]">
+                <div className="absolute -right-5 -bottom-6 text-[var(--s)] opacity-[0.14] transition duration-300 group-hover:scale-110 group-hover:-rotate-6 group-hover:opacity-[0.22] dark:opacity-[0.16]">
                   <Icon name={it.icon} size={112} />
                 </div>
-                <div className="absolute inset-x-0 top-0 h-1 bg-linear-to-r from-primary to-cyan opacity-70" />
               </div>
-              <span className="inline-flex size-10 items-center justify-center rounded-xl bg-info-bg text-info shadow-sm ring-1 ring-line">
+              <span className="inline-flex size-10 items-center justify-center rounded-xl bg-surface text-[var(--s-ink)] shadow-sm ring-1 ring-[color-mix(in_srgb,var(--s)_25%,transparent)]">
                 <Icon name={it.icon} size={22} />
               </span>
               <span className="font-bold leading-tight">{it.label}</span>
