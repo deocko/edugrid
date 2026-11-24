@@ -40,6 +40,7 @@ import { BrandStyle } from './brand/SchoolBrand'
 import { SchoolSettings } from './pages/admin/SchoolSettings'
 import { FamilyCards } from './pages/family/FamilyCards'
 import { AdminCalendar } from './pages/admin/AdminCalendar'
+import { SettingsHub } from './pages/admin/SettingsHub'
 
 export function App() {
   const { status, error, session, resetDemo } = useStore()
@@ -78,6 +79,7 @@ export function App() {
           <Route path="/admin/entradas" element={<RequireRole roles={['admin']}><ScanPage /></RequireRole>} />
           <Route path="/admin/docentes" element={<RequireRole roles={['admin']}><Teachers /></RequireRole>} />
           <Route path="/admin/escuela" element={<RequireRole roles={['admin']}><SchoolStructure /></RequireRole>} />
+          <Route path="/admin/ajustes" element={<RequireRole roles={['admin']}><SettingsHub /></RequireRole>} />
           <Route path="/admin/calificaciones" element={<RequireRole roles={['admin']}><GradesPage /></RequireRole>} />
           <Route path="/admin/calendario" element={<RequireRole roles={['admin']}><AdminCalendar /></RequireRole>} />
           <Route path="/admin/configuracion" element={<RequireRole roles={['admin']}><SchoolSettings /></RequireRole>} />

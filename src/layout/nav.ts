@@ -25,7 +25,7 @@ export const NAV: Record<Role, NavItem[]> = {
     { to: '/admin/escuela', label: 'Ciclos y grupos', icon: 'estructura' },
     { to: '/pagos', label: 'Pagos', icon: 'pagos' },
     { to: '/facturacion', label: 'Facturación', icon: 'factura' },
-    { to: '/admin/configuracion', label: 'Configuración', icon: 'ajustes' },
+    { to: '/admin/ajustes', label: 'Configuración', icon: 'ajustes' },
     { to: '/admin/permisos', label: 'Permisos', icon: 'escudo' },
     { to: '/admin/bitacora', label: 'Bitácora', icon: 'bitacora' },
   ],
@@ -58,6 +58,36 @@ export const NAV: Record<Role, NavItem[]> = {
     { to: '/avisos', label: 'Avisos', icon: 'avisos' },
   ],
 }
+
+export interface SettingsItem {
+  to: string
+  label: string
+  icon: IconName
+  description: string
+}
+
+/**
+ * Secciones que la dirección abre desde «Configuración»: en el celular sustituye al botón «Más»
+ * y muestra una tarjeta por sección.
+ */
+export const ADMIN_SETTINGS: SettingsItem[] = [
+  { to: '/admin/familias', label: 'Familias', icon: 'hijo', description: 'Tutores, datos fiscales y hermanos' },
+  { to: '/admin/docentes', label: 'Docentes', icon: 'docente', description: 'Catálogo, grupos y materias' },
+  { to: '/admin/calificaciones', label: 'Calificaciones', icon: 'calificaciones', description: 'Captura y cierre por trimestre' },
+  { to: '/admin/calendario', label: 'Calendario', icon: 'calendario', description: 'Eventos, trimestres y tareas' },
+  { to: '/admin/clases', label: 'Clases', icon: 'horario', description: 'Horario de cada grupo' },
+  { to: '/admin/aulas', label: 'Aulas', icon: 'aula', description: 'Salones, cupo y espacios' },
+  { to: '/admin/escuela', label: 'Ciclos y grupos', icon: 'estructura', description: 'Ciclos, grados, grupos y materias' },
+  { to: '/pagos', label: 'Pagos', icon: 'pagos', description: 'Cargos, cobros y adeudos' },
+  { to: '/facturacion', label: 'Facturación', icon: 'factura', description: 'CFDI de demostración' },
+  { to: '/admin/configuracion', label: 'Marca y entradas', icon: 'ajustes', description: 'Logo, colores y lugares de entrada' },
+  { to: '/admin/permisos', label: 'Permisos', icon: 'escudo', description: 'Qué ve cada perfil' },
+  { to: '/admin/bitacora', label: 'Bitácora', icon: 'bitacora', description: 'Accesos y cambios' },
+  { to: '/privacidad', label: 'Privacidad', icon: 'candado', description: 'Aviso de privacidad' },
+]
+
+/** ¿La ruta pertenece a Configuración? (para marcar la pestaña activa en el celular) */
+export const inSettings = (pathname: string) => pathname === '/admin/ajustes' || ADMIN_SETTINGS.some((i) => pathname === i.to || pathname.startsWith(`${i.to}/`))
 
 /** Módulo de EDUGRID al que pertenece cada vista (se muestra arriba del título). */
 const MODULES: [prefix: string, name: string][] = [

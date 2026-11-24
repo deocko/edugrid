@@ -5,7 +5,7 @@ import { Avatar, DemoBadge, Switch } from '../components/ui'
 import { ROLE_LABEL } from '../lib/permissions'
 import { userKey, visibleAnnouncements } from '../lib/scope'
 import { useApp } from '../state/context'
-import { moduleForPath, NAV } from './nav'
+import { inSettings, moduleForPath, NAV } from './nav'
 import { ByEdugrid, SchoolLogo } from '../brand/SchoolBrand'
 import { brandingOf } from '../lib/branding'
 
@@ -150,7 +150,7 @@ export function AppShell() {
 
       {/* Navegación inferior (móvil y tableta) */}
       <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-surface pb-[env(safe-area-inset-bottom)] lg:hidden no-print" aria-label="Navegación principal">
-        <ul className="mx-auto grid max-w-xl" style={{ gridTemplateColumns: `repeat(${primary.length + (rest.length ? 1 : 0)}, minmax(0, 1fr))` }}>
+        <ul className="mx-auto grid max-w-xl" style={{ gridTemplateColumns: `repeat(${primary.length + (rest.length || session.role === 'admin' ? 1 : 0)}, minmax(0, 1fr))` }}>
           {primary.map((it) => (
             <li key={it.to}>
               <NavLink
@@ -171,16 +171,30 @@ export function AppShell() {
               </NavLink>
             </li>
           ))}
-          {rest.length > 0 && (
+          {session.role === 'admin' ? (
             <li>
-              <button type="button" onClick={() => setMoreOpen((v) => !v)} aria-expanded={moreOpen} className="flex min-h-14 w-full flex-col items-center justify-center gap-0.5 px-1 py-1.5 text-[11px] font-semibold text-muted">
-                <Icon name={moreOpen ? 'cerrar' : 'menu'} size={22} />
-                Más
-              </button>
+              <NavLink
+                to="/admin/ajustes"
+                className={`relative flex min-h-14 flex-col items-center justify-center gap-0.5 px-0 py-1.5 text-[11px] font-semibold no-underline ${inSettings(location.pathname) ? 'text-link' : 'text-muted'}`}
+                aria-current={inSettings(location.pathname) ? 'page' : undefined}
+              >
+                {inSettings(location.pathname) && <span className="absolute top-0 h-1 w-8 rounded-b bg-primary dark:bg-link" aria-hidden="true" />}
+                <Icon name="ajustes" size={22} />
+                <span className="max-w-full text-[9.5px] tracking-tight whitespace-nowrap min-[360px]:text-[10px] min-[400px]:text-[11px] min-[400px]:tracking-normal">Configuración</span>
+              </NavLink>
             </li>
+          ) : (
+            rest.length > 0 && (
+              <li>
+                <button type="button" onClick={() => setMoreOpen((v) => !v)} aria-expanded={moreOpen} className="flex min-h-14 w-full flex-col items-center justify-center gap-0.5 px-1 py-1.5 text-[11px] font-semibold text-muted">
+                  <Icon name={moreOpen ? 'cerrar' : 'menu'} size={22} />
+                  Más
+                </button>
+              </li>
+            )
           )}
         </ul>
-        {moreOpen && (
+        {moreOpen && session.role !== 'admin' && (
           <div className="absolute inset-x-0 bottom-full border-t border-line bg-surface p-3 shadow-lg">
             <ul className="mx-auto grid max-w-xl grid-cols-2 gap-2 sm:grid-cols-3">
               {rest.map((it) => (

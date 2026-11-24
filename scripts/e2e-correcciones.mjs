@@ -199,6 +199,22 @@ await page.getByText('Hermanos: Regina').waitFor()
 await page.screenshot({ path: `${OUT}/alta-hermano-buscador.png` })
 step('Al inscribir a un hermano se busca al tutor por apellidos, nombre o nombre de un hijo y se vincula')
 
+// 12. En el celular, dirección tiene «Configuración» en lugar de «Más», con una tarjeta por sección
+await page.setViewportSize({ width: 390, height: 844 })
+await as('admin', '/admin')
+const bottom = page.getByRole('navigation', { name: 'Navegación principal' }).last()
+if (await bottom.getByRole('button', { name: 'Más' }).count()) fail('Dirección sigue viendo «Más» en el celular')
+await bottom.getByRole('link', { name: 'Configuración' }).click()
+await page.getByRole('heading', { level: 1, name: 'Configuración' }).waitFor()
+const tiles = ['Familias', 'Docentes', 'Calificaciones', 'Calendario', 'Clases', 'Aulas', 'Ciclos y grupos', 'Pagos', 'Facturación', 'Permisos', 'Bitácora', 'Privacidad']
+for (const t of tiles) if (!(await page.locator('main').getByRole('link', { name: new RegExp(`^${t}`) }).count())) fail(`Falta la tarjeta «${t}» en Configuración`)
+await page.screenshot({ path: `${OUT}/admin-configuracion-celular.png`, fullPage: true })
+await page.locator('main').getByRole('link', { name: /^Aulas/ }).click()
+await page.getByRole('heading', { level: 1 }).waitFor()
+if ((await bottom.getByRole('link', { name: 'Configuración' }).getAttribute('aria-current')) !== 'page') fail('«Configuración» no queda marcada al entrar a una sección')
+await page.setViewportSize({ width: 1280, height: 900 })
+step('En el celular, «Configuración» reemplaza a «Más» y muestra las tarjetas de cada sección')
+
 if (errors.length) fail(`Errores en la página: ${errors.join(' | ')}`)
 await browser.close()
 console.log('Correcciones del mensaje 8: todo en orden.')
