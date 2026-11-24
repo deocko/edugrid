@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
 import { Icon } from '../../components/Icon'
-import { Badge, Button, Card, Field, Input, Notice, PageHeader, Select, Tabs } from '../../components/ui'
+import { Avatar, Badge, Button, Card, Field, Input, Notice, PageHeader, Select, Tabs } from '../../components/ui'
 import { checkinsOfDay, evaluateScan, presenceOf } from '../../lib/presence'
 import { groupLabel, studentName, visibleGroups, visibleStudents } from '../../lib/scope'
 import { plural } from '../../lib/format'
@@ -8,7 +8,7 @@ import { useApp } from '../../state/context'
 
 const PLACES = ['Puerta principal', 'Puerta de preescolar', 'Salón']
 
-type Feedback = { tone: 'entrada' | 'salida' | 'error'; title: string; detail: string }
+type Feedback = { tone: 'entrada' | 'salida' | 'error'; title: string; detail: string; name?: string; photo?: string | null }
 type CamState = 'apagada' | 'iniciando' | 'activa' | 'no-disponible'
 
 /** Escanear credenciales QR: entrada y, al volver a escanear, salida. */
@@ -50,6 +50,8 @@ export function ScanPage() {
           tone: r.checkin.type,
           title: `${r.checkin.type === 'entrada' ? 'Entrada' : 'Salida'}: ${studentName(r.student)}`,
           detail: `${groupLabel(dbRef.current, r.student.groupId)} · ${r.checkin.at.slice(11, 16)} · Se avisó a su familia.`,
+          name: studentName(r.student),
+          photo: r.student.photo,
         })
         setCode('')
       } finally {
@@ -164,8 +166,13 @@ export function ScanPage() {
           <div aria-live="assertive" className="mt-4">
             {feedback && (
               <div className={`rounded-2xl p-4 ${feedback.tone === 'entrada' ? 'bg-success-bg text-success' : feedback.tone === 'salida' ? 'bg-info-bg text-info' : 'bg-danger-bg text-danger'}`}>
-                <p className="text-lg font-bold">{feedback.title}</p>
-                <p className="text-sm">{feedback.detail}</p>
+                <div className="flex items-center gap-3">
+                  {feedback.name && <Avatar name={feedback.name} src={feedback.photo} size={64} />}
+                  <div className="min-w-0">
+                    <p className="text-lg font-bold">{feedback.title}</p>
+                    <p className="text-sm">{feedback.detail}</p>
+                  </div>
+                </div>
               </div>
             )}
           </div>
@@ -201,12 +208,15 @@ export function ScanPage() {
             <ul className="divide-y divide-line">
               {shown.slice(0, 60).map(({ s, state, list }) => (
                 <li key={s.id} className="flex items-center justify-between gap-2 py-2.5">
-                  <div className="min-w-0">
-                    <p className="font-semibold text-heading">{studentName(s)}</p>
-                    <p className="text-xs text-muted">
-                      {groupLabel(db, s.groupId)}
-                      {list.length > 0 && ` · ${list.map((c) => `${c.type === 'entrada' ? 'entró' : 'salió'} ${c.at.slice(11, 16)}`).join(', ')}`}
-                    </p>
+                  <div className="flex min-w-0 items-center gap-3">
+                    <Avatar name={studentName(s)} src={s.photo} size={36} />
+                    <div className="min-w-0">
+                      <p className="font-semibold text-heading">{studentName(s)}</p>
+                      <p className="text-xs text-muted">
+                        {groupLabel(db, s.groupId)}
+                        {list.length > 0 && ` · ${list.map((c) => `${c.type === 'entrada' ? 'entró' : 'salió'} ${c.at.slice(11, 16)}`).join(', ')}`}
+                      </p>
+                    </div>
                   </div>
                   {state === 'dentro' && <Badge tone="exito">Dentro</Badge>}
                   {state === 'salio' && <Badge tone="info">Salió</Badge>}

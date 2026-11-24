@@ -44,7 +44,7 @@ export function FamilyHome() {
             return (
               <Card key={k.id} as="article">
                 <div className="flex items-center gap-3">
-                  <Avatar name={`${k.firstName} ${k.lastName}`} size={48} />
+                  <Avatar name={`${k.firstName} ${k.lastName}`} src={k.photo} size={48} />
                   <div className="min-w-0">
                     <h2 className="text-lg font-bold text-heading">{k.firstName} {k.lastName}</h2>
                     <p className="text-sm text-muted">{groupLabel(db, k.groupId)}</p>

@@ -4,6 +4,8 @@ import { formatDate, todayISO, uid } from '../../lib/format'
 import { groupLabel, subjectName } from '../../lib/scope'
 import { useApp } from '../../state/context'
 import { useManagedGroups } from './useTeacherGroups'
+import { SubjectTag } from '../../components/Subject'
+import { subjectStripe } from '../../lib/subjects'
 
 export function HomeworkPage() {
   const { db, session, act } = useApp()
@@ -52,14 +54,14 @@ export function HomeworkPage() {
           ) : (
             <ul className="divide-y divide-line">
               {list.map((h) => (
-                <li key={h.id} className="flex flex-wrap items-start justify-between gap-2 py-3">
+                <li key={h.id} className="py-3"><div className={`flex flex-wrap items-start justify-between gap-2 ${subjectStripe(db, h.subjectId)}`}>
                   <div className="min-w-0">
                     <p className="font-semibold text-heading">{h.title}</p>
-                    <p className="text-sm text-muted">{groupLabel(db, h.groupId)} · {subjectName(db, h.subjectId)} · entrega {formatDate(h.dueDate)}</p>
+                    <p className="text-sm text-muted">{groupLabel(db, h.groupId)} · <SubjectTag db={db} id={h.subjectId} /> · entrega {formatDate(h.dueDate)}</p>
                     {h.description && <p className="mt-1 text-sm">{h.description}</p>}
                   </div>
                   <Button variant="fantasma" onClick={() => void act((repo) => repo.remove('homework', h.id), { action: 'Eliminó tarea', detail: h.title })}>Eliminar</Button>
-                </li>
+                </div></li>
               ))}
             </ul>
           )}

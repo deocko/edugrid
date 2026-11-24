@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { QrCode } from '../../components/QrCode'
-import { Badge, Card, EmptyState, Notice, PageHeader, Tabs } from '../../components/ui'
+import { Avatar, Badge, Card, EmptyState, Notice, PageHeader, Tabs } from '../../components/ui'
 import { checkinsOfDay, presenceOf } from '../../lib/presence'
 import { formatQrCode, qrPayload } from '../../lib/qr'
 import { groupLabel, studentName, visibleStudents } from '../../lib/scope'
@@ -23,7 +23,8 @@ export function QrPage() {
       {kids.length > 1 && <Tabs label="Credencial de" value={st.id} onChange={setWho} options={kids.map((k) => ({ value: k.id, label: k.firstName }))} />}
       <div className="grid gap-4 lg:grid-cols-[auto_1fr]">
         <Card className="flex flex-col items-center text-center">
-          <p className="text-lg font-bold text-heading">{studentName(st)}</p>
+          <Avatar name={studentName(st)} src={st.photo} size={72} />
+          <p className="mt-2 text-lg font-bold text-heading">{studentName(st)}</p>
           <p className="mb-4 text-sm text-muted">{groupLabel(db, st.groupId)}</p>
           <div className="rounded-2xl bg-white p-3">
             <QrCode value={qrPayload(st.qrCode)} size={232} label={`Código QR de ${studentName(st)}`} />

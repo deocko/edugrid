@@ -1,6 +1,6 @@
 import { useMemo, useState, type FormEvent } from 'react'
 import { Link, useSearchParams } from 'react-router'
-import { Badge, Button, Card, EmptyState, Field, Input, Modal, Notice, PageHeader, Select, Table, Switch, TD, TH } from '../../components/ui'
+import { Avatar, Badge, Button, Card, EmptyState, Field, Input, Modal, Notice, PageHeader, Select, Table, Switch, TD, TH } from '../../components/ui'
 import type { Guardian, Level, Student } from '../../data/types'
 import { formatMoney, nowISO, uid, plural } from '../../lib/format'
 import { studentBalance } from '../../lib/finance'
@@ -99,10 +99,15 @@ export function Students() {
                 return (
                   <tr key={s.id}>
                     <td className={TD}>
-                      <Link to={`/alumnos/${s.id}`} className="font-semibold text-link no-underline hover:underline">
-                        {studentName(s)}
-                      </Link>
-                      <p className="text-xs text-muted">{s.enrollmentId}</p>
+                      <div className="flex items-center gap-3">
+                        <Avatar name={studentName(s)} src={s.photo} size={36} />
+                        <div className="min-w-0">
+                          <Link to={`/alumnos/${s.id}`} className="font-semibold text-link no-underline hover:underline">
+                            {studentName(s)}
+                          </Link>
+                          <p className="text-xs text-muted">{s.enrollmentId}</p>
+                        </div>
+                      </div>
                     </td>
                     <td className={TD}>{groupLabel(db, s.groupId)}</td>
                     <td className={`${TD} hidden md:table-cell`}>{consent ? <Badge tone="exito">Firmado</Badge> : <Badge tone="aviso">Pendiente</Badge>}</td>

@@ -1,8 +1,11 @@
 import { useState, type FormEvent } from 'react'
-import { Badge, Button, Card, Field, Input, Modal, Notice, PageHeader, Select, Tabs } from '../../components/ui'
-import type { Level } from '../../data/types'
+import { Badge, Button, Card, Field, Input, Modal, Notice, PageHeader, Select, Switch, Tabs } from '../../components/ui'
+import { ColorPicker, SubjectDot } from '../../components/Subject'
+import { subjectCard } from '../../lib/subjects'
+import type { Level, Subject, SubjectColor } from '../../data/types'
 import { formatDate, uid, plural } from '../../lib/format'
 import { LEVEL_LABEL, LEVELS, groupLabel, levelOfGroup, subjectName, teacherName } from '../../lib/scope'
+import { SUBJECT_COLORS, suggestColor } from '../../lib/subjects'
 import { useApp } from '../../state/context'
 
 type View = 'grupos' | 'ciclos' | 'materias'
@@ -153,11 +156,15 @@ function SubjectsView() {
   const { db, act } = useApp()
   const [level, setLevel] = useState<Level>('primaria')
   const [name, setName] = useState('')
+  const [color, setColor] = useState<SubjectColor | null>(null)
+  const [editing, setEditing] = useState<Subject | null>(null)
+  const chosen = color ?? suggestColor(db, name, level)
   const add = async (e: FormEvent) => {
     e.preventDefault()
     if (!name.trim()) return
-    await act((repo) => repo.insert('subjects', [{ id: uid('s'), name: name.trim(), level }]), { action: 'Agregó materia', detail: `${name} (${LEVEL_LABEL[level]})` })
+    await act((repo) => repo.insert('subjects', [{ id: uid('s'), name: name.trim(), level, color: chosen }]), { action: 'Agregó materia', detail: `${name} (${LEVEL_LABEL[level]})` })
     setName('')
+    setColor(null)
   }
   return (
     <div className="grid gap-4 lg:grid-cols-3">
@@ -166,11 +173,22 @@ function SubjectsView() {
           <Card key={l} title={LEVEL_LABEL[l]}>
             <ul className="flex flex-wrap gap-2">
               {db.subjects.filter((s) => s.level === l).map((s) => (
-                <li key={s.id}><Badge>{s.name}</Badge></li>
+                <li key={s.id}>
+                  <button
+                    type="button"
+                    onClick={() => setEditing(s)}
+                    className={`inline-flex min-h-11 items-center gap-2 rounded-xl px-3 text-sm font-semibold text-[var(--s-ink)] ${subjectCard(db, s.id)} hover:brightness-95`}
+                    aria-label={`${s.name}: cambiar color`}
+                  >
+                    <SubjectDot db={db} id={s.id} />
+                    {s.name}
+                  </button>
+                </li>
               ))}
             </ul>
           </Card>
         ))}
+        <p className="text-sm text-muted sm:col-span-2">Toca una materia para cambiar su color. Ese color se usa en horarios, tareas, calificaciones, calendario y boleta.</p>
       </div>
       <Card title="Nueva materia" className="h-fit">
         <form onSubmit={(e) => void add(e)} className="space-y-3">
@@ -182,9 +200,40 @@ function SubjectsView() {
             )}
           </Field>
           <Field label="Nombre de la materia">{(id) => <Input id={id} value={name} onChange={(e) => setName(e.target.value)} />}</Field>
+          <ColorPicker legend="Color" value={chosen} onChange={setColor} />
           <Button type="submit" icon="mas" className="w-full">Agregar materia</Button>
         </form>
       </Card>
+      <Modal open={!!editing} onClose={() => setEditing(null)} title={editing ? `Color de ${editing.name}` : ''}>
+        {editing && <SubjectColorForm subject={editing} onDone={() => setEditing(null)} />}
+      </Modal>
+    </div>
+  )
+}
+
+function SubjectColorForm({ subject, onDone }: { subject: Subject; onDone: () => void }) {
+  const { db, act } = useApp()
+  const [color, setColor] = useState<SubjectColor>(subject.color)
+  const twins = db.subjects.filter((s) => s.id !== subject.id && s.name.trim().toLowerCase() === subject.name.trim().toLowerCase())
+  const [all, setAll] = useState(true)
+  const save = async () => {
+    const ids = [subject.id, ...(all ? twins.map((t) => t.id) : [])]
+    await act(
+      async (repo) => {
+        for (const id of ids) await repo.update('subjects', id, { color })
+      },
+      { action: 'Cambió color de materia', detail: `${subject.name}: ${SUBJECT_COLORS.find((c) => c.value === color)?.label ?? color}` },
+    )
+    onDone()
+  }
+  return (
+    <div className="space-y-4">
+      <ColorPicker legend="Elige un color" value={color} onChange={setColor} />
+      {twins.length > 0 && <Switch checked={all} onChange={setAll} label={`Usar el mismo color en ${plural(twins.length, 'otro nivel', 'otros niveles')}`} description={twins.map((t) => LEVEL_LABEL[t.level]).join(', ')} />}
+      <div className="flex justify-end gap-2">
+        <Button variant="secundario" onClick={onDone}>Cancelar</Button>
+        <Button icon="check" onClick={() => void save()}>Guardar color</Button>
+      </div>
     </div>
   )
 }

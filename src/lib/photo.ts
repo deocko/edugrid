@@ -25,3 +25,26 @@ export async function compressPhoto(file: File, maxSide = 720, quality = 0.7): P
 
 /** En la demo se guardan como máximo estas fotos (el navegador tiene poco espacio). */
 export const MAX_DEMO_PHOTOS = 20
+
+/** Foto de perfil: recorte cuadrado al centro, 320 px, JPEG (~20 KB). */
+export async function compressAvatar(file: File, side = 320, quality = 0.8): Promise<string> {
+  if (!file.type.startsWith('image/')) throw new Error('El archivo no es una imagen.')
+  const url = URL.createObjectURL(file)
+  try {
+    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const i = new Image()
+      i.onload = () => resolve(i)
+      i.onerror = () => reject(new Error('No se pudo abrir la foto.'))
+      i.src = url
+    })
+    const crop = Math.min(img.naturalWidth, img.naturalHeight)
+    const canvas = document.createElement('canvas')
+    canvas.width = canvas.height = Math.min(side, crop)
+    const ctx = canvas.getContext('2d')
+    if (!ctx) throw new Error('No se pudo procesar la foto.')
+    ctx.drawImage(img, (img.naturalWidth - crop) / 2, (img.naturalHeight - crop) / 2, crop, crop, 0, 0, canvas.width, canvas.height)
+    return canvas.toDataURL('image/jpeg', quality)
+  } finally {
+    URL.revokeObjectURL(url)
+  }
+}

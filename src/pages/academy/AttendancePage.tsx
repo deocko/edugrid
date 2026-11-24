@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router'
 import { ATT_LABEL } from '../../lib/attendance'
-import { Button, Card, EmptyState, Field, Input, Notice, PageHeader, Select } from '../../components/ui'
+import { Avatar, Button, Card, EmptyState, Field, Input, Notice, PageHeader, Select } from '../../components/ui'
 import type { AttendanceRecord, AttendanceStatus } from '../../data/types'
 import { formatDateLong, todayISO, plural } from '../../lib/format'
 import { groupLabel, studentName } from '../../lib/scope'
@@ -77,7 +77,7 @@ export function AttendancePage() {
           <ul className="divide-y divide-line">
             {students.map((s) => (
               <li key={s.id} className="flex flex-col gap-2 py-3 md:flex-row md:items-center md:justify-between">
-                <p className="font-semibold text-heading">{studentName(s)}</p>
+                <p className="flex items-center gap-3 font-semibold text-heading"><Avatar name={studentName(s)} src={s.photo} size={36} />{studentName(s)}</p>
                 <div role="radiogroup" aria-label={`Asistencia de ${studentName(s)}`} className="grid grid-cols-4 gap-1.5 md:flex">
                   {STATUSES.map((st) => {
                     const on = value(s.id) === st

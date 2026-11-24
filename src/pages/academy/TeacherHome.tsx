@@ -3,6 +3,8 @@ import { Badge, Card, EmptyState, LinkButton, PageHeader, Stat } from '../../com
 import { DAYS, demoDate, formatDate, todayISO } from '../../lib/format'
 import { groupLabel, subjectName, teacherGroupIds, visibleAnnouncements } from '../../lib/scope'
 import { useApp } from '../../state/context'
+import { SubjectTag } from '../../components/Subject'
+import { subjectStripe } from '../../lib/subjects'
 
 export function TeacherHome() {
   const { db, session } = useApp()
@@ -34,7 +36,7 @@ export function TeacherHome() {
             <ul className="divide-y divide-line">
               {classes.map((c) => (
                 <li key={c.id} className="flex flex-wrap items-center justify-between gap-2 py-2.5">
-                  <div>
+                  <div className={subjectStripe(db, c.subjectId)}>
                     <p className="font-semibold text-heading">{subjectName(db, c.subjectId)}</p>
                     <p className="text-sm text-muted">{c.start} – {c.end} · {groupLabel(db, c.groupId)}</p>
                   </div>
@@ -61,8 +63,10 @@ export function TeacherHome() {
             <ul className="divide-y divide-line">
               {homework.slice(0, 5).map((h) => (
                 <li key={h.id} className="py-2.5">
-                  <p className="font-semibold text-heading">{h.title}</p>
-                  <p className="text-sm text-muted">{groupLabel(db, h.groupId)} · {subjectName(db, h.subjectId)} · entrega {formatDate(h.dueDate)}</p>
+                  <div className={subjectStripe(db, h.subjectId)}>
+                    <p className="font-semibold text-heading">{h.title}</p>
+                    <p className="text-sm text-muted">{groupLabel(db, h.groupId)} · <SubjectTag db={db} id={h.subjectId} /> · entrega {formatDate(h.dueDate)}</p>
+                  </div>
                 </li>
               ))}
             </ul>

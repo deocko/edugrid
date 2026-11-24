@@ -69,6 +69,7 @@ node scripts/qa.mjs            # 390/768/1024/1440 px, claro y oscuro, contraste
 node scripts/consistencia.mjs  # mismos datos en todas las vistas (Mateo, asistencia, horario, tareas, avisos...)
 node scripts/e2e.mjs           # flujo completo: inscripción → pago → factura demo
 node scripts/e2e-comunicacion.mjs  # QR con cámara simulada, novedades con foto, chat, familias, aulas y clases (requiere ffmpeg)
+node scripts/e2e-fotos-colores.mjs # foto del alumno y colores de materias en todas las pantallas (requiere ffmpeg)
 ```
 
 ## Despliegue en GitHub Pages

@@ -38,6 +38,15 @@ const subjectsByLevel = {
   preparatoria: ['Matemáticas', 'Lectura y Redacción', 'Física', 'Historia', 'Inglés'],
 }
 
+// Mismo color para la misma materia en todos los niveles.
+const SUBJECT_COLOR = {
+  'Español': 'rojo', 'Lenguaje y comunicación': 'rojo', 'Lectura y Redacción': 'rojo',
+  'Matemáticas': 'azul', 'Pensamiento matemático': 'azul',
+  'Ciencias Naturales': 'verde', 'Ciencias': 'verde', 'Exploración del mundo': 'verde',
+  'Física': 'indigo', 'Historia': 'naranja', 'Inglés': 'morado',
+  'Educación Física': 'turquesa', 'Artes': 'rosa', 'Desarrollo personal y social': 'ambar',
+}
+
 const cycle = { id: 'c2026', name: 'Ciclo 2026-2027', startDate: '2026-08-24', endDate: '2027-07-09', active: true }
 const cycles = [{ id: 'c2025', name: 'Ciclo 2025-2026', startDate: '2025-08-25', endDate: '2026-07-10', active: false }, cycle]
 const periods = [
@@ -54,7 +63,7 @@ const mkTeacher = (specialty, female) => {
   const t = { id: `t${tCount}`, firstName: fn, lastName: `${pick(surnames)} ${pick(surnames)}`, email: `docente${tCount}@demo.edugrid.mx`, phone: `55 0000 ${pad(tCount, 4)}`, specialty, active: true }
   teachers.push(t); return t
 }
-for (const def of levelDefs) for (const name of subjectsByLevel[def.level]) subjects.push({ id: `s-${def.level}-${subjects.length + 1}`, name, level: def.level })
+for (const def of levelDefs) for (const name of subjectsByLevel[def.level]) subjects.push({ id: `s-${def.level}-${subjects.length + 1}`, name, level: def.level, color: SUBJECT_COLOR[name] ?? 'gris' })
 
 const subjFor = (level) => subjects.filter((x) => x.level === level)
 // Docentes por materia para secundaria y prepa
@@ -351,7 +360,7 @@ const chatMessages = [
 
 const db = {
   meta: {
-    seedVersion: 3,
+    seedVersion: 4,
     school: { id: 'esc1', name: 'Colegio Demo EDUGRID', shortName: 'Colegio Demo', cct: 'DEMO-CCT-0000', rvoe: 'DEMO-RVOE-0000', address: 'Av. Ejemplo 123, Col. Demostración, Ciudad de México (DEMO)', phone: '55 0000 0000', email: 'contacto@demo.edugrid.mx', demo: true },
     cfdiConfig: { rfcEmisor: 'DEMO123456T78', razonSocial: 'COLEGIO DEMO EDUGRID S.A. DE C.V.', regimenFiscal: '601', codigoPostal: '03100', serie: 'CFDI-DEMO', nextFolio: 1, pacProvider: 'demo', demo: true },
   },

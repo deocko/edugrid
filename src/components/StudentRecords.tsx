@@ -3,7 +3,8 @@
 import type { Database } from '../data/types'
 import { ATT_LABEL, ATT_TONE, attendanceSummary } from '../lib/attendance'
 import { formatDate } from '../lib/format'
-import { formatScore, isPreschool, levelOfGroup, subjectName } from '../lib/scope'
+import { formatScore, isPreschool, levelOfGroup } from '../lib/scope'
+import { SubjectTag } from './Subject'
 import { Badge, EmptyState, Table, TD, TH } from './ui'
 
 export function AttendanceList({ db, studentId, limit = 10 }: { db: Database; studentId: string; limit?: number }) {
@@ -56,7 +57,7 @@ export function GradesTable({ db, studentId }: { db: Database; studentId: string
         <tbody>
           {subjects.map((sid) => (
             <tr key={sid}>
-              <td className={`${TD} font-semibold text-heading`}>{subjectName(db, sid)}</td>
+              <td className={`${TD} font-semibold text-heading`}><SubjectTag db={db} id={sid} /></td>
               {periods.map((p) => {
                 const r = records.find((x) => x.subjectId === sid && x.periodId === p.id)
                 const closed = isClosed(sid, p.id)
