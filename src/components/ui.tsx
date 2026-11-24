@@ -6,12 +6,12 @@ type Variant = 'primario' | 'secundario' | 'fantasma' | 'peligro'
 
 const VARIANT: Record<Variant, string> = {
   primario: 'bg-primary text-on-primary hover:bg-primary-hover border border-transparent',
-  secundario: 'bg-surface text-heading border border-line hover:bg-surface-2',
-  fantasma: 'bg-transparent text-link border border-transparent hover:bg-surface-2',
+  secundario: 'bg-surface text-link border border-link/40 hover:bg-info-bg hover:border-link',
+  fantasma: 'bg-transparent text-link border border-transparent hover:bg-info-bg',
   peligro: 'bg-danger-bg text-danger border border-danger/40 hover:brightness-95',
 }
 
-const BASE = 'inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-60'
+const BASE = 'inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 disabled:active:scale-100'
 
 export function Button({ variant = 'primario', icon, children, className = '', ...rest }: ButtonHTMLAttributes<HTMLButtonElement> & { variant?: Variant; icon?: IconName }) {
   return (
@@ -33,7 +33,7 @@ export function LinkButton({ to, variant = 'primario', icon, children, className
 
 export function Card({ children, className = '', title, action, as: As = 'section' }: { children: ReactNode; className?: string; title?: ReactNode; action?: ReactNode; as?: 'section' | 'div' | 'article' }) {
   return (
-    <As className={`min-w-0 rounded-2xl border border-line bg-surface p-4 shadow-sm sm:p-5 ${className}`}>
+    <As className={`min-w-0 rounded-2xl border border-line bg-surface p-4 sm:p-6 ${className}`}>
       {(title || action) && (
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
           {title && <h2 className="text-base font-bold text-heading">{title}</h2>}
@@ -47,9 +47,9 @@ export function Card({ children, className = '', title, action, as: As = 'sectio
 
 export function PageHeader({ title, subtitle, actions }: { title: string; subtitle?: ReactNode; actions?: ReactNode }) {
   return (
-    <header className="mb-5 flex flex-wrap items-end justify-between gap-3">
+    <header className="mb-6 flex flex-wrap items-end justify-between gap-3">
       <div className="min-w-0">
-        <h1 className="text-2xl font-extrabold tracking-tight text-heading sm:text-3xl">{title}</h1>
+        <h1 className="text-2xl font-bold tracking-tight text-heading sm:text-3xl">{title}</h1>
         {subtitle && <p className="mt-1 text-muted">{subtitle}</p>}
       </div>
       {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
@@ -126,7 +126,7 @@ export function Notice({ tone = 'info', icon = 'alerta', children }: { tone?: To
 
 export function Stat({ label, value, hint, icon, tone = 'neutro' }: { label: string; value: ReactNode; hint?: ReactNode; icon?: IconName; tone?: Tone }) {
   return (
-    <div className="min-w-0 rounded-2xl border border-line bg-surface p-4 shadow-sm">
+    <div className="min-w-0 rounded-2xl border border-line bg-surface p-4 sm:p-5">
       <div className="flex items-center justify-between gap-2">
         <p className="text-sm font-medium text-muted">{label}</p>
         {icon && (
@@ -135,7 +135,7 @@ export function Stat({ label, value, hint, icon, tone = 'neutro' }: { label: str
           </span>
         )}
       </div>
-      <p className="mt-2 text-2xl font-extrabold text-heading">{value}</p>
+      <p className="mt-2 text-xl font-bold tabular-nums break-words text-heading sm:text-2xl">{value}</p>
       {hint && <p className="mt-1 text-xs text-muted">{hint}</p>}
     </div>
   )
