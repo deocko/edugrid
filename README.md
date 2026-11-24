@@ -12,7 +12,7 @@ EDUGRID es una plataforma web de gestión escolar para escuelas privadas en Méx
 | --- | --- | --- |
 | **EDUGRID Admin** | Dirección y administración | Indicadores, inscripción de alumnos con consentimiento del tutor, edición y baja de alumnos y docentes, asignación de docente por materia y grupo, boleta en PDF, ciclos, trimestres, grados, grupos y materias, matriz de permisos y bitácora. |
 | **Academy** | Docentes | Pase de lista por grupo, captura de calificaciones por grupo y materia con cierre de periodo, tareas y horario. |
-| **Family** | Papás y mamás | Calificaciones (con boleta en PDF), asistencia, tareas, horario, pagos, estado de cuenta, avisos y calendario de **sus hijos únicamente**. |
+| **Family** | Familias | Calificaciones (con boleta en PDF), asistencia, tareas, horario, pagos, estado de cuenta, avisos y calendario de **sus hijos únicamente**. |
 | **Student** | Alumnos | Horario, tareas, calificaciones y avisos. En primaria la vista es más sencilla. |
 | **Connect** | Todos | Avisos institucionales (escuela, nivel o grupo) y mensajes de grupo con acuse de lectura. |
 | **Pay** | Administración y familias | Conceptos (inscripción, colegiatura, otros), cargos por alumno, colegiatura masiva del mes, registro de pagos (efectivo, transferencia, tarjeta; solo registro), adeudos, estado de cuenta y recordatorios. |
@@ -20,16 +20,16 @@ EDUGRID es una plataforma web de gestión escolar para escuelas privadas en Méx
 
 ## Cuentas demo
 
-No hay contraseñas. En la pantalla de inicio elige **Entrar como Administrador / Docente / Papá / Alumno** y, si quieres, la cuenta:
+No hay contraseñas. En la pantalla de inicio elige **Entrar como Administrador / Docente / Familia / Alumno** y, si quieres, la cuenta:
 
 | Perfil | Cuenta sugerida | Qué ve |
 | --- | --- | --- |
 | Administrador | Mtra. Patricia Ruiz (Dirección general) | Todo |
-| Docente | Titular de 4° de primaria A | Solo sus grupos |
-| Papá / Mamá | Laura Ortega Salinas (2 hijos: 4° de primaria y 2° de secundaria) | Solo sus hijos |
+| Docente | Carmen Escobedo Salinas · 4° de primaria A (titular) | Solo sus grupos |
+| Familia | Laura Ortega Salinas (2 hijos: Regina en 4° de primaria A y Mateo en 2° de primaria A) | Solo sus hijos |
 | Alumno | Alumno de 4° de primaria (vista sencilla) o de secundaria/prepa | Solo lo suyo |
 
-El botón **Restablecer datos demo** (en la pantalla de inicio) vuelve a cargar los datos de ejemplo.
+El botón **Restablecer datos demo** (en la pantalla de inicio) pide confirmación y vuelve a cargar los datos de ejemplo. La demo simula que hoy es **martes 24 de noviembre de 2026**.
 
 ## Cómo correrlo en tu computadora
 
@@ -47,14 +47,16 @@ npm run build      # revisa tipos y genera dist/
 npx tsc --noEmit   # revisión de tipos
 npm run lint       # lint sin advertencias
 npm run preview    # sirve dist/ en http://localhost:4173/edugrid/
-node scripts/generate-seed.mjs   # regenera los datos demo (src/data/seed.json)
+npm run seed       # regenera los datos demo (src/data/seed.json) con la factura CFDI-DEMO-1
 ```
 
 QA visual (requiere Playwright instalado):
 
 ```bash
 npm run build && npx vite preview --port 4173 &
-node scripts/qa.mjs   # 390/768/1024/1440 px, claro y oscuro, contraste AA, permisos
+node scripts/qa.mjs            # 390/768/1024/1440 px, claro y oscuro, contraste AA, tablas, redacción, permisos
+node scripts/consistencia.mjs  # mismos datos en todas las vistas (Mateo, asistencia, horario, tareas, avisos...)
+node scripts/e2e.mjs           # flujo completo: inscripción → pago → factura demo
 ```
 
 ## Despliegue en GitHub Pages
