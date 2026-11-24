@@ -49,9 +49,43 @@ function hex(h: string): [number, number, number] {
   return [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)]
 }
 
-/** Banda marino con el logotipo oficial en su versión invertida (como indica el manual para fondos oscuros). */
-export function drawBrandHeader(doc: jsPDF) {
+/** Marca que llevan los PDF: la de la escuela si cargó logo; si no, la de EDUGRID. */
+export interface PdfBrand {
+  logo: string | null
+  primary: string
+  accent: string
+}
+
+const rgb = (hex: string): [number, number, number] => {
+  const n = parseInt(hex.replace('#', '').slice(0, 6), 16)
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255]
+}
+
+/**
+ * Banda superior. Con logo de escuela: banda del color de la escuela, su logo sobre placa blanca y «by EDUGRID».
+ * Sin logo: banda marino con el logotipo oficial invertido (como indica el manual para fondos oscuros).
+ */
+export function drawBrandHeader(doc: jsPDF, brand?: PdfBrand, navHex?: string) {
   const W = doc.internal.pageSize.getWidth()
+  if (brand?.logo && navHex) {
+    doc.setFillColor(...rgb(navHex))
+    doc.rect(0, 0, W, 30, 'F')
+    doc.setFillColor(...rgb(brand.accent))
+    doc.rect(0, 30, W, 1.5, 'F')
+    const props = doc.getImageProperties(brand.logo)
+    const h = 16
+    const w = Math.min(60, (props.width / props.height) * h)
+    const hh = (w / ((props.width / props.height) * h)) * h
+    doc.setFillColor(255, 255, 255)
+    doc.roundedRect(8, 4, w + 6, 20, 2, 2, 'F')
+    doc.addImage(brand.logo, 'PNG', 11, 4 + (20 - hh) / 2, w, hh)
+    doc.setTextColor(255, 255, 255)
+    doc.setFontSize(7)
+    doc.setFont('helvetica', 'normal')
+    doc.text('by', 8, 28.2)
+    drawLogo(doc, 11.5, 25.6, 17, 'invertida')
+    return
+  }
   doc.setFillColor(...NAVY)
   doc.rect(0, 0, W, 30, 'F')
   doc.setFillColor(...CYAN)

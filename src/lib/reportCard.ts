@@ -3,6 +3,7 @@ import type { Database } from '../data/types'
 import { formatDate, todayISO } from './format'
 import { CYAN, NAVY, TEXT, drawBrandHeader, drawDemoWatermark } from './pdfBrand'
 import { subjectHex } from './subjects'
+import { brandTokens, brandingOf } from './branding'
 import { averageFor, formatScore, groupLabel, isPreschool, levelOfGroup, studentName, subjectName, teacherName } from './scope'
 import { attendanceSummary } from './attendance'
 
@@ -20,7 +21,8 @@ export async function buildReportCardPdf(db: Database, studentId: string): Promi
   const subjects = db.assignments.filter((a) => a.groupId === student.groupId)
 
   drawDemoWatermark(doc)
-  drawBrandHeader(doc)
+  const brand = brandingOf(db.meta)
+  drawBrandHeader(doc, brand, brandTokens(brand).nav)
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(12)
   doc.text('BOLETA DE CALIFICACIONES', W - 14, 13, { align: 'right' })

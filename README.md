@@ -70,6 +70,8 @@ node scripts/consistencia.mjs  # mismos datos en todas las vistas (Mateo, asiste
 node scripts/e2e.mjs           # flujo completo: inscripción → pago → factura demo
 node scripts/e2e-comunicacion.mjs  # QR con cámara simulada, novedades con foto, chat, familias, aulas y clases (requiere ffmpeg)
 node scripts/e2e-fotos-colores.mjs # foto del alumno y colores de materias en todas las pantallas (requiere ffmpeg)
+node scripts/e2e-marca.mjs         # marca de cada escuela: logo, colores, «by EDUGRID», PDF y lugares de entrada
+QA_MARCA=montesol node scripts/qa.mjs  # QA completo con la marca de una escuela de ejemplo aplicada
 ```
 
 ## Despliegue en GitHub Pages

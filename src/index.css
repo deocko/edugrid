@@ -64,9 +64,9 @@
 }
 
 @theme inline {
-  --color-navy: #101d32;
+  --color-navy: var(--c-brand-navy, #101d32);
   --color-electric: #1769d2;
-  --color-cyan: #35c5d9;
+  --color-cyan: var(--c-brand-accent, #35c5d9);
   --color-cloud: #f3f6fa;
   --color-brand-text: #243247;
 

@@ -1,12 +1,13 @@
 import { useState, useSyncExternalStore } from 'react'
 import { Link, NavLink, Outlet, useLocation } from 'react-router'
-import { Logo } from '../brand/Logo'
 import { Icon } from '../components/Icon'
 import { Avatar, DemoBadge, Switch } from '../components/ui'
 import { ROLE_LABEL } from '../lib/permissions'
 import { userKey, visibleAnnouncements } from '../lib/scope'
 import { useApp } from '../state/context'
 import { moduleForPath, NAV } from './nav'
+import { ByEdugrid, SchoolLogo } from '../brand/SchoolBrand'
+import { brandingOf } from '../lib/branding'
 
 const darkQuery = () => window.matchMedia('(prefers-color-scheme: dark)')
 const subscribeDark = (cb: () => void) => {
@@ -58,9 +59,9 @@ export function AppShell() {
       {/* Barra lateral (escritorio) */}
       <aside className="sticky top-0 hidden h-dvh flex-col bg-nav text-nav-ink lg:flex" aria-label="Navegación principal">
         <div className="px-5 pt-5 pb-4">
-          <Logo height={30} tone="invertida" />
+          <SchoolLogo height={34} onDark />
           <p className="mt-3 text-sm font-semibold text-white">{db.meta.school.name}</p>
-          <p className="text-xs text-nav-ink/90">Una escuela. Todos conectados.</p>
+          {brandingOf(db.meta).logo ? <ByEdugrid onDark className="mt-1" /> : <p className="text-xs text-nav-ink/90">Una escuela. Todos conectados.</p>}
         </div>
         <nav className="flex-1 overflow-y-auto px-3">
           <ul className="space-y-1">
@@ -93,7 +94,7 @@ export function AppShell() {
         <header className="sticky top-0 z-30 border-b border-line bg-surface/95 backdrop-blur no-print">
           <div className="mx-auto flex max-w-6xl items-center gap-2 px-4 py-2">
             <span className="lg:hidden">
-              <Logo height={26} />
+              <SchoolLogo height={28} />
             </span>
             <span className="hidden lg:inline">
               <DemoBadge label="MODO DEMO" />
@@ -129,7 +130,10 @@ export function AppShell() {
             </p>
           )}
           <Outlet />
-          <p className="mt-8 text-center text-xs text-muted lg:hidden">
+          <div className="mt-8 flex justify-center lg:hidden">
+            <ByEdugrid />
+          </div>
+          <p className="mt-2 text-center text-xs text-muted lg:hidden">
             Datos de ejemplo (DEMO).{' '}
             <Link to="/privacidad" className="font-semibold text-link underline">
               Aviso de privacidad
@@ -137,7 +141,10 @@ export function AppShell() {
           </p>
         </main>
         <footer className="mx-auto hidden w-full max-w-6xl px-4 pb-6 text-xs text-muted lg:block">
-          EDUGRID · Administra tu Escuela · Datos de ejemplo (DEMO), no corresponden a personas reales.
+          <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
+            <ByEdugrid />
+            <span>{brandingOf(db.meta).logo ? db.meta.school.name : 'EDUGRID · Administra tu Escuela'} · Datos de ejemplo (DEMO), no corresponden a personas reales.</span>
+          </span>
         </footer>
       </div>
 
