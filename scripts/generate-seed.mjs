@@ -177,13 +177,17 @@ for (const st of students) for (const day of schoolDays) {
 }
 
 // Calificaciones: 1er trimestre completo y cerrado
+const REGINA_P1 = { 'Español': 8.8, 'Matemáticas': 8.2, 'Ciencias Naturales': 8.6, 'Historia': 8.0, 'Inglés': 8.4, 'Educación Física': 9.0 }
 const gradeRecords = [], closures = []
 for (const g of groups) {
   const level = grades.find((x) => x.id === g.gradeId).level
   const preschool = level === 'maternal' || level === 'kinder'
   for (const a of assignments.filter((x) => x.groupId === g.id)) {
     for (const st of students.filter((x) => x.groupId === g.id)) {
-      const score = preschool ? 2 + Math.floor(rnd() * 3) : Math.min(10, Math.max(6, Math.round((7 + rnd() * 3.4) * 10) / 10))
+      let score = preschool ? 2 + Math.floor(rnd() * 3) : Math.min(10, Math.max(6, Math.round((7 + rnd() * 3.4) * 10) / 10))
+      // Regina (caso de referencia de la revisión): promedio 8.5 en el 1er trimestre
+      const fixed = st.id === 'al1' ? REGINA_P1[subjects.find((x) => x.id === a.subjectId)?.name] : undefined
+      if (fixed !== undefined) score = fixed
       gradeRecords.push({ id: `cal${gradeRecords.length + 1}`, studentId: st.id, groupId: g.id, subjectId: a.subjectId, periodId: 'p1', score, updatedAt: '2026-11-12T18:00:00' })
     }
     closures.push({ id: `ci${closures.length + 1}`, groupId: g.id, subjectId: a.subjectId, periodId: 'p1', closedAt: '2026-11-13T19:00:00', closedBy: a.teacherId })
