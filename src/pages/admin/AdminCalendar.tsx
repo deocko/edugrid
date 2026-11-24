@@ -4,6 +4,7 @@ import { formatDate, todayISO } from '../../lib/format'
 import { audienceLabel, groupLabel, subjectName } from '../../lib/scope'
 import { subjectClass } from '../../lib/subjects'
 import { useApp } from '../../state/context'
+import { WeekAgenda } from '../../components/WeekAgenda'
 
 type Kind = 'evento' | 'periodo' | 'tarea'
 interface Item {
@@ -41,6 +42,9 @@ export function AdminCalendar() {
   return (
     <>
       <PageHeader title="Calendario" subtitle="Eventos de la escuela, trimestres y entregas de tareas de todos los grupos." />
+      <WeekAgenda
+        items={all.map((i) => ({ date: i.date, title: i.title, detail: i.detail, tone: i.subjectId ? `${subjectClass(db, i.subjectId)} border-l-4 border-l-[var(--s)] bg-[var(--s-bg)] text-[var(--s-ink)]` : CHIP[i.kind] }))}
+      />
       <Tabs
         label="Mostrar"
         value={view}

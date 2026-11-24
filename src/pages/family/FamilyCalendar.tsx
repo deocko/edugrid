@@ -4,6 +4,7 @@ import { formatDate, todayISO } from '../../lib/format'
 import { audienceLabel, groupLabel, studentName, subjectName, visibleEvents, visibleStudents } from '../../lib/scope'
 import { useApp } from '../../state/context'
 import { subjectClass } from '../../lib/subjects'
+import { WeekAgenda } from '../../components/WeekAgenda'
 
 interface Item {
   date: string
@@ -45,6 +46,14 @@ export function FamilyCalendar() {
       {kids.length > 1 && (
         <Tabs label="Ver calendario de" value={who} onChange={setWho} options={[{ value: 'todos', label: 'Todos' }, ...kids.map((k) => ({ value: k.id, label: studentName(k) }))]} />
       )}
+      <WeekAgenda
+        items={items.map((i) => ({
+          date: i.date,
+          title: i.title,
+          detail: i.detail,
+          tone: i.kind === 'evento' ? 'bg-info-bg text-info' : i.kind === 'registro' ? 'bg-success-bg text-success' : i.subjectId ? `${subjectClass(db, i.subjectId)} border-l-4 border-l-[var(--s)] bg-[var(--s-bg)] text-[var(--s-ink)]` : 'bg-warning-bg text-warning',
+        }))}
+      />
       {items.length === 0 ? (
         <EmptyState icon="calendario" title="No hay fechas próximas" />
       ) : (

@@ -1,5 +1,7 @@
 import { useEffect, useId, useRef, useState, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes, type TextareaHTMLAttributes } from 'react'
-import { Link } from 'react-router'
+import { Link, useLocation } from 'react-router'
+import { artFor } from '../layout/headerArt'
+import { HeaderArt } from './HeaderArt'
 import { Icon, type IconName } from './Icon'
 
 type Variant = 'primario' | 'secundario' | 'fantasma' | 'peligro'
@@ -46,13 +48,17 @@ export function Card({ children, className = '', title, action, as: As = 'sectio
 }
 
 export function PageHeader({ title, subtitle, actions }: { title: string; subtitle?: ReactNode; actions?: ReactNode }) {
+  const { pathname } = useLocation()
   return (
-    <header className="mb-6 flex flex-wrap items-end justify-between gap-3">
-      <div className="min-w-0">
-        <h1 className="text-2xl font-bold tracking-tight text-heading sm:text-3xl">{title}</h1>
-        {subtitle && <p className="mt-1 text-muted">{subtitle}</p>}
+    <header className="relative isolate mb-6 rounded-3xl bg-linear-to-br from-navy via-navy to-primary px-5 py-6 text-white shadow-md sm:px-8 sm:py-8">
+      <HeaderArt art={artFor(pathname)} />
+      <div className="relative min-w-0 sm:max-w-[calc(100%-15rem)]">
+        <div className="max-w-[calc(100%-4.5rem)] sm:max-w-none">
+          <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl">{title}</h1>
+          {subtitle && <p className="mt-1 text-white/85">{subtitle}</p>}
+        </div>
+        {actions && <div className="mt-4 flex flex-wrap gap-2">{actions}</div>}
       </div>
-      {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
     </header>
   )
 }

@@ -289,6 +289,19 @@ if (!opened.includes('Asistencia de hoy') || !opened.includes('Ver todo de Regin
 await page.screenshot({ path: `${OUT}/familia-expediente-abierto.png`, fullPage: true })
 step('Familia: cada hijo es un expediente contraído (nombre, foto y nivel) que se abre con sus datos')
 
+// 16. Calendario: tira de la semana con hoy marcado; al elegir otro día muestra lo de ese día
+await as('familia', '/familia/calendario')
+const week = page.getByRole('group', { name: 'Días de la semana' })
+if ((await week.getByRole('button').count()) !== 7) fail('La tira de la semana no tiene 7 días')
+if ((await week.getByRole('button', { name: /hoy/ }).getAttribute('aria-pressed')) !== 'true') fail('Hoy no aparece seleccionado')
+await week.getByRole('button', { name: /Viernes.*27/ }).click()
+await page.getByRole('region', { name: 'Agenda de la semana' }).getByText('Junta de Consejo Técnico (sin clases)').waitFor()
+await page.getByRole('button', { name: 'Semana siguiente' }).click()
+await page.getByRole('button', { name: 'Hoy', exact: true }).click()
+if ((await week.getByRole('button', { name: /hoy/ }).getAttribute('aria-pressed')) !== 'true') fail('«Hoy» no regresa al día actual')
+if (!(await page.locator('header').filter({ has: page.getByRole('heading', { level: 1 }) }).locator('svg').count())) fail('El encabezado no tiene ilustración')
+step('Calendario: tira de la semana con hoy marcado y eventos del día elegido; encabezado ilustrado')
+
 if (errors.length) fail(`Errores en la página: ${errors.join(' | ')}`)
 await browser.close()
 console.log('Correcciones del mensaje 8: todo en orden.')
