@@ -20,9 +20,7 @@ export function InvoicePreview({ invoice, school }: { invoice: Invoice; school: 
         DEMO
       </span>
       <header className="flex flex-wrap items-center justify-between gap-2 bg-[#101D32] px-4 py-3 text-white">
-        <span className="rounded-lg bg-white px-2 py-1">
-          <Logo height={22} plate="never" />
-        </span>
+        <Logo height={24} tone="invertida" />
         <div className="text-right text-xs">
           <p className="text-sm font-bold">Factura electrónica (CFDI 4.0)</p>
           <p>{invoice.serie}-{invoice.folio} · {invoice.fecha.replace('T', ' ')}</p>

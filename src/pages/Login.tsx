@@ -76,9 +76,7 @@ export function Login() {
     <div className="min-h-dvh bg-bg">
       <div className="bg-navy text-white">
         <div className="mx-auto flex max-w-5xl flex-col gap-4 px-4 py-8 sm:py-12">
-          <span className="inline-flex w-fit rounded-2xl bg-white px-4 py-3">
-            <Logo height={40} plate="never" />
-          </span>
+          <Logo height={44} tone="invertida" />
           <div>
             <p className="text-sm font-semibold tracking-wide text-cyan uppercase">Administra tu Escuela</p>
             <h1 className="mt-1 text-3xl font-extrabold sm:text-4xl">Una escuela. Todos conectados.</h1>
@@ -132,9 +130,7 @@ export function Login() {
 
         <div className="mt-8 flex flex-col items-start gap-3 border-t border-line pt-6 text-sm text-muted sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-2">
-            <span className="inline-flex rounded-md bg-white p-0.5">
-              <Isotipo size={22} />
-            </span>
+            <Isotipo size={22} />
             <span>
               Cuidamos los datos de niñas, niños y jóvenes.{' '}
               <Link to="/privacidad" className="font-semibold text-link underline">

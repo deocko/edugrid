@@ -57,9 +57,7 @@ export function AppShell() {
       {/* Barra lateral (escritorio) */}
       <aside className="sticky top-0 hidden h-dvh flex-col bg-nav text-nav-ink lg:flex" aria-label="Navegación principal">
         <div className="px-5 pt-5 pb-4">
-          <span className="inline-flex rounded-xl bg-white px-3 py-2">
-            <Logo height={30} plate="never" />
-          </span>
+          <Logo height={30} tone="invertida" />
           <p className="mt-3 text-sm font-semibold text-white">{db.meta.school.name}</p>
           <p className="text-xs text-nav-ink/90">Una escuela. Todos conectados.</p>
         </div>
