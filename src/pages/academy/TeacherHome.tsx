@@ -1,7 +1,8 @@
 import { Link } from 'react-router'
 import { Badge, Card, EmptyState, LinkButton, PageHeader, Stat } from '../../components/ui'
 import { DAYS, demoDate, formatDate, todayISO } from '../../lib/format'
-import { groupLabel, subjectName, teacherGroupIds, teacherName, visibleAnnouncements } from '../../lib/scope'
+import { groupLabel, studentName, subjectName, teacherGroupIds, teacherName, visibleAnnouncements } from '../../lib/scope'
+import { StatList } from '../../components/StatList'
 import { useApp } from '../../state/context'
 import { SubjectTag } from '../../components/Subject'
 import { subjectStripe } from '../../lib/subjects'
@@ -22,15 +23,16 @@ export function TeacherHome() {
   const takenToday = groups.filter((g) => { const ids = db.students.filter((s) => s.groupId === g.id && s.status === 'activo').map((s) => s.id); return ids.length > 0 && ids.every((id) => db.attendance.some((a) => a.studentId === id && a.date === today)) }).length
   const openGrades = db.assignments.filter((a) => a.teacherId === session.personId && !db.closures.some((c) => c.groupId === a.groupId && c.subjectId === a.subjectId && c.periodId === 'p2')).length
   const news = visibleAnnouncements(db, session).slice(0, 3)
+  const myStudents = db.students.filter((s) => groupIds.has(s.groupId) && s.status === 'activo').sort((a, b) => a.groupId.localeCompare(b.groupId) || a.lastName.localeCompare(b.lastName))
 
   return (
     <>
       <PageHeader title={`Hola, ${session.name.split(' ')[0]}`} subtitle="Esto es lo que tienes para hoy." actions={<><LinkButton to="/docente/entradas" icon="qr">Escanear QR</LinkButton><LinkButton to="/docente/novedades" variant="secundario" icon="camara">Enviar novedad</LinkButton></>} />
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Stat label="Mis grupos" value={groups.length} icon="alumnos" tone="info" />
-        <Stat label="Alumnos" value={db.students.filter((s) => groupIds.has(s.groupId) && s.status === 'activo').length} icon="hijo" tone="info" />
-        <Stat label="Listas de hoy" value={`${takenToday}/${groups.length}`} hint="Grupos con asistencia" icon="asistencia" tone="exito" />
-        <Stat label="Calificaciones abiertas" value={openGrades} hint="2º trimestre" icon="calificaciones" tone="aviso" />
+        <Stat label="Mis grupos" value={groups.length} hint="Grupos asignados" icon="alumnos" tone="info" action="Ver grupos" details={<StatList rows={groups.map((g) => ({ key: g.id, label: groupLabel(db, g), value: `${g.homeroomTeacherId === session.personId ? 'Titular · ' : ''}${db.students.filter((s) => s.groupId === g.id && s.status === 'activo').length} alumnos`, to: `/docente/asistencia?grupo=${g.id}` }))} />} />
+        <Stat label="Alumnos" value={myStudents.length} hint="Alumnos activos" icon="hijo" tone="info" action="Ver alumnos" details={<StatList rows={myStudents.map((s) => ({ key: s.id, label: studentName(s), value: groupLabel(db, s.groupId), to: `/alumnos/${s.id}` }))} />} />
+        <Stat label="Listas de hoy" value={`${takenToday}/${groups.length}`} hint={takenToday === groups.length ? 'Asistencia completa' : 'Grupos con asistencia'} icon="asistencia" tone="exito" progress={groups.length ? takenToday / groups.length : 0} to="/docente/asistencia" action="Pasar lista" />
+        <Stat label="Calificaciones abiertas" value={openGrades} hint="2º trimestre · por capturar" icon="calificaciones" tone="aviso" to="/docente/calificaciones" action="Capturar" />
       </div>
       <div className="mt-4 grid gap-4 lg:grid-cols-3">
         <Card title={`Clases del ${DAYS[day]?.toLowerCase()}`} action={classes.length > 0 && <span className="text-sm text-muted">{mine} de {classes.length} las impartes tú</span>} className="lg:col-span-2">

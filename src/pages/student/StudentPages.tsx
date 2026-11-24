@@ -1,9 +1,10 @@
 import { Link } from 'react-router'
 import { ReportCardButton } from '../../components/ReportCardButton'
 import { ScheduleView } from '../../components/ScheduleView'
-import { GradesTable } from '../../components/StudentRecords'
+import { AttendanceList, GradesTable } from '../../components/StudentRecords'
+import { StatList } from '../../components/StatList'
 import { Card, EmptyState, PageHeader, Stat } from '../../components/ui'
-import { attendanceSummary } from '../../lib/attendance'
+import { ATT_LABEL, attendanceSummary } from '../../lib/attendance'
 import { DAYS, demoDate, formatDate, todayISO } from '../../lib/format'
 import { averageFor, formatAverage, groupLabel, levelOfGroup, visibleAnnouncements } from '../../lib/scope'
 import { useApp } from '../../state/context'
@@ -56,9 +57,9 @@ export function StudentHome() {
       <PageHeader title={simple ? `¡Hola, ${me.firstName}!` : `Hola, ${me.firstName}`} subtitle={groupLabel(db, me.groupId)} />
       {!simple && (
         <div className="mb-4 grid grid-cols-2 gap-3 lg:grid-cols-3">
-          <Stat label="Promedio 1er trimestre" value={formatAverage(avg)} icon="calificaciones" tone="info" />
-          <Stat label="Asistencia" value={`${att.rate}%`} icon="asistencia" tone="exito" />
-          <Stat label="Faltas" value={att.falta} icon="alerta" tone="aviso" />
+          <Stat label="Promedio 1er trimestre" value={formatAverage(avg)} icon="calificaciones" tone="info" progress={avg === null ? undefined : avg / 10} to="/alumno/calificaciones" action="Ver boleta" />
+          <Stat label="Asistencia" value={`${att.rate}%`} hint={`${att.list.length} días registrados`} icon="asistencia" tone="exito" progress={att.rate / 100} details={<AttendanceList db={db} studentId={me.id} limit={30} />} />
+          <Stat label="Faltas" value={att.falta} hint={att.retardo ? `y ${att.retardo} ${att.retardo === 1 ? 'retardo' : 'retardos'}` : undefined} icon="alerta" tone="aviso" action="Ver fechas" details={<StatList rows={att.list.filter((a) => a.status !== 'presente').map((a) => ({ key: a.id, label: formatDate(a.date), value: ATT_LABEL[a.status] }))} empty="No tienes faltas ni retardos. ¡Muy bien!" />} />
         </div>
       )}
       <div className="grid gap-4 lg:grid-cols-2">

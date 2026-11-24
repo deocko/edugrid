@@ -19,6 +19,7 @@ const S = {
   familia: { role: 'familia', personId: 'tu0', name: 'Laura Ortega Salinas' },
   mateo: { role: 'alumno', personId: 'al2', name: 'Mateo Méndez Ortega' },
   regina: { role: 'alumno', personId: 'al1', name: 'Regina Méndez Ortega' },
+  secundaria: { role: 'alumno', personId: 'al41', name: 'Alumno secundaria' },
 }
 
 const browser = await chromium.launch()
@@ -210,6 +211,7 @@ const tiles = ['Familias', 'Docentes', 'Calificaciones', 'Calendario', 'Clases',
 for (const t of tiles) if (!(await page.locator('main').getByRole('link', { name: new RegExp(`^${t}`) }).count())) fail(`Falta la tarjeta «${t}» en Configuración`)
 await page.screenshot({ path: `${OUT}/admin-configuracion-celular.png`, fullPage: true })
 await page.locator('main').getByRole('link', { name: /^Aulas/ }).click()
+await page.waitForURL(/admin\/aulas/)
 await page.getByRole('heading', { level: 1 }).waitFor()
 if ((await bottom.getByRole('link', { name: 'Configuración' }).getAttribute('aria-current')) !== 'page') fail('«Configuración» no queda marcada al entrar a una sección')
 await page.setViewportSize({ width: 1280, height: 900 })
@@ -230,11 +232,43 @@ for (const [who, cards] of Object.entries(HUBS)) {
   for (const t of cards) if (!(await page.locator('main').getByRole('link', { name: new RegExp(`^${t}`) }).count())) fail(`${who}: falta la tarjeta «${t}»`)
   await page.screenshot({ path: `${OUT}/mas-${who}.png`, fullPage: true })
   await page.locator('main').getByRole('link', { name: new RegExp(`^${cards[0]}`) }).click()
+  await page.waitForURL((u) => !u.hash.includes('/mas'))
   await page.getByRole('heading', { level: 1 }).waitFor()
   if ((await nav.getByRole('link', { name: /^Más/ }).getAttribute('aria-current')) !== 'page') fail(`${who}: «Más» no queda marcada al entrar a una sección`)
 }
 await page.setViewportSize({ width: 1280, height: 900 })
 step('Docente, familia y alumno: «Más» abre tarjetas pastel con sus secciones')
+
+// 14. Los indicadores del tablero son interactivos: llevan a su detalle, abren su listado o muestran avance
+await as('docente', '/docente')
+const tile = (name) => page.locator('main').getByRole('button', { name: new RegExp(`^${name}`) }).or(page.locator('main').getByRole('link', { name: new RegExp(`^${name}`) })).first()
+await tile('Mis grupos').click()
+await page.getByRole('dialog', { name: 'Mis grupos' }).getByRole('link', { name: /4° de primaria A/ }).waitFor()
+await page.getByRole('dialog').getByRole('button', { name: 'Cerrar' }).click()
+await tile('Alumnos').click()
+if ((await page.getByRole('dialog', { name: 'Alumnos' }).getByRole('link').count()) < 4) fail('«Alumnos» no lista a los alumnos de la docente')
+await page.getByRole('dialog').getByRole('button', { name: 'Cerrar' }).click()
+if (!(await page.locator('main').getByRole('progressbar', { name: /Listas de hoy/ }).count())) fail('«Listas de hoy» no muestra barra de avance')
+await tile('Calificaciones abiertas').click()
+await page.waitForURL(/docente\/calificaciones/)
+await as('admin', '/admin')
+await tile('Cobrado este mes').click()
+await page.waitForURL(/pagos\?vista=cargos/)
+await as('admin', '/pagos')
+await tile('Adeudo vencido').click()
+await page.getByRole('dialog', { name: 'Adeudo vencido' }).getByRole('link').first().click()
+await page.waitForURL(/pagos\/estado\//)
+await as('familia', '/familia')
+await page.locator('main').getByRole('link', { name: /^Asistencia/ }).first().click()
+await page.waitForURL(/vista=asistencia/)
+await page.getByRole('tab', { name: 'Asistencia', selected: true }).waitFor()
+await as('secundaria', '/alumno')
+await tile('Faltas').click()
+await page.getByRole('dialog', { name: 'Faltas' }).waitFor()
+await page.getByRole('dialog').getByRole('button', { name: 'Cerrar' }).click()
+await tile('Promedio 1er trimestre').click()
+await page.waitForURL(/alumno\/calificaciones/)
+step('Los indicadores del tablero llevan a su detalle, abren su listado o muestran una barra de avance')
 
 if (errors.length) fail(`Errores en la página: ${errors.join(' | ')}`)
 await browser.close()

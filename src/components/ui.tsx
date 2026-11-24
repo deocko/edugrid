@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes, type TextareaHTMLAttributes } from 'react'
+import { useEffect, useId, useRef, useState, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes, type TextareaHTMLAttributes } from 'react'
 import { Link } from 'react-router'
 import { Icon, type IconName } from './Icon'
 
@@ -124,21 +124,77 @@ export function Notice({ tone = 'info', icon = 'alerta', children }: { tone?: To
   )
 }
 
-export function Stat({ label, value, hint, icon, tone = 'neutro' }: { label: string; value: ReactNode; hint?: ReactNode; icon?: IconName; tone?: Tone }) {
-  return (
-    <div className="min-w-0 rounded-2xl border border-line bg-surface p-4 sm:p-5">
+const TONE_TEXT: Record<Tone, string> = { neutro: 'text-link', exito: 'text-success', aviso: 'text-warning', peligro: 'text-danger', info: 'text-link' }
+
+/**
+ * Indicador del tablero. Es interactivo: con `to` lleva a la información que resume; con `details`
+ * abre el listado en una ventana. `progress` (0 a 1) dibuja una barra cuando el dato es «parte de».
+ */
+export function Stat({
+  label,
+  value,
+  hint,
+  icon,
+  tone = 'neutro',
+  to,
+  action,
+  progress,
+  details,
+}: {
+  label: string
+  value: ReactNode
+  hint?: ReactNode
+  icon?: IconName
+  tone?: Tone
+  to?: string
+  action?: string
+  progress?: number
+  details?: ReactNode
+}) {
+  const [open, setOpen] = useState(false)
+  const pct = progress === undefined ? null : Math.round(Math.min(1, Math.max(0, progress)) * 100)
+  const interactive = !!(to || details)
+  const body = (
+    <>
       <div className="flex min-h-10 items-start justify-between gap-2">
-        <p className="text-sm leading-5 font-medium text-muted">{label}</p>
+        <span className="text-sm leading-5 font-medium text-muted">{label}</span>
         {icon && (
           <span className={`rounded-xl p-2 ${TONE[tone]}`}>
             <Icon name={icon} size={18} />
           </span>
         )}
       </div>
-      <p className="mt-2 text-base font-bold tabular-nums break-words text-heading min-[360px]:text-lg min-[400px]:text-xl sm:text-2xl">{value}</p>
-      {hint && <p className="mt-1 text-xs text-muted">{hint}</p>}
-    </div>
+      <span className="mt-2 block text-base font-bold tabular-nums break-words text-heading min-[360px]:text-lg min-[400px]:text-xl sm:text-2xl">{value}</span>
+      {pct !== null && (
+        <span className="mt-2 block h-1.5 overflow-hidden rounded-full bg-surface-2" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} aria-label={`${label}: ${pct}%`}>
+          <span className={`block h-full rounded-full bg-current ${TONE_TEXT[tone]}`} style={{ width: `${pct}%` }} />
+        </span>
+      )}
+      {(hint || interactive) && <span className={`block flex-1 ${interactive ? 'min-h-3' : 'min-h-1'}`} aria-hidden="true" />}
+      {(hint || interactive) && (
+        <span className={`flex flex-wrap items-end justify-between gap-x-2 gap-y-1 text-xs ${interactive ? 'border-t border-line pt-2' : ''}`}>
+          {hint ? <span className="text-muted">{hint}</span> : <span />}
+          {interactive && (
+            <span className={`inline-flex items-center gap-0.5 font-semibold ${TONE_TEXT[tone]}`}>
+              {action ?? (details ? 'Ver lista' : 'Ver')}
+              <Icon name="derecha" size={14} className="transition group-hover:translate-x-0.5" />
+            </span>
+          )}
+        </span>
+      )}
+    </>
   )
+  const box = 'group flex h-full min-w-0 flex-col rounded-2xl border border-line bg-surface p-4 text-left sm:p-5'
+  const hover = 'no-underline transition hover:-translate-y-0.5 hover:border-primary hover:shadow-md focus-visible:border-primary'
+  if (to) return <Link to={to} className={`${box} ${hover}`}>{body}</Link>
+  if (details)
+    return (
+      <>
+        <button type="button" onClick={() => setOpen(true)} className={`${box} ${hover} w-full cursor-pointer`} aria-haspopup="dialog">{body}</button>
+        <Modal open={open} onClose={() => setOpen(false)} title={label}>{details}</Modal>
+      </>
+    )
+  return <div className={box}>{body}</div>
 }
 
 const FIELD = 'block w-full min-h-11 rounded-xl border border-line bg-surface px-3 py-2 text-ink placeholder:text-muted focus:border-primary'

@@ -6,6 +6,7 @@ import { demoDate, formatDate, formatMoney, nowISO, todayISO, uid, plural } from
 import { METHOD_LABEL, chargeView, studentCharges } from '../../lib/finance'
 import { LEVEL_LABEL, LEVELS, groupLabel, levelOfGroup, studentName } from '../../lib/scope'
 import { useApp } from '../../state/context'
+import { StatList } from '../../components/StatList'
 
 /** Siguiente referencia REF-DEMO consecutiva, para que todos los pagos tengan una. */
 const nextReference = (refs: string[]) => {
@@ -62,10 +63,10 @@ function Debts() {
   return (
     <>
       <div className="mb-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Stat label="Adeudo vencido" value={formatMoney(total)} icon="alerta" tone="peligro" />
-        <Stat label="Alumnos con atraso" value={rows.length} icon="alumnos" tone="aviso" />
-        <Stat label="Cobrado este mes" value={formatMoney(monthPaid)} icon="pagos" tone="exito" />
-        <Stat label="Recordatorios enviados" value={db.reminders.length} icon="campana" tone="info" />
+        <Stat label="Adeudo vencido" value={formatMoney(total)} icon="alerta" tone="peligro" action="Ver por alumno" details={<StatList rows={[...rows].sort((a, b) => b.overdue - a.overdue).map((r) => ({ key: r.student.id, label: studentName(r.student), value: formatMoney(r.overdue), to: `/pagos/estado/${r.student.id}` }))} empty="No hay adeudos vencidos." />} />
+        <Stat label="Alumnos con atraso" value={rows.length} hint={`de ${plural(db.students.filter((s) => s.status === 'activo').length, 'alumno', 'alumnos')}`} icon="alumnos" tone="aviso" progress={rows.length / Math.max(1, db.students.filter((s) => s.status === 'activo').length)} details={<StatList rows={rows.map((r) => ({ key: r.student.id, label: studentName(r.student), value: groupLabel(db, r.student.groupId), to: `/pagos/estado/${r.student.id}` }))} empty="Todas las familias están al corriente." />} />
+        <Stat label="Cobrado este mes" value={formatMoney(monthPaid)} hint={`${plural(db.payments.filter((p) => p.paidAt.startsWith(month)).length, 'pago', 'pagos')}`} icon="pagos" tone="exito" action="Ver pagos" details={<StatList rows={db.payments.filter((p) => p.paidAt.startsWith(month)).sort((a, b) => b.paidAt.localeCompare(a.paidAt)).map((p) => ({ key: p.id, label: studentName(db.students.find((s) => s.id === p.studentId)), value: `${formatMoney(p.amount)} · ${formatDate(p.paidAt)}`, to: `/pagos/estado/${p.studentId}` }))} empty="Aún no hay pagos este mes." />} />
+        <Stat label="Recordatorios enviados" value={db.reminders.length} icon="campana" tone="info" details={<StatList rows={[...db.reminders].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 50).map((r) => ({ key: r.id, label: studentName(db.students.find((s) => s.id === r.studentId)), value: `${formatMoney(r.amount)} · ${formatDate(r.createdAt)}`, to: `/pagos/estado/${r.studentId}` }))} empty="Aún no se han enviado recordatorios." />} />
       </div>
       <Card title="Alumnos con saldo vencido" action={rows.length > 0 && <Button variant="secundario" icon="campana" onClick={() => void remind(rows)}>Recordar a todos</Button>}>
         {rows.length === 0 ? (

@@ -51,20 +51,21 @@ export function FamilyHome() {
                   </div>
                 </div>
                 <TodayLine db={db} studentId={k.id} />
-                <dl className="mt-4 grid grid-cols-3 gap-2 text-center">
-                  <div className="flex flex-col rounded-xl bg-surface-2 px-1.5 py-2">
-                    <dt className="flex-1 text-xs text-muted">Asistencia</dt>
-                    <dd className="mt-1 text-[0.8125rem] font-bold tabular-nums min-[360px]:text-sm min-[400px]:text-base text-heading sm:text-lg">{att.rate}%</dd>
-                  </div>
-                  <div className="flex flex-col rounded-xl bg-surface-2 px-1.5 py-2">
-                    <dt className="flex-1 text-xs text-muted">{isPreschool(level) ? 'Evaluación' : 'Promedio 1er trim.'}</dt>
-                    <dd className="mt-1 text-[0.8125rem] font-bold tabular-nums min-[360px]:text-sm min-[400px]:text-base text-heading sm:text-lg">{isPreschool(level) ? 'Ver' : formatAverage(avg)}</dd>
-                  </div>
-                  <div className="flex flex-col rounded-xl bg-surface-2 px-1.5 py-2">
-                    <dt className="flex-1 text-xs text-muted">Saldo</dt>
-                    <dd className={`mt-1 text-[0.8125rem] font-bold tabular-nums min-[360px]:text-sm min-[400px]:text-base sm:text-lg ${bal.overdue > 0 ? 'text-danger' : 'text-heading'}`}>{formatMoney(bal.balance)}</dd>
-                  </div>
-                </dl>
+                <div className="mt-4 grid grid-cols-3 gap-2 text-center">
+                  <Link to={`/familia/hijo/${k.id}?vista=asistencia`} className="group flex flex-col rounded-xl bg-surface-2 px-1.5 py-2 no-underline ring-1 ring-transparent transition hover:ring-primary focus-visible:ring-primary">
+                    <span className="block flex-1 text-xs text-muted">Asistencia</span>
+                    <span className="block mt-1 text-[0.8125rem] font-bold tabular-nums min-[360px]:text-sm min-[400px]:text-base text-heading sm:text-lg">{att.rate}%</span>
+                    <span aria-hidden="true" className="mx-auto mt-1 block h-1 w-4/5 overflow-hidden rounded-full bg-line"><span className="block h-full rounded-full bg-success" style={{ width: `${att.rate}%` }} /></span>
+                  </Link>
+                  <Link to={`/familia/hijo/${k.id}?vista=calificaciones`} className="group flex flex-col rounded-xl bg-surface-2 px-1.5 py-2 no-underline ring-1 ring-transparent transition hover:ring-primary focus-visible:ring-primary">
+                    <span className="block flex-1 text-xs text-muted">{isPreschool(level) ? 'Evaluación' : 'Promedio 1er trim.'}</span>
+                    <span className="block mt-1 text-[0.8125rem] font-bold tabular-nums min-[360px]:text-sm min-[400px]:text-base text-heading sm:text-lg">{isPreschool(level) ? 'Ver' : formatAverage(avg)}</span>
+                  </Link>
+                  <Link to={`/familia/hijo/${k.id}?vista=pagos`} className="group flex flex-col rounded-xl bg-surface-2 px-1.5 py-2 no-underline ring-1 ring-transparent transition hover:ring-primary focus-visible:ring-primary">
+                    <span className="block flex-1 text-xs text-muted">Saldo</span>
+                    <span className={`block mt-1 text-[0.8125rem] font-bold tabular-nums min-[360px]:text-sm min-[400px]:text-base sm:text-lg ${bal.overdue > 0 ? 'text-danger' : 'text-heading'}`}>{formatMoney(bal.balance)}</span>
+                  </Link>
+                </div>
                 {bal.overdue > 0 && <p className="mt-2 text-sm font-semibold text-danger">Tienes {formatMoney(bal.overdue)} vencido.</p>}
                 <LinkButton to={`/familia/hijo/${k.id}`} variant="secundario" icon="ojo" className="mt-4 w-full">
                   Ver todo de {k.firstName}

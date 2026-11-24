@@ -14,12 +14,13 @@ import { SubjectTag } from '../../components/Subject'
 import { subjectStripe } from '../../lib/subjects'
 
 type View = 'dia' | 'calificaciones' | 'asistencia' | 'tareas' | 'horario' | 'pagos'
+const VIEWS: View[] = ['dia', 'calificaciones', 'asistencia', 'tareas', 'horario', 'pagos']
 
 export function ChildPage() {
   const { id = '' } = useParams()
   const { db, session, log } = useApp()
   const [params] = useSearchParams()
-  const [view, setView] = useState<View>(params.get('vista') === 'dia' ? 'dia' : 'calificaciones')
+  const [view, setView] = useState<View>(VIEWS.includes(params.get('vista') as View) ? (params.get('vista') as View) : 'calificaciones')
   const student = db.students.find((s) => s.id === id)
   const allowed = canSeeStudent(db, session, id)
   const logged = useRef('')

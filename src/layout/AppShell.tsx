@@ -173,7 +173,7 @@ export function AppShell() {
           ))}
           {rest.length > 0 && (
             <li>
-              <NavLink
+              <Link
                 to={hub.to}
                 className={`relative flex min-h-14 flex-col items-center justify-center gap-0.5 px-0 py-1.5 text-[11px] font-semibold no-underline ${inHub(session.role, location.pathname) ? 'text-link' : 'text-muted'}`}
                 aria-current={inHub(session.role, location.pathname) ? 'page' : undefined}
@@ -184,7 +184,7 @@ export function AppShell() {
                 {session.role !== 'admin' && unread > 0 && hub.items.some((i) => i.to === '/avisos') && (
                   <span className="absolute top-1 right-[calc(50%-20px)] min-w-4 rounded-full bg-cyan px-1 text-[10px] leading-4 font-bold text-navy">{unread}</span>
                 )}
-              </NavLink>
+              </Link>
             </li>
           )}
         </ul>
