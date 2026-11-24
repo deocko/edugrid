@@ -71,6 +71,7 @@ node scripts/e2e.mjs           # flujo completo: inscripción → pago → factu
 node scripts/e2e-comunicacion.mjs  # QR con cámara simulada, novedades con foto, chat, familias, aulas y clases (requiere ffmpeg)
 node scripts/e2e-fotos-colores.mjs # foto del alumno y colores de materias en todas las pantallas (requiere ffmpeg)
 node scripts/e2e-marca.mjs         # marca de cada escuela: logo, colores, «by EDUGRID», PDF y lugares de entrada
+node scripts/e2e-tarjeta.mjs       # tarjeta virtual de la familia: solo tarjetas de prueba, se gira, pago de un cargo
 QA_MARCA=montesol node scripts/qa.mjs  # QA completo con la marca de una escuela de ejemplo aplicada
 ```
 

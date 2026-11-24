@@ -38,6 +38,7 @@ import { StudentGrades, StudentHome, StudentHomework, StudentSchedule } from './
 import { useStore } from './state/context'
 import { BrandStyle } from './brand/SchoolBrand'
 import { SchoolSettings } from './pages/admin/SchoolSettings'
+import { FamilyCards } from './pages/family/FamilyCards'
 
 export function App() {
   const { status, error, session, resetDemo } = useStore()
@@ -91,6 +92,7 @@ export function App() {
 
           <Route path="/familia" element={<RequireRole roles={['familia']}><FamilyHome /></RequireRole>} />
           <Route path="/familia/hijo/:id" element={<RequireRole roles={['familia']}><ChildPage /></RequireRole>} />
+          <Route path="/familia/tarjetas" element={<RequireRole roles={['familia']}><FamilyCards /></RequireRole>} />
           <Route path="/familia/pagos" element={<RequireRole roles={['familia']}><FamilyPayments /></RequireRole>} />
           <Route path="/familia/qr" element={<RequireRole roles={['familia']}><QrPage /></RequireRole>} />
           <Route path="/familia/chat" element={<RequireRole roles={['familia']}><ChatPage /></RequireRole>} />

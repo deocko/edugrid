@@ -360,7 +360,7 @@ const chatMessages = [
 
 const db = {
   meta: {
-    seedVersion: 5,
+    seedVersion: 6,
     school: { id: 'esc1', name: 'Colegio Demo EDUGRID', shortName: 'Colegio Demo', cct: 'DEMO-CCT-0000', rvoe: 'DEMO-RVOE-0000', address: 'Av. Ejemplo 123, Col. Demostración, Ciudad de México (DEMO)', phone: '55 0000 0000', email: 'contacto@demo.edugrid.mx', demo: true },
     cfdiConfig: { rfcEmisor: 'DEMO123456T78', razonSocial: 'COLEGIO DEMO EDUGRID S.A. DE C.V.', regimenFiscal: '601', codigoPostal: '03100', serie: 'CFDI-DEMO', nextFolio: 1, pacProvider: 'demo', demo: true },
     branding: { logo: null, primary: '#1769d2', accent: '#35c5d9' },
@@ -368,7 +368,7 @@ const db = {
   },
   staff, cycles, periods, grades, groups, subjects, teachers, assignments, schedule, guardians, students,
   attendance, gradeRecords, closures, homework, announcements, receipts, events, concepts, charges, payments, reminders, invoices: [], audit,
-  rooms, checkins, studentUpdates, chatThreads, chatMessages, notifications,
+  rooms, checkins, studentUpdates, chatThreads, chatMessages, notifications, cards: [],
 }
 writeFileSync(new URL('../src/data/seed.json', import.meta.url), JSON.stringify(db) + '\n')
 console.log(`Semilla DEMO: ${students.length} alumnos, ${teachers.length} docentes, ${guardians.length} tutores, ${groups.length} grupos, ${charges.length} cargos, ${payments.length} pagos`)

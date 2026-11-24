@@ -235,6 +235,25 @@ export interface Payment {
   invoiceId: string | null
 }
 
+export type CardBrand = 'visa' | 'mastercard' | 'amex'
+
+/**
+ * Tarjeta guardada por una familia. Nunca se guarda el número completo ni el código de seguridad:
+ * solo la marca, los últimos 4 dígitos y el vencimiento. El cobro real irá por un procesador que tokenice.
+ */
+export interface PaymentCard {
+  id: string
+  guardianId: string
+  brand: CardBrand
+  last4: string
+  holder: string
+  expMonth: number
+  expYear: number
+  isDefault: boolean
+  createdAt: string
+  demo: true
+}
+
 export interface Reminder {
   id: string
   studentId: string
@@ -402,6 +421,7 @@ export interface Tables {
   chatThreads: ChatThread
   chatMessages: ChatMessage
   notifications: AppNotification
+  cards: PaymentCard
 }
 
 export type TableName = keyof Tables

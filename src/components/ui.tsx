@@ -130,7 +130,7 @@ export function Stat({ label, value, hint, icon, tone = 'neutro' }: { label: str
       <div className="flex min-h-10 items-start justify-between gap-2">
         <p className="text-sm leading-5 font-medium text-muted">{label}</p>
         {icon && (
-          <span className={`rounded-lg p-1.5 ${TONE[tone]}`}>
+          <span className={`rounded-xl p-2 ${TONE[tone]}`}>
             <Icon name={icon} size={18} />
           </span>
         )}

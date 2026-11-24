@@ -45,6 +45,7 @@ export const NAV: Record<Role, NavItem[]> = {
     { to: '/avisos', label: 'Avisos', icon: 'avisos' },
     { to: '/familia/calendario', label: 'Calendario', icon: 'calendario' },
     { to: '/familia/pagos', label: 'Pagos', icon: 'pagos' },
+    { to: '/familia/tarjetas', label: 'Mis tarjetas', short: 'Tarjetas', icon: 'tarjeta' },
   ],
   alumno: [
     { to: '/alumno', label: 'Inicio', icon: 'inicio', end: true },
@@ -59,6 +60,7 @@ export const NAV: Record<Role, NavItem[]> = {
 /** Módulo de EDUGRID al que pertenece cada vista (se muestra arriba del título). */
 const MODULES: [prefix: string, name: string][] = [
   ['/familia/pagos', 'EDUGRID Pay'],
+  ['/familia/tarjetas', 'EDUGRID Pay'],
   ['/pagos', 'EDUGRID Pay'],
   ['/facturacion', 'EDUGRID Pay'],
   ['/avisos', 'EDUGRID Connect'],
