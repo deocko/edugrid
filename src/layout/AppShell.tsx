@@ -39,6 +39,7 @@ export function AppShell() {
   const items = NAV[session.role]
   const moduleName = moduleForPath(location.pathname)
   const unread = visibleAnnouncements(db, session).filter((a) => !db.receipts.some((r) => r.announcementId === a.id && r.userKey === userKey(session))).length
+  const notes = db.notifications.filter((n) => n.userKey === userKey(session) && !n.readAt).length
   const primary = items.slice(0, 4)
   const rest = items.slice(4)
 
@@ -101,6 +102,10 @@ export function AppShell() {
               <DemoBadge />
             </span>
             <div className="ml-auto flex items-center gap-1">
+              <Link to="/notificaciones" className="relative inline-flex min-h-11 min-w-11 items-center justify-center rounded-xl text-heading no-underline hover:bg-surface-2" aria-label={notes > 0 ? `Notificaciones: ${notes} sin leer` : 'Notificaciones'}>
+                <Icon name="campana" />
+                {notes > 0 && <span className="absolute top-1.5 right-1.5 min-w-4 rounded-full bg-primary px-1 text-center text-[10px] leading-4 font-bold text-on-primary">{notes}</span>}
+              </Link>
               <ThemeToggle />
               <div className="hidden items-center gap-2 pl-2 sm:flex">
                 <Avatar name={session.name} size={34} />

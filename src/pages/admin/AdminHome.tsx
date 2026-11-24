@@ -40,7 +40,10 @@ export function AdminHome() {
         }
         actions={
           <>
-            <LinkButton to="/admin/alumnos?alta=1" icon="mas">
+            <LinkButton to="/admin/entradas" icon="qr">
+              Escanear entradas
+            </LinkButton>
+            <LinkButton to="/admin/alumnos?alta=1" variant="secundario" icon="mas">
               Inscribir alumno
             </LinkButton>
             <LinkButton to="/pagos?registrar=1" variant="secundario" icon="pagos">
