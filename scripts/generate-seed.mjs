@@ -292,14 +292,72 @@ const audit = [
   { id: 'lg1', at: '2026-11-20T09:00:00', actorKey: 'admin:adm1', actorName: 'Mtra. Patricia Ruiz', role: 'admin', action: 'Publicó un aviso', detail: 'Junta de Consejo Técnico: no hay clases', kind: 'cambio' },
 ]
 
+// Aulas: los salones de cada grupo y espacios comunes
+const rooms = groups.map((g, i) => ({ id: `au${i + 1}`, name: g.room, kind: 'salon', capacity: grades.find((x) => x.id === g.gradeId).level === 'maternal' ? 12 : 30, floor: i < 8 ? 'Planta baja' : 'Primer piso', notes: '' }))
+rooms.push(
+  { id: `au${rooms.length + 1}`, name: 'Laboratorio de ciencias', kind: 'laboratorio', capacity: 24, floor: 'Primer piso', notes: 'Batas y lentes de seguridad' },
+  { id: `au${rooms.length + 2}`, name: 'Sala de cómputo', kind: 'computo', capacity: 28, floor: 'Primer piso', notes: '' },
+  { id: `au${rooms.length + 3}`, name: 'Patio y cancha', kind: 'deportivo', capacity: 120, floor: 'Planta baja', notes: '' },
+)
+
+// Código QR de cada alumno: identificador opaco (no lleva nombre ni datos personales)
+const QR_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
+const usedCodes = new Set()
+for (const st of students) {
+  let code
+  do code = Array.from({ length: 8 }, () => QR_ALPHABET[Math.floor(rnd() * QR_ALPHABET.length)]).join('')
+  while (usedCodes.has(code))
+  usedCodes.add(code)
+  st.qrCode = code
+}
+
+// Entradas y salidas con QR: ayer completas y hoy solo entradas (4° A y 2° A de primaria)
+const checkins = [], notifications = []
+const keyOf = (st) => st.guardianIds.map((g) => `familia:${g}`)
+const qrGroups = ['gr-primaria-4A', 'gr-primaria-2A']
+const fixedIn = { al1: '07:42', al2: '07:44' }
+for (const [date, withExit] of [['2026-11-23', true], ['2026-11-24', false]]) {
+  for (const st of students.filter((x) => qrGroups.includes(x.groupId) && x.status === 'activo')) {
+    const tin = fixedIn[st.id] ?? `07:${pad(30 + Math.floor(rnd() * 25))}`
+    checkins.push({ id: `qr${checkins.length + 1}`, studentId: st.id, date, type: 'entrada', at: `${date}T${tin}:00`, scannedBy: 'admin:adm1', scannedByName: 'Mtra. Patricia Ruiz', place: 'Puerta principal' })
+    if (withExit) checkins.push({ id: `qr${checkins.length + 1}`, studentId: st.id, date, type: 'salida', at: `${date}T14:${pad(5 + Math.floor(rnd() * 20))}:00`, scannedBy: 'admin:adm1', scannedByName: 'Mtra. Patricia Ruiz', place: 'Puerta principal' })
+  }
+}
+const regina = students.find((x) => x.id === 'al1'), mateo = students.find((x) => x.id === 'al2')
+for (const c of checkins.filter((x) => x.date === '2026-11-24' && (x.studentId === 'al1' || x.studentId === 'al2'))) {
+  const st = c.studentId === 'al1' ? regina : mateo
+  for (const k of keyOf(st)) notifications.push({ id: `nt${notifications.length + 1}`, userKey: k, kind: 'entrada', title: `${st.firstName} entró a la escuela`, body: `Entrada registrada con QR a las ${c.at.slice(11, 16)} en Puerta principal.`, link: `/familia/hijo/${st.id}?vista=dia`, studentId: st.id, at: c.at, readAt: '2026-11-24T08:30:00' })
+}
+
+// Estatus del día que envían las docentes a las familias
+const mateoTeacher = groups.find((g) => g.id === mateo.groupId).homeroomTeacherId
+const tName = (id) => { const t = teachers.find((x) => x.id === id); return `${t.firstName} ${t.lastName}` }
+const studentUpdates = [
+  { id: 'es1', studentId: 'al2', teacherId: mateoTeacher, teacherName: tName(mateoTeacher), at: '2026-11-23T12:10:00', category: 'comio', text: 'Mateo comió todo su refrigerio y jugó muy bien con sus compañeros en el recreo.', photo: null },
+  { id: 'es2', studentId: 'al1', teacherId: 't14', teacherName: tName('t14'), at: '2026-11-24T10:45:00', category: 'logro', text: 'Regina explicó su avance de la maqueta del sistema digestivo frente al grupo. ¡Muy bien!', photo: null },
+]
+for (const u of studentUpdates) {
+  const st = u.studentId === 'al1' ? regina : mateo
+  for (const k of keyOf(st)) notifications.push({ id: `nt${notifications.length + 1}`, userKey: k, kind: 'estatus', title: `Novedad de ${st.firstName}`, body: `${u.teacherName}: ${u.text}`, link: `/familia/hijo/${st.id}?vista=dia`, studentId: st.id, at: u.at, readAt: u.id === 'es1' ? '2026-11-23T13:00:00' : null })
+}
+
+// Chat entre la titular de 4° A y la mamá de Regina
+const laura = guardians.find((g) => g.id === 'tu0') ?? guardians.find((g) => regina.guardianIds.includes(g.id))
+const chatThreads = [{ id: 'ch1', teacherId: 't14', guardianId: laura.id, studentId: 'al1', createdAt: '2026-11-23T18:20:00' }]
+const chatMessages = [
+  { id: 'cm1', threadId: 'ch1', fromKey: `familia:${laura.id}`, fromName: `${laura.firstName} ${laura.lastName}`, text: 'Buenas tardes, maestra. ¿Regina tiene que llevar material para la maqueta?', at: '2026-11-23T18:20:00', readAt: '2026-11-23T19:00:00' },
+  { id: 'cm2', threadId: 'ch1', fromKey: 'docente:t14', fromName: tName('t14'), text: 'Hola, Laura. Sí: plastilina de colores y una base de cartón de 30 × 30 cm. ¡Gracias!', at: '2026-11-23T19:05:00', readAt: '2026-11-23T20:10:00' },
+]
+
 const db = {
   meta: {
-    seedVersion: 2,
+    seedVersion: 3,
     school: { id: 'esc1', name: 'Colegio Demo EDUGRID', shortName: 'Colegio Demo', cct: 'DEMO-CCT-0000', rvoe: 'DEMO-RVOE-0000', address: 'Av. Ejemplo 123, Col. Demostración, Ciudad de México (DEMO)', phone: '55 0000 0000', email: 'contacto@demo.edugrid.mx', demo: true },
     cfdiConfig: { rfcEmisor: 'DEMO123456T78', razonSocial: 'COLEGIO DEMO EDUGRID S.A. DE C.V.', regimenFiscal: '601', codigoPostal: '03100', serie: 'CFDI-DEMO', nextFolio: 1, pacProvider: 'demo', demo: true },
   },
   staff, cycles, periods, grades, groups, subjects, teachers, assignments, schedule, guardians, students,
   attendance, gradeRecords, closures, homework, announcements, receipts, events, concepts, charges, payments, reminders, invoices: [], audit,
+  rooms, checkins, studentUpdates, chatThreads, chatMessages, notifications,
 }
 writeFileSync(new URL('../src/data/seed.json', import.meta.url), JSON.stringify(db) + '\n')
 console.log(`Semilla DEMO: ${students.length} alumnos, ${teachers.length} docentes, ${guardians.length} tutores, ${groups.length} grupos, ${charges.length} cargos, ${payments.length} pagos`)

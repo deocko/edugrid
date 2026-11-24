@@ -113,6 +113,8 @@ export interface Student {
   createdAt: string
   withdrawnAt?: string
   withdrawReason?: string
+  /** Código opaco de su credencial QR (no contiene datos personales). */
+  qrCode: string
 }
 
 export type AttendanceStatus = 'presente' | 'retardo' | 'falta' | 'justificada'
@@ -277,6 +279,72 @@ export interface AuditEntry {
   kind: 'acceso' | 'cambio' | 'denegado'
 }
 
+export interface Room {
+  id: string
+  name: string
+  kind: 'salon' | 'laboratorio' | 'computo' | 'deportivo' | 'otro'
+  capacity: number
+  floor: string
+  notes: string
+}
+
+/** Entrada o salida registrada al escanear la credencial QR. */
+export interface CheckIn {
+  id: string
+  studentId: string
+  date: string
+  type: 'entrada' | 'salida'
+  at: string
+  scannedBy: string
+  scannedByName: string
+  place: string
+}
+
+export type UpdateCategory = 'llego' | 'comio' | 'participo' | 'logro' | 'necesita' | 'salud' | 'otro'
+
+/** Novedad del día que la docente envía a la familia (con foto opcional). */
+export interface StudentUpdate {
+  id: string
+  studentId: string
+  teacherId: string
+  teacherName: string
+  at: string
+  category: UpdateCategory
+  text: string
+  /** Foto comprimida (data URL JPEG). Solo la ven la familia del alumno, sus docentes y la dirección. */
+  photo: string | null
+}
+
+export interface ChatThread {
+  id: string
+  teacherId: string
+  guardianId: string
+  studentId: string
+  createdAt: string
+}
+
+export interface ChatMessage {
+  id: string
+  threadId: string
+  fromKey: string
+  fromName: string
+  text: string
+  at: string
+  readAt: string | null
+}
+
+export interface AppNotification {
+  id: string
+  userKey: string
+  kind: 'entrada' | 'salida' | 'estatus' | 'chat' | 'aviso'
+  title: string
+  body: string
+  link: string
+  studentId?: string
+  at: string
+  readAt: string | null
+}
+
 export interface Meta {
   seedVersion: number
   school: School
@@ -309,6 +377,12 @@ export interface Tables {
   reminders: Reminder
   invoices: Invoice
   audit: AuditEntry
+  rooms: Room
+  checkins: CheckIn
+  studentUpdates: StudentUpdate
+  chatThreads: ChatThread
+  chatMessages: ChatMessage
+  notifications: AppNotification
 }
 
 export type TableName = keyof Tables
