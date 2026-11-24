@@ -127,15 +127,15 @@ export function Notice({ tone = 'info', icon = 'alerta', children }: { tone?: To
 export function Stat({ label, value, hint, icon, tone = 'neutro' }: { label: string; value: ReactNode; hint?: ReactNode; icon?: IconName; tone?: Tone }) {
   return (
     <div className="min-w-0 rounded-2xl border border-line bg-surface p-4 sm:p-5">
-      <div className="flex items-center justify-between gap-2">
-        <p className="text-sm font-medium text-muted">{label}</p>
+      <div className="flex min-h-10 items-start justify-between gap-2">
+        <p className="text-sm leading-5 font-medium text-muted">{label}</p>
         {icon && (
           <span className={`rounded-lg p-1.5 ${TONE[tone]}`}>
             <Icon name={icon} size={18} />
           </span>
         )}
       </div>
-      <p className="mt-2 text-xl font-bold tabular-nums break-words text-heading sm:text-2xl">{value}</p>
+      <p className="mt-2 text-base font-bold tabular-nums break-words text-heading min-[360px]:text-lg min-[400px]:text-xl sm:text-2xl">{value}</p>
       {hint && <p className="mt-1 text-xs text-muted">{hint}</p>}
     </div>
   )
@@ -243,5 +243,70 @@ export function Avatar({ name, size = 40 }: { name: string; size?: number }) {
     <span aria-hidden="true" style={{ width: size, height: size }} className="inline-flex shrink-0 items-center justify-center rounded-full bg-navy text-sm font-bold text-white ring-2 ring-cyan/60">
       {initials}
     </span>
+  )
+}
+
+/**
+ * Interruptor de encendido/apagado (sí/no, activar/desactivar).
+ * Para una sola opción binaria que surte efecto al momento. Para aceptar términos o
+ * elegir varios elementos de una lista se siguen usando casillas.
+ */
+export function Switch({
+  checked,
+  onChange,
+  label,
+  description,
+  disabled,
+  icons,
+  hideLabel,
+  className = '',
+}: {
+  checked: boolean
+  onChange: (next: boolean) => void
+  label: ReactNode
+  description?: ReactNode
+  disabled?: boolean
+  icons?: { off: IconName; on: IconName }
+  hideLabel?: boolean
+  className?: string
+}) {
+  const id = useId()
+  return (
+    <div className={`flex min-h-11 items-center gap-3 ${className}`}>
+      <button
+        type="button"
+        role="switch"
+        id={id}
+        aria-checked={checked}
+        aria-label={hideLabel && typeof label === 'string' ? label : undefined}
+        aria-describedby={description ? `${id}-d` : undefined}
+        disabled={disabled}
+        onClick={() => onChange(!checked)}
+        className={`group relative inline-flex h-7 w-12 shrink-0 items-center rounded-full border-2 transition-colors duration-200 disabled:cursor-not-allowed disabled:opacity-50 ${
+          checked ? 'border-primary bg-primary' : 'border-muted bg-surface-2'
+        }`}
+      >
+        <span
+          aria-hidden="true"
+          className={`inline-flex items-center justify-center rounded-full shadow-sm transition-all duration-200 motion-reduce:transition-none ${
+            checked ? 'size-5 translate-x-[1.375rem] bg-white text-primary' : `translate-x-1 ${icons ? 'size-5 bg-muted text-surface' : 'size-4 bg-muted'}`
+          }`}
+        >
+          {icons && <Icon name={checked ? icons.on : icons.off} size={13} />}
+        </span>
+      </button>
+      {!hideLabel && (
+        <span className="min-w-0">
+          <label htmlFor={id} className="block cursor-pointer text-sm font-medium text-ink">
+            {label}
+          </label>
+          {description && (
+            <span id={`${id}-d`} className="block text-xs text-muted">
+              {description}
+            </span>
+          )}
+        </span>
+      )}
+    </div>
   )
 }

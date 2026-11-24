@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { Badge, Button, Card, EmptyState, Field, Input, Modal, Notice, PageHeader, Select, Tabs, Textarea } from '../../components/ui'
+import { Badge, Button, Card, EmptyState, Field, Input, Modal, Notice, PageHeader, Select, Tabs, Switch, Textarea } from '../../components/ui'
 import type { Announcement, Audience, Database, Level } from '../../data/types'
 import { formatDateTime, nowISO, uid, plural } from '../../lib/format'
 import { LEVEL_LABEL, LEVELS, audienceLabel, groupLabel, levelOfGroup, teacherGroupIds, userKey, visibleAnnouncements } from '../../lib/scope'
@@ -188,10 +188,7 @@ function Composer({ onDone }: { onDone: (k: View) => void }) {
       )}
       <Field label="Título">{(id) => <Input id={id} value={title} onChange={(e) => setTitle(e.target.value)} />}</Field>
       <Field label="Mensaje">{(id) => <Textarea id={id} rows={5} value={body} onChange={(e) => setBody(e.target.value)} />}</Field>
-      <label className="flex min-h-11 items-center gap-2 text-sm">
-        <input type="checkbox" checked={ack} onChange={(e) => setAck(e.target.checked)} className="size-5 accent-[var(--c-primary)]" />
-        Pedir confirmación de lectura a las familias
-      </label>
+      <Switch checked={ack} onChange={setAck} label="Pedir confirmación de lectura" description="Las familias verán un botón para confirmar que leyeron el aviso." />
       {error && <Notice tone="peligro">{error}</Notice>}
       <div className="flex justify-end">
         <Button type="submit" icon="enviar">Publicar</Button>

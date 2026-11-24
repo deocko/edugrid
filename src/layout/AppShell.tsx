@@ -1,34 +1,34 @@
-import { useState } from 'react'
+import { useState, useSyncExternalStore } from 'react'
 import { Link, NavLink, Outlet, useLocation } from 'react-router'
 import { Logo } from '../brand/Logo'
 import { Icon } from '../components/Icon'
-import { Avatar, DemoBadge } from '../components/ui'
+import { Avatar, DemoBadge, Switch } from '../components/ui'
 import { ROLE_LABEL } from '../lib/permissions'
 import { userKey, visibleAnnouncements } from '../lib/scope'
-import { useApp, type ThemeChoice } from '../state/context'
+import { useApp } from '../state/context'
 import { moduleForPath, NAV } from './nav'
 
-const THEMES: { value: ThemeChoice; label: string; icon: 'sol' | 'luna' | 'pantalla' }[] = [
-  { value: 'claro', label: 'Tema: claro', icon: 'sol' },
-  { value: 'oscuro', label: 'Tema: oscuro', icon: 'luna' },
-  { value: 'sistema', label: 'Tema: según el dispositivo', icon: 'pantalla' },
-]
+const darkQuery = () => window.matchMedia('(prefers-color-scheme: dark)')
+const subscribeDark = (cb: () => void) => {
+  const m = darkQuery()
+  m.addEventListener('change', cb)
+  return () => m.removeEventListener('change', cb)
+}
 
-function ThemeToggle() {
+/** Interruptor claro/oscuro. Mientras no se toque, sigue el tema del dispositivo. */
+function ThemeSwitch() {
   const { theme, setTheme } = useApp()
-  const idx = THEMES.findIndex((t) => t.value === theme)
-  const current = THEMES[idx] ?? THEMES[2]!
-  const next = THEMES[(idx + 1) % THEMES.length]!
+  const systemDark = useSyncExternalStore(subscribeDark, () => darkQuery().matches, () => false)
+  const dark = theme === 'oscuro' || (theme === 'sistema' && systemDark)
   return (
-    <button
-      type="button"
-      onClick={() => setTheme(next.value)}
-      className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-xl text-heading hover:bg-surface-2"
-      aria-label={current.label}
-      title={`${current.label} (toca para cambiar)`}
-    >
-      <Icon name={current.icon} />
-    </button>
+    <Switch
+      checked={dark}
+      onChange={(next) => setTheme(next ? 'oscuro' : 'claro')}
+      label="Modo oscuro"
+      hideLabel
+      icons={{ off: 'sol', on: 'luna' }}
+      className="px-1"
+    />
   )
 }
 
@@ -39,6 +39,7 @@ export function AppShell() {
   const items = NAV[session.role]
   const moduleName = moduleForPath(location.pathname)
   const unread = visibleAnnouncements(db, session).filter((a) => !db.receipts.some((r) => r.announcementId === a.id && r.userKey === userKey(session))).length
+  const notes = db.notifications.filter((n) => n.userKey === userKey(session) && !n.readAt).length
   const primary = items.slice(0, 4)
   const rest = items.slice(4)
 
@@ -101,7 +102,11 @@ export function AppShell() {
               <DemoBadge />
             </span>
             <div className="ml-auto flex items-center gap-1">
-              <ThemeToggle />
+              <Link to="/notificaciones" className="relative inline-flex min-h-11 min-w-11 items-center justify-center rounded-xl text-heading no-underline hover:bg-surface-2" aria-label={notes > 0 ? `Notificaciones: ${notes} sin leer` : 'Notificaciones'}>
+                <Icon name="campana" />
+                {notes > 0 && <span className="absolute top-1.5 right-1.5 min-w-4 rounded-full bg-primary px-1 text-center text-[10px] leading-4 font-bold text-on-primary">{notes}</span>}
+              </Link>
+              <ThemeSwitch />
               <div className="hidden items-center gap-2 pl-2 sm:flex">
                 <Avatar name={session.name} size={34} />
                 <div className="max-w-[12rem] leading-tight">

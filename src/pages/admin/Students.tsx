@@ -1,10 +1,11 @@
 import { useMemo, useState, type FormEvent } from 'react'
 import { Link, useSearchParams } from 'react-router'
-import { Badge, Button, Card, EmptyState, Field, Input, Modal, Notice, PageHeader, Select, Table, TD, TH } from '../../components/ui'
+import { Badge, Button, Card, EmptyState, Field, Input, Modal, Notice, PageHeader, Select, Table, Switch, TD, TH } from '../../components/ui'
 import type { Guardian, Level, Student } from '../../data/types'
 import { formatMoney, nowISO, uid, plural } from '../../lib/format'
 import { studentBalance } from '../../lib/finance'
 import { LEVEL_LABEL, LEVELS, groupLabel, levelOfGroup, studentName } from '../../lib/scope'
+import { newQrCode } from '../../lib/qr'
 import { useApp } from '../../state/context'
 
 const CURP_RE = /^[A-Z]{4}\d{6}[HM][A-Z]{5}[A-Z0-9]\d$/
@@ -78,10 +79,7 @@ export function Students() {
             )}
           </Field>
         </div>
-        <label className="mb-3 inline-flex min-h-11 items-center gap-2 text-sm">
-          <input type="checkbox" checked={showWithdrawn} onChange={(e) => setShowWithdrawn(e.target.checked)} className="size-5 accent-[var(--c-primary)]" />
-          Ver alumnos dados de baja ({db.students.filter((s) => s.status === 'baja').length})
-        </label>
+        <Switch className="mb-3" checked={showWithdrawn} onChange={setShowWithdrawn} label={`Mostrar alumnos dados de baja (${db.students.filter((s) => s.status === 'baja').length})`} />
         {list.length === 0 ? (
           <EmptyState icon="buscar" title={showWithdrawn ? 'No hay alumnos dados de baja' : 'No encontramos alumnos'}>{showWithdrawn ? 'Cuando des de baja a un alumno, aparecerá aquí.' : 'Prueba con otro nombre o quita los filtros.'}</EmptyState>
         ) : (
@@ -152,7 +150,7 @@ function EnrollForm({ onDone }: { onDone: (s: Student) => void }) {
         : null
     if (newGuardian) guardianId = newGuardian.id
     const seq = db.students.length + 1
-    const student: Student = { id: uid('al'), firstName: form.firstName.trim(), lastName: form.lastName.trim(), birthDate: form.birthDate, curp: curp || 'PENDIENTE', groupId: form.groupId, guardianIds: [guardianId], enrollmentId: `DEMO-${String(seq).padStart(4, '0')}`, status: 'activo', createdAt: now }
+    const student: Student = { id: uid('al'), firstName: form.firstName.trim(), lastName: form.lastName.trim(), birthDate: form.birthDate, curp: curp || 'PENDIENTE', groupId: form.groupId, guardianIds: [guardianId], enrollmentId: `DEMO-${String(seq).padStart(4, '0')}`, status: 'activo', createdAt: now, qrCode: newQrCode(db.students.map((x) => x.qrCode)) }
     await act(
       async (repo) => {
         if (newGuardian) await repo.insert('guardians', [newGuardian])

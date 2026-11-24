@@ -19,7 +19,7 @@ export function TeacherHome() {
 
   return (
     <>
-      <PageHeader title={`Hola, ${session.name.split(' ')[0]}`} subtitle="Esto es lo que tienes para hoy." actions={<LinkButton to="/docente/asistencia" icon="asistencia">Pasar lista</LinkButton>} />
+      <PageHeader title={`Hola, ${session.name.split(' ')[0]}`} subtitle="Esto es lo que tienes para hoy." actions={<><LinkButton to="/docente/entradas" icon="qr">Escanear QR</LinkButton><LinkButton to="/docente/novedades" variant="secundario" icon="camara">Enviar novedad</LinkButton></>} />
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Stat label="Mis grupos" value={groups.length} icon="alumnos" tone="info" />
         <Stat label="Alumnos" value={db.students.filter((s) => groupIds.has(s.groupId) && s.status === 'activo').length} icon="hijo" tone="info" />

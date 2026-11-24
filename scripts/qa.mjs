@@ -23,10 +23,10 @@ const sessions = {
 }
 const routes = {
   login: ['/'],
-  admin: ['/admin', '/admin/alumnos', '/admin/alumnos?alta=1', '/alumnos/al1', '/admin/docentes', '/admin/escuela', '/admin/permisos', '/admin/bitacora', '/avisos', '/pagos', '/pagos?registrar=1&alumno=al2', '/pagos?vista=cargos', '/pagos?vista=conceptos', '/pagos/estado/al2', '/facturacion', '/facturacion/configuracion', '/docente/calificaciones'],
-  docente: ['/docente', '/docente/asistencia', '/docente/calificaciones', '/docente/tareas', '/docente/horario', '/avisos'],
-  familia: ['/familia', '/familia/hijo/al1', '/familia/pagos', '/familia/calendario', '/avisos', '/pagos/estado/al2', '/privacidad'],
-  alumnoPrim: ['/alumno', '/alumno/horario', '/alumno/tareas', '/alumno/calificaciones'],
+  admin: ['/admin', '/admin/alumnos', '/admin/alumnos?alta=1', '/alumnos/al1', '/admin/docentes', '/admin/escuela', '/admin/permisos', '/admin/bitacora', '/avisos', '/pagos', '/pagos?registrar=1&alumno=al2', '/pagos?vista=cargos', '/pagos?vista=conceptos', '/pagos/estado/al2', '/facturacion', '/facturacion/configuracion', '/docente/calificaciones', '/admin/entradas', '/admin/familias', '/admin/aulas', '/admin/clases', '/notificaciones'],
+  docente: ['/docente', '/docente/asistencia', '/docente/calificaciones', '/docente/tareas', '/docente/horario', '/avisos', '/docente/entradas', '/docente/novedades', '/docente/chat', '/docente/chat?c=ch1'],
+  familia: ['/familia', '/familia/hijo/al1', '/familia/hijo/al1?vista=dia', '/familia/pagos', '/familia/calendario', '/avisos', '/pagos/estado/al2', '/privacidad', '/familia/qr', '/familia/chat', '/familia/chat?c=ch1', '/notificaciones'],
+  alumnoPrim: ['/alumno', '/alumno/horario', '/alumno/tareas', '/alumno/calificaciones', '/alumno/qr'],
   alumnoSec: ['/alumno', '/alumno/calificaciones', '/avisos'],
 }
 // Accesos que deben bloquearse
@@ -38,6 +38,10 @@ const denied = [
   ['docente', '/pagos'],
   ['alumnoSec', '/familia/hijo/al1'],
   ['alumnoSec', '/facturacion'],
+  ['familia', '/admin/familias'],
+  ['familia', '/docente/entradas'],
+  ['docente', '/admin/entradas'],
+  ['alumnoSec', '/familia/chat'],
 ]
 
 // Errores de redacción que no deben aparecer en ninguna vista
@@ -77,6 +81,7 @@ for (const theme of themes) {
   for (const width of widths) {
     for (const [who, list] of Object.entries(routes)) {
       for (const path of list) {
+        if (process.env.QA_FILTER && !path.includes(process.env.QA_FILTER)) continue
         const { ctx, page, errors } = await open(who, theme, width, path)
         const tag = `${theme} ${width}px ${who} ${path}`
         const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)
