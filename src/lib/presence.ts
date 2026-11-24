@@ -1,6 +1,7 @@
 // Entradas y salidas con QR: la primera lectura del día es la entrada y la
 // siguiente, la salida (y así sucesivamente si el alumno vuelve a entrar).
-import type { AppNotification, CheckIn, Database, Session, Student } from '../data/types'
+import type { AppNotification, AttendanceRecord, CheckIn, Database, Session, Student } from '../data/types'
+import { attendanceFromEntry } from './attendance'
 import { nowISO, todayISO, uid } from './format'
 import { canSeeStudent, groupLabel, studentName, userKey } from './scope'
 import { parseQrInput } from './qr'
@@ -19,7 +20,7 @@ export function presenceOf(db: Database, studentId: string, date = todayISO()): 
 }
 
 export type ScanResult =
-  | { ok: true; student: Student; checkin: CheckIn; notifications: AppNotification[] }
+  | { ok: true; student: Student; checkin: CheckIn; notifications: AppNotification[]; attendance: AttendanceRecord | null }
   | { ok: false; reason: 'codigo' | 'no-encontrado' | 'sin-permiso' | 'repetido' | 'baja'; message: string; student?: Student }
 
 /** Calcula qué registrar al leer un código. No guarda nada: la pantalla decide. */
@@ -51,5 +52,5 @@ export function evaluateScan(db: Database, session: Session, raw: string, place:
     at: now,
     readAt: null,
   }))
-  return { ok: true, student, checkin, notifications }
+  return { ok: true, student, checkin, notifications, attendance: attendanceFromEntry(db, student, checkin) }
 }

@@ -132,6 +132,8 @@ export interface AttendanceRecord {
   date: string
   status: AttendanceStatus
   recordedBy: string
+  /** «qr» cuando la marcó la entrada con QR; la docente puede corregirla en el pase de lista. */
+  source?: 'qr' | 'docente'
 }
 
 export interface GradeRecord {

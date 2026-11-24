@@ -4,7 +4,7 @@ import { formatDate, todayISO } from './format'
 import { CYAN, NAVY, TEXT, drawBrandHeader, drawDemoWatermark } from './pdfBrand'
 import { subjectHex } from './subjects'
 import { brandTokens, brandingOf } from './branding'
-import { averageFor, formatScore, groupLabel, isPreschool, levelOfGroup, studentName, subjectName, teacherName } from './scope'
+import { averageFor, formatAverage, formatScore, groupLabel, isPreschool, levelOfGroup, studentName, subjectName, teacherName } from './scope'
 import { attendanceSummary } from './attendance'
 
 export async function buildReportCardPdf(db: Database, studentId: string): Promise<Blob> {
@@ -87,7 +87,7 @@ export async function buildReportCardPdf(db: Database, studentId: string): Promi
     doc.text('Promedio', 16, y)
     periods.forEach((p, i) => {
       const avg = averageFor(db, student.id, p.id)
-      doc.text(avg === null ? '—' : avg.toFixed(1), 84 + colW * i + colW / 2, y, { align: 'center' })
+      doc.text(formatAverage(avg), 84 + colW * i + colW / 2, y, { align: 'center' })
     })
     y += 8
   }

@@ -5,7 +5,7 @@ import { GradesTable } from '../../components/StudentRecords'
 import { Card, EmptyState, PageHeader, Stat } from '../../components/ui'
 import { attendanceSummary } from '../../lib/attendance'
 import { DAYS, demoDate, formatDate, todayISO } from '../../lib/format'
-import { averageFor, groupLabel, levelOfGroup, visibleAnnouncements } from '../../lib/scope'
+import { averageFor, formatAverage, groupLabel, levelOfGroup, visibleAnnouncements } from '../../lib/scope'
 import { useApp } from '../../state/context'
 import { SubjectTag } from '../../components/Subject'
 import { subjectCard, subjectStripe } from '../../lib/subjects'
@@ -56,7 +56,7 @@ export function StudentHome() {
       <PageHeader title={simple ? `¡Hola, ${me.firstName}!` : `Hola, ${me.firstName}`} subtitle={groupLabel(db, me.groupId)} />
       {!simple && (
         <div className="mb-4 grid grid-cols-2 gap-3 lg:grid-cols-3">
-          <Stat label="Promedio 1er trimestre" value={avg?.toFixed(1) ?? '—'} icon="calificaciones" tone="info" />
+          <Stat label="Promedio 1er trimestre" value={formatAverage(avg)} icon="calificaciones" tone="info" />
           <Stat label="Asistencia" value={`${att.rate}%`} icon="asistencia" tone="exito" />
           <Stat label="Faltas" value={att.falta} icon="alerta" tone="aviso" />
         </div>

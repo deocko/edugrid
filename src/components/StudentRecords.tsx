@@ -3,7 +3,7 @@
 import type { Database } from '../data/types'
 import { ATT_LABEL, ATT_TONE, attendanceSummary } from '../lib/attendance'
 import { formatDate } from '../lib/format'
-import { formatScore, isPreschool, levelOfGroup } from '../lib/scope'
+import { averageFor, formatAverage, formatScore, isPreschool, levelOfGroup } from '../lib/scope'
 import { SubjectTag } from './Subject'
 import { Badge, EmptyState, Table, TD, TH } from './ui'
 
@@ -72,6 +72,16 @@ export function GradesTable({ db, studentId }: { db: Database; studentId: string
             </tr>
           ))}
         </tbody>
+        {!isPreschool(level) && (
+          <tfoot>
+            <tr className="border-t-2 border-line">
+              <th scope="row" className={`${TD} text-left font-bold text-heading`}>Promedio</th>
+              {periods.map((p) => (
+                <td key={p.id} className={`${TD} text-center font-bold tabular-nums text-heading`}>{formatAverage(averageFor(db, studentId, p.id))}</td>
+              ))}
+            </tr>
+          </tfoot>
+        )}
       </Table>
     </>
   )

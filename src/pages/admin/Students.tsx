@@ -7,6 +7,7 @@ import { studentBalance } from '../../lib/finance'
 import { LEVEL_LABEL, LEVELS, groupLabel, levelOfGroup, studentName } from '../../lib/scope'
 import { newQrCode } from '../../lib/qr'
 import { useApp } from '../../state/context'
+import { GuardianPicker } from '../../components/GuardianPicker'
 
 const CURP_RE = /^[A-Z]{4}\d{6}[HM][A-Z]{5}[A-Z0-9]\d$/
 
@@ -204,16 +205,7 @@ function EnrollForm({ onDone }: { onDone: (s: Student) => void }) {
           </label>
         </div>
         {form.guardianMode === 'existente' ? (
-          <Field label="Tutor registrado">
-            {(id) => (
-              <Select id={id} value={form.guardianId} onChange={(e) => set('guardianId', e.target.value)}>
-                <option value="">Elige</option>
-                {[...db.guardians].sort((a, b) => a.lastName.localeCompare(b.lastName)).map((g) => (
-                  <option key={g.id} value={g.id}>{g.lastName}, {g.firstName}</option>
-                ))}
-              </Select>
-            )}
-          </Field>
+          <GuardianPicker db={db} value={form.guardianId} onChange={(id) => set('guardianId', id)} />
         ) : (
           <div className="grid gap-3 sm:grid-cols-2">
             <Field label="Nombre(s)">{(id) => <Input id={id} value={form.gFirst} onChange={(e) => set('gFirst', e.target.value)} />}</Field>

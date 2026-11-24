@@ -1,9 +1,9 @@
 import { Link } from 'react-router'
 import { Avatar, Badge, Button, Card, EmptyState, LinkButton, PageHeader } from '../../components/ui'
-import { attendanceSummary } from '../../lib/attendance'
+import { ATT_LABEL, ATT_TONE, attendanceOfDay, attendanceSummary } from '../../lib/attendance'
 import { formatDate, formatMoney, nowISO, todayISO } from '../../lib/format'
 import { studentBalance } from '../../lib/finance'
-import { averageFor, groupLabel, isPreschool, levelOfGroup, userKey, visibleAnnouncements, visibleEvents, visibleStudents } from '../../lib/scope'
+import { averageFor, formatAverage, groupLabel, isPreschool, levelOfGroup, userKey, visibleAnnouncements, visibleEvents, visibleStudents } from '../../lib/scope'
 import { useApp } from '../../state/context'
 import { checkinsOfDay } from '../../lib/presence'
 import type { Database } from '../../data/types'
@@ -58,7 +58,7 @@ export function FamilyHome() {
                   </div>
                   <div className="flex flex-col rounded-xl bg-surface-2 px-1.5 py-2">
                     <dt className="flex-1 text-xs text-muted">{isPreschool(level) ? 'Evaluación' : 'Promedio 1er trim.'}</dt>
-                    <dd className="mt-1 text-[0.8125rem] font-bold tabular-nums min-[360px]:text-sm min-[400px]:text-base text-heading sm:text-lg">{isPreschool(level) ? 'Ver' : (avg?.toFixed(1) ?? '—')}</dd>
+                    <dd className="mt-1 text-[0.8125rem] font-bold tabular-nums min-[360px]:text-sm min-[400px]:text-base text-heading sm:text-lg">{isPreschool(level) ? 'Ver' : formatAverage(avg)}</dd>
                   </div>
                   <div className="flex flex-col rounded-xl bg-surface-2 px-1.5 py-2">
                     <dt className="flex-1 text-xs text-muted">Saldo</dt>
@@ -108,9 +108,14 @@ export function FamilyHome() {
 function TodayLine({ db, studentId }: { db: Database; studentId: string }) {
   const today = checkinsOfDay(db, studentId)
   const last = db.studentUpdates.filter((u) => u.studentId === studentId && u.at.startsWith(todayISO())).sort((a, b) => b.at.localeCompare(a.at))[0]
-  if (today.length === 0 && !last) return <p className="mt-3 text-sm text-muted">Hoy aún no hay registro de entrada.</p>
+  const att = attendanceOfDay(db, studentId, todayISO())
+  if (today.length === 0 && !last && !att) return <p className="mt-3 text-sm text-muted">Asistencia de hoy: aún sin registro de entrada.</p>
   return (
     <div className="mt-3 space-y-1 text-sm">
+      <p className="flex flex-wrap items-center gap-2">
+        <span className="text-muted">Asistencia de hoy:</span>
+        {att ? <Badge tone={ATT_TONE[att.status]}>{ATT_LABEL[att.status]}</Badge> : <span className="text-muted">aún sin registro</span>}
+      </p>
       {today.length > 0 && (
         <p className="flex flex-wrap items-center gap-2">
           <Badge tone={today.at(-1)?.type === 'entrada' ? 'exito' : 'info'}>{today.at(-1)?.type === 'entrada' ? 'En la escuela' : 'Ya salió'}</Badge>

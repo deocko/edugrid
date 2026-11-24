@@ -18,6 +18,8 @@ export const NAV: Record<Role, NavItem[]> = {
     { to: '/avisos', label: 'Avisos', icon: 'avisos' },
     { to: '/admin/familias', label: 'Familias', icon: 'hijo' },
     { to: '/admin/docentes', label: 'Docentes', icon: 'docente' },
+    { to: '/admin/calificaciones', label: 'Calificaciones', icon: 'calificaciones' },
+    { to: '/admin/calendario', label: 'Calendario', icon: 'calendario' },
     { to: '/admin/clases', label: 'Clases', icon: 'horario' },
     { to: '/admin/aulas', label: 'Aulas', icon: 'aula' },
     { to: '/admin/escuela', label: 'Ciclos y grupos', icon: 'estructura' },

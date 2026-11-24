@@ -45,13 +45,14 @@ export function ScanPage() {
           async (repo) => {
             await repo.insert('checkins', [r.checkin])
             await repo.insert('notifications', r.notifications)
+            if (r.attendance) await repo.insert('attendance', [r.attendance])
           },
           { action: r.checkin.type === 'entrada' ? 'Registró entrada con QR' : 'Registró salida con QR', detail: `${studentName(r.student)} · ${place}` },
         )
         setFeedback({
           tone: r.checkin.type,
           title: `${r.checkin.type === 'entrada' ? 'Entrada' : 'Salida'}: ${studentName(r.student)}`,
-          detail: `${groupLabel(dbRef.current, r.student.groupId)} · ${r.checkin.at.slice(11, 16)} · Se avisó a su familia.`,
+          detail: `${groupLabel(dbRef.current, r.student.groupId)} · ${r.checkin.at.slice(11, 16)} · Se avisó a su familia.${r.attendance ? ` Asistencia: ${r.attendance.status === 'retardo' ? 'retardo' : 'asistió'}.` : ''}`,
           name: studentName(r.student),
           photo: r.student.photo,
         })
