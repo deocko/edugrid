@@ -3,6 +3,8 @@ import type { jsPDF } from 'jspdf'
 
 export const NAVY: [number, number, number] = [16, 29, 50]
 export const CYAN: [number, number, number] = [53, 197, 217]
+/** «GRID» sobre la placa blanca: cyan oscurecido para contraste AA de texto grande (3.82:1). */
+export const CYAN_TEXT_ON_LIGHT: [number, number, number] = [22, 143, 163]
 export const TEXT: [number, number, number] = [36, 50, 71]
 
 export function drawDemoWatermark(doc: jsPDF) {
@@ -41,7 +43,7 @@ export function drawBrandHeader(doc: jsPDF) {
   doc.setFontSize(18)
   doc.setTextColor(...NAVY)
   doc.text('EDU', 28, 15.3)
-  doc.setTextColor(...CYAN)
+  doc.setTextColor(...CYAN_TEXT_ON_LIGHT)
   doc.text('GRID', 28 + doc.getTextWidth('EDU'), 15.3)
   doc.setTextColor(255, 255, 255)
   doc.setFontSize(9)

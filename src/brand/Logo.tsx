@@ -4,6 +4,9 @@
 
 const NAVY = '#101D32'
 const CYAN = '#35C5D9'
+// «GRID» sobre fondo claro: #35C5D9 sobre blanco da 2.07:1 (no cumple AA para texto grande, 3:1).
+// Solo para las letras del logotipo sobre placa blanca se usa este cyan oscurecido (3.82:1).
+const CYAN_TEXT_ON_LIGHT = '#168FA3'
 
 export function Isotipo({ size = 40, title }: { size?: number; title?: string }) {
   return (
@@ -26,7 +29,7 @@ export function Logo({ height = 36, plate = 'auto' }: { height?: number; plate?:
       </g>
       <text x="72" y="44" fontFamily="system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif" fontSize="36" fontWeight="800" letterSpacing="1">
         <tspan fill={NAVY}>EDU</tspan>
-        <tspan fill={CYAN}>GRID</tspan>
+        <tspan fill={CYAN_TEXT_ON_LIGHT}>GRID</tspan>
       </text>
     </svg>
   )
