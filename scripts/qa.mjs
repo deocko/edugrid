@@ -23,7 +23,7 @@ const sessions = {
 }
 const routes = {
   login: ['/'],
-  admin: ['/admin', '/admin/alumnos', '/admin/alumnos?alta=1', '/alumnos/al1', '/admin/docentes', '/admin/escuela', '/admin/permisos', '/admin/bitacora', '/avisos', '/pagos', '/pagos?registrar=1&alumno=al2', '/pagos?vista=cargos', '/pagos?vista=conceptos', '/pagos/estado/al2', '/facturacion', '/facturacion/configuracion', '/docente/calificaciones', '/admin/entradas', '/admin/familias', '/admin/aulas', '/admin/clases', '/notificaciones'],
+  admin: ['/admin', '/admin/alumnos', '/admin/alumnos?alta=1', '/alumnos/al1', '/admin/docentes', '/admin/escuela', '/admin/permisos', '/admin/bitacora', '/avisos', '/pagos', '/pagos?registrar=1&alumno=al2', '/pagos?vista=cargos', '/pagos?vista=conceptos', '/pagos/estado/al2', '/facturacion', '/facturacion/configuracion', '/docente/calificaciones', '/admin/entradas', '/admin/familias', '/admin/aulas', '/admin/clases', '/notificaciones', '/admin/configuracion'],
   docente: ['/docente', '/docente/asistencia', '/docente/calificaciones', '/docente/tareas', '/docente/horario', '/avisos', '/docente/entradas', '/docente/novedades', '/docente/chat', '/docente/chat?c=ch1'],
   familia: ['/familia', '/familia/hijo/al1', '/familia/hijo/al1?vista=dia', '/familia/pagos', '/familia/calendario', '/avisos', '/pagos/estado/al2', '/privacidad', '/familia/qr', '/familia/chat', '/familia/chat?c=ch1', '/notificaciones'],
   alumnoPrim: ['/alumno', '/alumno/horario', '/alumno/tareas', '/alumno/calificaciones', '/alumno/qr'],
@@ -34,6 +34,7 @@ const denied = [
   ['familia', '/familia/hijo/al3'],
   ['familia', '/pagos/estado/al3'],
   ['familia', '/admin'],
+  ['docente', '/admin/configuracion'],
   ['docente', '/alumnos/al3'],
   ['docente', '/pagos'],
   ['alumnoSec', '/familia/hijo/al1'],
@@ -59,8 +60,23 @@ const themes = ['claro', 'oscuro']
 const problems = []
 const browser = await chromium.launch()
 
+// QA_MARCA=arboleda|montesol revisa todo con la marca de una escuela de ejemplo aplicada.
+let storageState
+if (process.env.QA_MARCA) {
+  const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } })
+  const page = await ctx.newPage()
+  await page.addInitScript((s) => localStorage.setItem('edugrid.demo.sesion', s), JSON.stringify(sessions.admin))
+  await page.goto(`${BASE}#/admin/configuracion`)
+  const names = { arboleda: /Colegio Arboleda/, montesol: /Instituto Montesol/ }
+  await page.getByRole('button', { name: names[process.env.QA_MARCA] }).click()
+  await page.getByText('En uso').waitFor()
+  storageState = await ctx.storageState()
+  await ctx.close()
+  console.log(`Marca aplicada: ${process.env.QA_MARCA}`)
+}
+
 async function open(sessionKey, theme, width, path) {
-  const ctx = await browser.newContext({ viewport: { width, height: 900 }, colorScheme: theme === 'oscuro' ? 'dark' : 'light' })
+  const ctx = await browser.newContext({ viewport: { width, height: 900 }, colorScheme: theme === 'oscuro' ? 'dark' : 'light', storageState })
   await ctx.addInitScript(([s, t]) => {
     if (s) localStorage.setItem('edugrid.demo.sesion', s)
     else localStorage.removeItem('edugrid.demo.sesion')

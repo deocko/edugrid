@@ -351,10 +351,23 @@ export interface AppNotification {
   readAt: string | null
 }
 
+export interface Branding {
+  /** Logo de la escuela en PNG (data URL). Sin logo se muestra el de EDUGRID. */
+  logo: string | null
+  /** Color principal (botones, enlaces, menú). */
+  primary: string
+  /** Color de acento (detalles). */
+  accent: string
+}
+
 export interface Meta {
   seedVersion: number
   school: School
   cfdiConfig: CfdiConfig
+  /** Marca de la escuela. Si falta, se usa la de EDUGRID. */
+  branding?: Branding
+  /** Catálogo de lugares donde se escanean entradas y salidas. */
+  checkinPlaces?: string[]
 }
 
 /** Tablas que maneja el repositorio. Cada una es una lista de filas con `id`. */

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router'
-import { Isotipo, Logo } from '../brand/Logo'
+import { Isotipo } from '../brand/Logo'
 import { Icon, type IconName } from '../components/Icon'
 import { Button, DemoBadge, Notice, Select } from '../components/ui'
 import type { Role, Session } from '../data/types'
@@ -8,6 +8,8 @@ import { HOME_BY_ROLE } from '../lib/permissions'
 import { groupLabel, isPreschool, levelOfGroup, studentName } from '../lib/scope'
 import { useStore } from '../state/context'
 import { plural } from '../lib/format'
+import { ByEdugrid, SchoolLogo } from '../brand/SchoolBrand'
+import { brandingOf } from '../lib/branding'
 
 interface RoleCard {
   role: Role
@@ -74,14 +76,15 @@ export function Login() {
     navigate(HOME_BY_ROLE[role], { replace: true })
   }
 
+  const branded = !!brandingOf(db.meta).logo
   return (
     <div className="min-h-dvh bg-bg">
       <div className="bg-navy text-white">
         <div className="mx-auto flex max-w-5xl flex-col gap-4 px-4 py-8 sm:py-12">
-          <Logo height={44} tone="invertida" />
+          <span className="flex flex-wrap items-center gap-4"><SchoolLogo height={48} onDark /><ByEdugrid onDark /></span>
           <div>
-            <p className="text-sm font-semibold tracking-wide text-cyan uppercase">Administra tu Escuela</p>
-            <h1 className="mt-1 text-3xl font-extrabold sm:text-4xl">Una escuela. Todos conectados.</h1>
+            <p className="text-sm font-semibold tracking-wide text-cyan uppercase">{branded ? 'Portal escolar' : 'Administra tu Escuela'}</p>
+            <h1 className="mt-1 text-3xl font-extrabold sm:text-4xl">{branded ? db.meta.school.name : 'Una escuela. Todos conectados.'}</h1>
             <p className="mt-2 max-w-2xl text-[#dbe3ee]">
               Dirección, docentes, familias y alumnos en un solo lugar. Elige cómo quieres entrar a la demo del <strong className="text-white">{db.meta.school.name}</strong>.
             </p>

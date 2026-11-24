@@ -36,6 +36,8 @@ import { StatementPage } from './pages/pay/StatementPage'
 import { Privacy } from './pages/Privacy'
 import { StudentGrades, StudentHome, StudentHomework, StudentSchedule } from './pages/student/StudentPages'
 import { useStore } from './state/context'
+import { BrandStyle } from './brand/SchoolBrand'
+import { SchoolSettings } from './pages/admin/SchoolSettings'
 
 export function App() {
   const { status, error, session, resetDemo } = useStore()
@@ -59,6 +61,7 @@ export function App() {
 
   return (
     <HashRouter>
+      <BrandStyle />
       <Routes>
         <Route path="/" element={session ? <Navigate to={HOME_BY_ROLE[session.role]} replace /> : <Login />} />
         {!session && <Route path="/privacidad" element={<Privacy />} />}
@@ -73,6 +76,7 @@ export function App() {
           <Route path="/admin/entradas" element={<RequireRole roles={['admin']}><ScanPage /></RequireRole>} />
           <Route path="/admin/docentes" element={<RequireRole roles={['admin']}><Teachers /></RequireRole>} />
           <Route path="/admin/escuela" element={<RequireRole roles={['admin']}><SchoolStructure /></RequireRole>} />
+          <Route path="/admin/configuracion" element={<RequireRole roles={['admin']}><SchoolSettings /></RequireRole>} />
           <Route path="/admin/permisos" element={<RequireRole roles={['admin']}><Permissions /></RequireRole>} />
           <Route path="/admin/bitacora" element={<RequireRole roles={['admin']}><AuditLog /></RequireRole>} />
 

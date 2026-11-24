@@ -1,12 +1,13 @@
 // Representación impresa del CFDI en PDF con marca de agua DEMO.
 // jsPDF se carga bajo demanda y va empaquetado con la app (sin CDN).
-import type { CfdiConfig, Invoice, School } from '../data/types'
+import type { Branding, CfdiConfig, Invoice, School } from '../data/types'
 import { FORMAS_PAGO, REGIMENES, USOS_CFDI } from './catalogs'
 import { amountInWords } from './numberToWords'
 import { readAttr } from './xml'
 import { CYAN, NAVY, TEXT, drawBrandHeader, drawDemoWatermark } from '../lib/pdfBrand'
+import { brandTokens } from '../lib/branding'
 
-export async function buildInvoicePdf(inv: Invoice, school: School, cfg: CfdiConfig): Promise<Blob> {
+export async function buildInvoicePdf(inv: Invoice, school: School, cfg: CfdiConfig, brand?: Branding): Promise<Blob> {
   const { jsPDF } = await import('jspdf')
   const doc = new jsPDF({ unit: 'mm', format: 'letter' })
   const W = doc.internal.pageSize.getWidth()
@@ -15,7 +16,7 @@ export async function buildInvoicePdf(inv: Invoice, school: School, cfg: CfdiCon
   const total = Number(readAttr(x, 'cfdi:Comprobante', 'Total'))
 
   drawDemoWatermark(doc)
-  drawBrandHeader(doc)
+  drawBrandHeader(doc, brand, brand ? brandTokens(brand).nav : undefined)
 
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(12)

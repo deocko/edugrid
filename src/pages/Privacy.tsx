@@ -1,7 +1,7 @@
 import { Link } from 'react-router'
-import { Logo } from '../brand/Logo'
 import { Card, DemoBadge } from '../components/ui'
 import { useStore } from '../state/context'
+import { SchoolLogo } from '../brand/SchoolBrand'
 
 export function Privacy() {
   const { session } = useStore()
@@ -10,7 +10,7 @@ export function Privacy() {
       <div className="mx-auto max-w-3xl">
         {!session && (
           <div className="mb-6 flex items-center justify-between gap-3">
-            <Logo height={30} />
+            <SchoolLogo height={30} />
             <Link to="/" className="-mr-2 inline-flex min-h-11 items-center gap-1 rounded-lg px-2 text-sm font-semibold text-link no-underline hover:bg-info-bg">
               Volver al inicio
             </Link>

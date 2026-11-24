@@ -40,6 +40,7 @@ export const PERMISSION_MATRIX: MatrixRow[] = [
   { area: 'Avisos y mensajes', description: 'Comunicación escolar', access: { admin: 'total', docente: 'grupos', familia: 'hijos', alumno: 'propio' } },
   { area: 'Pagos y estados de cuenta', description: 'Cargos, pagos y adeudos', access: { admin: 'total', docente: 'ninguno', familia: 'hijos', alumno: 'ninguno' } },
   { area: 'Facturación (CFDI)', description: 'Emisión y configuración', access: { admin: 'total', docente: 'ninguno', familia: 'ninguno', alumno: 'ninguno' } },
+  { area: 'Marca y configuración de la escuela', description: 'Logo, colores y lugares de entrada', access: { admin: 'total', docente: 'lectura', familia: 'lectura', alumno: 'lectura' } },
   { area: 'Bitácora', description: 'Accesos y cambios', access: { admin: 'total', docente: 'ninguno', familia: 'ninguno', alumno: 'ninguno' } },
 ]
 

@@ -5,8 +5,8 @@ import { checkinsOfDay, evaluateScan, presenceOf } from '../../lib/presence'
 import { groupLabel, studentName, visibleGroups, visibleStudents } from '../../lib/scope'
 import { plural } from '../../lib/format'
 import { useApp } from '../../state/context'
+import { placesOf } from '../../lib/branding'
 
-const PLACES = ['Puerta principal', 'Puerta de preescolar', 'Salón']
 
 type Feedback = { tone: 'entrada' | 'salida' | 'error'; title: string; detail: string; name?: string; photo?: string | null }
 type CamState = 'apagada' | 'iniciando' | 'activa' | 'no-disponible'
@@ -14,7 +14,9 @@ type CamState = 'apagada' | 'iniciando' | 'activa' | 'no-disponible'
 /** Escanear credenciales QR: entrada y, al volver a escanear, salida. */
 export function ScanPage() {
   const { db, session, act, log } = useApp()
-  const [place, setPlace] = useState(PLACES[0]!)
+  const places = placesOf(db.meta)
+  const [placeChoice, setPlace] = useState('')
+  const place = places.includes(placeChoice) ? placeChoice : places[0]!
   const [code, setCode] = useState('')
   const [feedback, setFeedback] = useState<Feedback | null>(null)
   const [cam, setCam] = useState<CamState>('apagada')
@@ -157,7 +159,7 @@ export function ScanPage() {
             <Field label="Lugar">
               {(id) => (
                 <Select id={id} value={place} onChange={(e) => setPlace(e.target.value)}>
-                  {PLACES.map((p) => <option key={p}>{p}</option>)}
+                  {places.map((p) => <option key={p}>{p}</option>)}
                 </Select>
               )}
             </Field>

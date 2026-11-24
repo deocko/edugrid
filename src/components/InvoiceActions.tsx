@@ -1,3 +1,4 @@
+import { brandingOf } from '../lib/branding'
 import { useState } from 'react'
 import { buildInvoicePdf } from '../cfdi/pdf'
 import { download, invoiceFileName } from '../cfdi/service'
@@ -20,7 +21,7 @@ export function InvoiceActions({ invoice }: { invoice: Invoice }) {
     setBusy(true)
     setError('')
     try {
-      const blob = await buildInvoicePdf(invoice, db.meta.school, db.meta.cfdiConfig)
+      const blob = await buildInvoicePdf(invoice, db.meta.school, db.meta.cfdiConfig, brandingOf(db.meta))
       download(blob, invoiceFileName(invoice, 'pdf'))
       void log({ action: 'Descargó factura PDF', detail: name, kind: 'acceso' })
     } catch {
