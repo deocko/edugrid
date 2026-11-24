@@ -38,7 +38,9 @@ const between = (t, a, b) => {
 }
 
 // 1a. Mateo en 2° de primaria A en todas las vistas
-const mateoFam = await text('familia', '/familia')
+// Los expedientes de los hijos inician contraídos: se abren para leer sus datos
+const openFolders = async (page) => { const closed = page.locator('main button[aria-expanded="false"]'); while (await closed.count()) await closed.first().click() }
+const mateoFam = await text('familia', '/familia', openFolders)
 const mateoAdm = await text('admin', '/alumnos/al2')
 check('1a Mateo en 2° de primaria A (Familia y Admin)', mateoFam.includes('Mateo Méndez Ortega') && /Mateo Méndez Ortega\s+2° de primaria A/.test(mateoFam) && mateoAdm.includes('2° de primaria A') && !/secundaria/.test(mateoAdm.split('Datos generales')[0]))
 

@@ -29,6 +29,7 @@ const errors = []
 page.on('pageerror', (e) => errors.push(e.message))
 const db = () => page.evaluate(() => JSON.parse(localStorage.getItem('edugrid.demo.db.v1')))
 let v = 0
+const openFolders = async () => { const closed = page.locator('main button[aria-expanded="false"]'); while (await closed.count()) await closed.first().click() }
 const as = async (who, path, { reset = false } = {}) => {
   await page.goto(`${BASE}#/`)
   await page.evaluate(([s, r]) => { if (r) localStorage.clear(); localStorage.setItem('edugrid.demo.sesion', s) }, [JSON.stringify(S[who]), reset])
@@ -141,6 +142,7 @@ if (!att.includes('Entró 07:42 con QR')) fail('El pase de lista no muestra la e
 if (!/por su entrada con QR/.test(att)) fail('El pase de lista no dice que la asistencia vino del QR')
 if ((await page.getByRole('radio', { name: 'Asistió' }).first().getAttribute('aria-checked')) !== 'true') fail('Regina no aparece como presente')
 await as('familia', '/familia')
+await openFolders()
 const home = await page.locator('main').innerText()
 if (!/Asistencia de hoy:\s*Asistió/.test(home)) fail('El inicio de Laura no muestra la asistencia de hoy')
 if (!home.includes('Entró 07:42')) fail('El inicio de Laura no muestra la entrada de las 07:42')
@@ -159,6 +161,7 @@ step(`Escanear la entrada de ${other.firstName} marcó su asistencia (${rec.stat
 
 // 8. El promedio de Mateo es 7.9 en Papá, Alumno y Admin
 await as('familia', '/familia', { reset: true })
+await openFolders()
 const avgFam = (await page.locator('article', { hasText: 'Mateo' }).first().innerText()).match(/Promedio 1er trim\.\s*([\d.]+)/)?.[1]
 await as('mateo', '/alumno/calificaciones')
 const avgAlu = (await page.getByRole('table', { name: /Calificaciones/ }).locator('tfoot').innerText()).match(/Promedio\s*([\d.]+)/)?.[1]
@@ -259,6 +262,7 @@ await tile('Adeudo vencido').click()
 await page.getByRole('dialog', { name: 'Adeudo vencido' }).getByRole('link').first().click()
 await page.waitForURL(/pagos\/estado\//)
 await as('familia', '/familia')
+await openFolders()
 await page.locator('main').getByRole('link', { name: /^Asistencia/ }).first().click()
 await page.waitForURL(/vista=asistencia/)
 await page.getByRole('tab', { name: 'Asistencia', selected: true }).waitFor()
@@ -269,6 +273,21 @@ await page.getByRole('dialog').getByRole('button', { name: 'Cerrar' }).click()
 await tile('Promedio 1er trimestre').click()
 await page.waitForURL(/alumno\/calificaciones/)
 step('Los indicadores del tablero llevan a su detalle, abren su listado o muestran una barra de avance')
+
+// 15. Inicio de la familia: cada hijo es un expediente contraído que se abre al tocarlo
+await as('familia', '/familia', { reset: true })
+const folders = page.locator('main').getByRole('button', { name: /Abrir expediente/ })
+if ((await folders.count()) !== 2) fail(`Se esperaban 2 expedientes contraídos y hay ${await folders.count()}`)
+const closedText = await page.locator('main ul[aria-label="Expedientes de tus hijos"]').innerText()
+if (!closedText.includes('Regina Méndez Ortega') || !closedText.includes('4° de primaria A') || !closedText.includes('Primaria')) fail('El expediente contraído no muestra nombre y nivel')
+if (closedText.includes('Asistencia de hoy') || closedText.includes('Saldo')) fail('El expediente contraído muestra datos de más')
+await page.screenshot({ path: `${OUT}/familia-expedientes-cerrados.png`, fullPage: true })
+await folders.first().click()
+await page.getByRole('button', { name: /Contraer expediente/ }).waitFor()
+const opened = await page.locator('main ul[aria-label="Expedientes de tus hijos"]').innerText()
+if (!opened.includes('Asistencia de hoy') || !opened.includes('Ver todo de Regina')) fail('Al abrir el expediente no aparecen sus datos')
+await page.screenshot({ path: `${OUT}/familia-expediente-abierto.png`, fullPage: true })
+step('Familia: cada hijo es un expediente contraído (nombre, foto y nivel) que se abre con sus datos')
 
 if (errors.length) fail(`Errores en la página: ${errors.join(' | ')}`)
 await browser.close()
