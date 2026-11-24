@@ -10,9 +10,9 @@ EDUGRID es una plataforma web de gestión escolar para escuelas privadas en Méx
 
 | Módulo | Para quién | Qué hace |
 | --- | --- | --- |
-| **EDUGRID Admin** | Dirección y administración | Indicadores, inscripción de alumnos con consentimiento del tutor, catálogo de alumnos y docentes, ciclos, trimestres, grados, grupos y materias, matriz de permisos y bitácora. |
+| **EDUGRID Admin** | Dirección y administración | Indicadores, inscripción de alumnos con consentimiento del tutor, edición y baja de alumnos y docentes, asignación de docente por materia y grupo, boleta en PDF, ciclos, trimestres, grados, grupos y materias, matriz de permisos y bitácora. |
 | **Academy** | Docentes | Pase de lista por grupo, captura de calificaciones por grupo y materia con cierre de periodo, tareas y horario. |
-| **Family** | Papás y mamás | Calificaciones, asistencia, tareas, horario, pagos, estado de cuenta, avisos y calendario de **sus hijos únicamente**. |
+| **Family** | Papás y mamás | Calificaciones (con boleta en PDF), asistencia, tareas, horario, pagos, estado de cuenta, avisos y calendario de **sus hijos únicamente**. |
 | **Student** | Alumnos | Horario, tareas, calificaciones y avisos. En primaria la vista es más sencilla. |
 | **Connect** | Todos | Avisos institucionales (escuela, nivel o grupo) y mensajes de grupo con acuse de lectura. |
 | **Pay** | Administración y familias | Conceptos (inscripción, colegiatura, otros), cargos por alumno, colegiatura masiva del mes, registro de pagos (efectivo, transferencia, tarjeta; solo registro), adeudos, estado de cuenta y recordatorios. |

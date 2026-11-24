@@ -111,6 +111,8 @@ export interface Student {
   enrollmentId: string
   status: 'activo' | 'baja'
   createdAt: string
+  withdrawnAt?: string
+  withdrawReason?: string
 }
 
 export type AttendanceStatus = 'presente' | 'retardo' | 'falta' | 'justificada'

@@ -1,8 +1,8 @@
 import { useState, type FormEvent } from 'react'
-import { Badge, Button, Card, Field, Input, Notice, PageHeader, Select, Tabs } from '../../components/ui'
+import { Badge, Button, Card, Field, Input, Modal, Notice, PageHeader, Select, Tabs } from '../../components/ui'
 import type { Level } from '../../data/types'
 import { formatDate, uid } from '../../lib/format'
-import { LEVEL_LABEL, LEVELS, groupLabel, levelOfGroup, teacherName } from '../../lib/scope'
+import { LEVEL_LABEL, LEVELS, groupLabel, levelOfGroup, subjectName, teacherName } from '../../lib/scope'
 import { useApp } from '../../state/context'
 
 type View = 'grupos' | 'ciclos' | 'materias'
@@ -26,6 +26,7 @@ function GroupsView() {
   const [name, setName] = useState('B')
   const [teacherId, setTeacherId] = useState('')
   const [msg, setMsg] = useState('')
+  const [editGroup, setEditGroup] = useState<string | null>(null)
   const active = db.cycles.find((c) => c.active)
 
   const submit = async (e: FormEvent) => {
@@ -57,13 +58,19 @@ function GroupsView() {
                     <p className="font-semibold text-heading">{groupLabel(db, g)}</p>
                     <p className="text-muted">Titular: {teacherName(db, g.homeroomTeacherId)} · {g.room}</p>
                   </div>
-                  <Badge tone="info">{db.students.filter((s) => s.groupId === g.id && s.status === 'activo').length} alumnos</Badge>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Badge tone="info">{db.students.filter((s) => s.groupId === g.id && s.status === 'activo').length} alumnos</Badge>
+                    <Button variant="fantasma" onClick={() => setEditGroup(g.id)} aria-label={`Materias y docentes de ${groupLabel(db, g)}`}>Materias y docentes</Button>
+                  </div>
                 </li>
               ))}
             </ul>
           </Card>
         ))}
       </div>
+      <Modal open={editGroup !== null} onClose={() => setEditGroup(null)} title={editGroup ? `Materias y docentes · ${groupLabel(db, editGroup)}` : 'Materias y docentes'}>
+        {editGroup && <GroupAssignments groupId={editGroup} onDone={() => setEditGroup(null)} />}
+      </Modal>
       <Card title="Nuevo grupo" className="h-fit">
         <form onSubmit={(e) => void submit(e)} className="space-y-3">
           <Field label="Grado">
@@ -81,7 +88,7 @@ function GroupsView() {
             {(id) => (
               <Select id={id} value={teacherId} onChange={(e) => setTeacherId(e.target.value)}>
                 <option value="">Elige un docente</option>
-                {db.teachers.map((t) => (
+                {db.teachers.filter((t) => t.active).map((t) => (
                   <option key={t.id} value={t.id}>{t.firstName} {t.lastName}</option>
                 ))}
               </Select>
@@ -179,5 +186,83 @@ function SubjectsView() {
         </form>
       </Card>
     </div>
+  )
+}
+
+function GroupAssignments({ groupId, onDone }: { groupId: string; onDone: () => void }) {
+  const { db, act } = useApp()
+  const group = db.groups.find((g) => g.id === groupId)
+  const level = levelOfGroup(db, groupId)
+  const current = db.assignments.filter((a) => a.groupId === groupId)
+  const subjects = db.subjects.filter((s) => s.level === level)
+  const teachers = db.teachers.filter((t) => t.active)
+  const [homeroom, setHomeroom] = useState(group?.homeroomTeacherId ?? '')
+  const [map, setMap] = useState<Record<string, string>>(Object.fromEntries(subjects.map((s) => [s.id, current.find((a) => a.subjectId === s.id)?.teacherId ?? ''])))
+  if (!group) return null
+
+  const save = async (e: FormEvent) => {
+    e.preventDefault()
+    const changes: string[] = []
+    if (homeroom && homeroom !== group.homeroomTeacherId) changes.push(`titular: ${teacherName(db, homeroom)}`)
+    for (const s of subjects) {
+      const before = current.find((a) => a.subjectId === s.id)?.teacherId ?? ''
+      const after = map[s.id] ?? ''
+      if (before !== after) changes.push(`${s.name}: ${after ? teacherName(db, after) : 'sin docente'}`)
+    }
+    await act(
+      async (repo) => {
+        if (homeroom && homeroom !== group.homeroomTeacherId) {
+          await repo.update('groups', groupId, { homeroomTeacherId: homeroom })
+        }
+        for (const s of subjects) {
+          const existing = current.find((a) => a.subjectId === s.id)
+          const teacherId = map[s.id] ?? ''
+          if (existing && !teacherId) {
+            await repo.remove('assignments', existing.id)
+          } else if (existing && existing.teacherId !== teacherId) {
+            await repo.update('assignments', existing.id, { teacherId })
+          } else if (!existing && teacherId) {
+            await repo.insert('assignments', [{ id: uid('a'), groupId, subjectId: s.id, teacherId }])
+          }
+        }
+        // El horario sigue al docente asignado a cada materia
+        for (const slot of db.schedule.filter((x) => x.groupId === groupId)) {
+          const teacherId = map[slot.subjectId]
+          if (teacherId && teacherId !== slot.teacherId) await repo.update('schedule', slot.id, { teacherId })
+        }
+      },
+      { action: 'Cambió materias y docentes', detail: `${groupLabel(db, groupId)}${changes.length ? ` · ${changes.join(', ')}` : ' · sin cambios'}` },
+    )
+    onDone()
+  }
+
+  return (
+    <form onSubmit={(e) => void save(e)} className="space-y-3">
+      <Field label="Titular del grupo">
+        {(id) => (
+          <Select id={id} value={homeroom} onChange={(e) => setHomeroom(e.target.value)}>
+            {teachers.map((t) => <option key={t.id} value={t.id}>{t.firstName} {t.lastName}</option>)}
+          </Select>
+        )}
+      </Field>
+      <fieldset className="space-y-2">
+        <legend className="mb-1 text-sm font-bold text-heading">Docente por materia</legend>
+        {subjects.map((s) => (
+          <Field key={s.id} label={subjectName(db, s.id)}>
+            {(id) => (
+              <Select id={id} value={map[s.id] ?? ''} onChange={(e) => setMap({ ...map, [s.id]: e.target.value })}>
+                <option value="">Sin docente (no se imparte)</option>
+                {teachers.map((t) => <option key={t.id} value={t.id}>{t.firstName} {t.lastName} · {t.specialty}</option>)}
+              </Select>
+            )}
+          </Field>
+        ))}
+      </fieldset>
+      <p className="text-xs text-muted">Cada docente solo ve a los grupos donde es titular o imparte alguna materia.</p>
+      <div className="flex justify-end gap-2">
+        <Button variant="secundario" onClick={onDone}>Cancelar</Button>
+        <Button type="submit" icon="check">Guardar</Button>
+      </div>
+    </form>
   )
 }

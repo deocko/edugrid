@@ -15,18 +15,19 @@ export function Students() {
   const [q, setQ] = useState('')
   const [level, setLevel] = useState<Level | ''>('')
   const [groupId, setGroupId] = useState('')
+  const [showWithdrawn, setShowWithdrawn] = useState(false)
   const [created, setCreated] = useState<Student | null>(null)
   const open = params.get('alta') === '1'
 
   const list = useMemo(() => {
     const term = q.trim().toLowerCase()
     return db.students
-      .filter((s) => s.status === 'activo')
+      .filter((s) => (showWithdrawn ? s.status === 'baja' : s.status === 'activo'))
       .filter((s) => !level || levelOfGroup(db, s.groupId) === level)
       .filter((s) => !groupId || s.groupId === groupId)
       .filter((s) => !term || `${studentName(s)} ${s.enrollmentId}`.toLowerCase().includes(term))
       .sort((a, b) => a.lastName.localeCompare(b.lastName))
-  }, [db, q, level, groupId])
+  }, [db, q, level, groupId, showWithdrawn])
 
   return (
     <>
@@ -77,8 +78,12 @@ export function Students() {
             )}
           </Field>
         </div>
+        <label className="mb-3 inline-flex min-h-11 items-center gap-2 text-sm">
+          <input type="checkbox" checked={showWithdrawn} onChange={(e) => setShowWithdrawn(e.target.checked)} className="size-5 accent-[var(--c-primary)]" />
+          Ver alumnos dados de baja ({db.students.filter((s) => s.status === 'baja').length})
+        </label>
         {list.length === 0 ? (
-          <EmptyState icon="buscar" title="No encontramos alumnos">Prueba con otro nombre o quita los filtros.</EmptyState>
+          <EmptyState icon="buscar" title={showWithdrawn ? 'No hay alumnos dados de baja' : 'No encontramos alumnos'}>{showWithdrawn ? 'Cuando des de baja a un alumno, aparecerá aquí.' : 'Prueba con otro nombre o quita los filtros.'}</EmptyState>
         ) : (
           <Table caption="Lista de alumnos">
             <thead>

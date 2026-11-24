@@ -4,10 +4,7 @@ import type { CfdiConfig, Invoice, School } from '../data/types'
 import { FORMAS_PAGO, REGIMENES, USOS_CFDI } from './catalogs'
 import { amountInWords } from './numberToWords'
 import { readAttr } from './xml'
-
-const NAVY: [number, number, number] = [16, 29, 50]
-const CYAN: [number, number, number] = [53, 197, 217]
-const TEXT: [number, number, number] = [36, 50, 71]
+import { CYAN, NAVY, TEXT, drawBrandHeader, drawDemoWatermark } from '../lib/pdfBrand'
 
 export async function buildInvoicePdf(inv: Invoice, school: School, cfg: CfdiConfig): Promise<Blob> {
   const { jsPDF } = await import('jspdf')
@@ -17,44 +14,9 @@ export async function buildInvoicePdf(inv: Invoice, school: School, cfg: CfdiCon
   const x = inv.xml
   const total = Number(readAttr(x, 'cfdi:Comprobante', 'Total'))
 
-  // Marca de agua DEMO
-  doc.setTextColor(236, 200, 140)
-  doc.setFont('helvetica', 'bold')
-  doc.setFontSize(110)
-  doc.text('DEMO', W / 2, H / 2 + 20, { align: 'center', angle: 35 })
+  drawDemoWatermark(doc)
+  drawBrandHeader(doc)
 
-  // Encabezado
-  doc.setFillColor(...NAVY)
-  doc.rect(0, 0, W, 30, 'F')
-  doc.setFillColor(...CYAN)
-  doc.rect(0, 30, W, 1.5, 'F')
-  // Logotipo sobre placa blanca (colores originales del manual, sin recolorear)
-  doc.setFillColor(255, 255, 255)
-  doc.roundedRect(10, 5, 62, 14, 2, 2, 'F')
-  const iso = (px: number, py: number) => [14 + px * 0.16, 6.6 + py * 0.16] as const
-  doc.setLineCap('round')
-  doc.setLineJoin('round')
-  doc.setDrawColor(...NAVY)
-  doc.setLineWidth(1.05)
-  const hex: [number, number][] = [[44, 7.6], [32, 1], [5.7, 16], [5.7, 48], [32, 63], [58.3, 48], [58.3, 26]]
-  for (let k = 0; k < hex.length - 1; k++) {
-    const [ax, ay] = iso(...hex[k]!)
-    const [bx, by] = iso(...hex[k + 1]!)
-    doc.line(ax, ay, bx, by)
-  }
-  doc.setDrawColor(...CYAN)
-  doc.setLineWidth(1.45)
-  doc.line(...iso(18, 44), ...iso(46, 16))
-  doc.setFont('helvetica', 'bold')
-  doc.setFontSize(18)
-  doc.setTextColor(...NAVY)
-  doc.text('EDU', 28, 15.3)
-  doc.setTextColor(...CYAN)
-  doc.text('GRID', 28 + doc.getTextWidth('EDU'), 15.3)
-  doc.setTextColor(255, 255, 255)
-  doc.setFontSize(9)
-  doc.setFont('helvetica', 'normal')
-  doc.text('Una escuela. Todos conectados.', 10, 25)
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(12)
   doc.text('FACTURA · CFDI 4.0', W - 14, 13, { align: 'right' })

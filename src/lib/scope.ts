@@ -51,7 +51,7 @@ export const visibleStudents = (db: Database, session: Session): Student[] => {
 }
 
 export const canSeeStudent = (db: Database, session: Session, studentId: string) =>
-  visibleStudents(db, session).some((s) => s.id === studentId)
+  session.role === 'admin' ? db.students.some((s) => s.id === studentId) : visibleStudents(db, session).some((s) => s.id === studentId)
 
 export const visibleGroups = (db: Database, session: Session): Group[] => {
   if (session.role === 'admin') return db.groups

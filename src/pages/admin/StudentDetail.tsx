@@ -1,16 +1,19 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { Link, useParams } from 'react-router'
+import { ReportCardButton } from '../../components/ReportCardButton'
 import { AccessDenied } from '../../components/guards'
 import { AttendanceList, GradesTable } from '../../components/StudentRecords'
-import { Badge, Card, DemoBadge, LinkButton, PageHeader } from '../../components/ui'
-import { ageFrom, formatDate, formatMoney } from '../../lib/format'
+import { Badge, Button, Card, DemoBadge, Field, Input, LinkButton, Modal, Notice, PageHeader, Select } from '../../components/ui'
+import type { Student } from '../../data/types'
+import { ageFrom, formatDate, formatMoney, nowISO } from '../../lib/format'
 import { studentBalance } from '../../lib/finance'
-import { canSeeStudent, groupLabel, studentName, teacherName } from '../../lib/scope'
+import { LEVEL_LABEL, LEVELS, canSeeStudent, groupLabel, levelOfGroup, studentName, teacherName } from '../../lib/scope'
 import { useApp } from '../../state/context'
 
 export function StudentDetail() {
   const { id = '' } = useParams()
   const { db, session, log } = useApp()
+  const [modal, setModal] = useState<'editar' | 'baja' | null>(null)
   const student = db.students.find((s) => s.id === id)
   const allowed = canSeeStudent(db, session, id)
   const logged = useRef('')
@@ -35,8 +38,29 @@ export function StudentDetail() {
             {groupLabel(db, student.groupId)} · {ageFrom(student.birthDate)} años · Matrícula {student.enrollmentId} <DemoBadge />
           </span>
         }
-        actions={isAdmin ? <LinkButton to={`/pagos/estado/${student.id}`} icon="pagos">Estado de cuenta</LinkButton> : undefined}
+        actions={
+          isAdmin ? (
+            <>
+              <LinkButton to={`/pagos/estado/${student.id}`} icon="pagos">Estado de cuenta</LinkButton>
+              <Button variant="secundario" icon="ajustes" onClick={() => setModal('editar')}>Editar datos</Button>
+              <Button variant={student.status === 'activo' ? 'peligro' : 'secundario'} onClick={() => setModal('baja')}>{student.status === 'activo' ? 'Dar de baja' : 'Reactivar'}</Button>
+            </>
+          ) : undefined
+        }
       />
+      {student.status === 'baja' && (
+        <div className="mb-4">
+          <Notice tone="aviso">
+            Alumno dado de baja el {formatDate(student.withdrawnAt ?? student.createdAt)}{student.withdrawReason ? ` · ${student.withdrawReason}` : ''}. Ya no aparece en listas de grupo ni en el portal familiar.
+          </Notice>
+        </div>
+      )}
+      <Modal open={modal === 'editar'} onClose={() => setModal(null)} title="Editar datos del alumno">
+        <EditStudent student={student} onDone={() => setModal(null)} />
+      </Modal>
+      <Modal open={modal === 'baja'} onClose={() => setModal(null)} title={student.status === 'activo' ? 'Dar de baja' : 'Reactivar alumno'}>
+        <Withdraw student={student} onDone={() => setModal(null)} />
+      </Modal>
       <div className="grid gap-4 lg:grid-cols-3">
         <Card title="Datos generales">
           <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-2 text-sm">
@@ -78,7 +102,7 @@ export function StudentDetail() {
         <Card title="Asistencia reciente">
           <AttendanceList db={db} studentId={student.id} limit={6} />
         </Card>
-        <Card title="Calificaciones" className="lg:col-span-2">
+        <Card title="Calificaciones" className="lg:col-span-2" action={<ReportCardButton studentId={student.id} />}>
           <GradesTable db={db} studentId={student.id} />
         </Card>
       </div>
@@ -88,5 +112,88 @@ export function StudentDetail() {
         </Link>
       </p>
     </>
+  )
+}
+
+const CURP_RE = /^[A-Z]{4}\d{6}[HM][A-Z]{5}[A-Z0-9]\d$/
+
+function EditStudent({ student, onDone }: { student: Student; onDone: () => void }) {
+  const { db, act } = useApp()
+  const [form, setForm] = useState({ firstName: student.firstName, lastName: student.lastName, birthDate: student.birthDate, curp: student.curp === 'PENDIENTE' ? '' : student.curp, groupId: student.groupId })
+  const [error, setError] = useState('')
+  const submit = async (e: FormEvent) => {
+    e.preventDefault()
+    const curp = form.curp.trim().toUpperCase()
+    if (!form.firstName.trim() || !form.lastName.trim() || !form.birthDate) return setError('Completa nombre, apellidos y fecha de nacimiento.')
+    if (curp && !CURP_RE.test(curp)) return setError('La CURP no tiene el formato correcto (18 caracteres).')
+    const changes: string[] = []
+    if (form.groupId !== student.groupId) changes.push(`cambio de grupo a ${groupLabel(db, form.groupId)}`)
+    if (`${form.firstName} ${form.lastName}` !== `${student.firstName} ${student.lastName}`) changes.push('nombre')
+    if (curp !== student.curp && curp) changes.push('CURP')
+    if (form.birthDate !== student.birthDate) changes.push('fecha de nacimiento')
+    await act((repo) => repo.update('students', student.id, { firstName: form.firstName.trim(), lastName: form.lastName.trim(), birthDate: form.birthDate, curp: curp || 'PENDIENTE', groupId: form.groupId }), { action: 'Editó datos de alumno', detail: `${studentName(student)}${changes.length ? ` · ${changes.join(', ')}` : ''}` })
+    onDone()
+  }
+  return (
+    <form onSubmit={(e) => void submit(e)} className="grid gap-3 sm:grid-cols-2" noValidate>
+      <Field label="Nombre(s)">{(id) => <Input id={id} value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} />}</Field>
+      <Field label="Apellidos">{(id) => <Input id={id} value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} />}</Field>
+      <Field label="Fecha de nacimiento">{(id) => <Input id={id} type="date" value={form.birthDate} onChange={(e) => setForm({ ...form, birthDate: e.target.value })} />}</Field>
+      <Field label="CURP">{(id) => <Input id={id} value={form.curp} maxLength={18} onChange={(e) => setForm({ ...form, curp: e.target.value.toUpperCase() })} />}</Field>
+      <div className="sm:col-span-2">
+        <Field label="Grupo" hint="Al cambiar de grupo, el historial de asistencia y calificaciones se conserva.">
+          {(id) => (
+            <Select id={id} value={form.groupId} onChange={(e) => setForm({ ...form, groupId: e.target.value })}>
+              {LEVELS.map((l) => (
+                <optgroup key={l} label={LEVEL_LABEL[l]}>
+                  {db.groups.filter((g) => levelOfGroup(db, g.id) === l).map((g) => <option key={g.id} value={g.id}>{groupLabel(db, g)}</option>)}
+                </optgroup>
+              ))}
+            </Select>
+          )}
+        </Field>
+      </div>
+      {error && <div className="sm:col-span-2"><Notice tone="peligro">{error}</Notice></div>}
+      <div className="flex justify-end gap-2 sm:col-span-2">
+        <Button variant="secundario" onClick={onDone}>Cancelar</Button>
+        <Button type="submit" icon="check">Guardar cambios</Button>
+      </div>
+    </form>
+  )
+}
+
+const REASONS = ['Cambio de escuela', 'Cambio de domicilio', 'Motivos económicos', 'Motivos personales', 'Otro']
+
+function Withdraw({ student, onDone }: { student: Student; onDone: () => void }) {
+  const { act } = useApp()
+  const [reason, setReason] = useState(REASONS[0]!)
+  const active = student.status === 'activo'
+  const submit = async (e: FormEvent) => {
+    e.preventDefault()
+    if (active) await act((repo) => repo.update('students', student.id, { status: 'baja', withdrawnAt: nowISO(), withdrawReason: reason }), { action: 'Dio de baja alumno', detail: `${studentName(student)} · ${reason}` })
+    else await act((repo) => repo.update('students', student.id, { status: 'activo', withdrawnAt: undefined, withdrawReason: undefined }), { action: 'Reactivó alumno', detail: studentName(student) })
+    onDone()
+  }
+  return (
+    <form onSubmit={(e) => void submit(e)} className="space-y-3">
+      {active ? (
+        <>
+          <p>{studentName(student)} dejará de aparecer en las listas de su grupo y en el portal de su familia. Su historial y su estado de cuenta se conservan.</p>
+          <Field label="Motivo de la baja">
+            {(id) => (
+              <Select id={id} value={reason} onChange={(e) => setReason(e.target.value)}>
+                {REASONS.map((r) => <option key={r}>{r}</option>)}
+              </Select>
+            )}
+          </Field>
+        </>
+      ) : (
+        <p>{studentName(student)} volverá a aparecer en su grupo y en el portal de su familia.</p>
+      )}
+      <div className="flex justify-end gap-2">
+        <Button variant="secundario" onClick={onDone}>Cancelar</Button>
+        <Button type="submit" variant={active ? 'peligro' : 'primario'}>{active ? 'Confirmar baja' : 'Reactivar alumno'}</Button>
+      </div>
+    </form>
   )
 }

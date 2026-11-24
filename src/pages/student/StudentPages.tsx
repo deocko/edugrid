@@ -1,4 +1,5 @@
 import { Link } from 'react-router'
+import { ReportCardButton } from '../../components/ReportCardButton'
 import { ScheduleView } from '../../components/ScheduleView'
 import { GradesTable } from '../../components/StudentRecords'
 import { Card, EmptyState, PageHeader, Stat } from '../../components/ui'
@@ -112,7 +113,7 @@ export function StudentGrades() {
   if (!me) return null
   return (
     <>
-      <PageHeader title="Mis calificaciones" subtitle="Ciclo 2026-2027" />
+      <PageHeader title="Mis calificaciones" subtitle="Ciclo 2026-2027" actions={<ReportCardButton studentId={me.id} />} />
       <Card>
         <GradesTable db={db} studentId={me.id} />
       </Card>

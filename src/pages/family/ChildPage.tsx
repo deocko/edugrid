@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router'
+import { ReportCardButton } from '../../components/ReportCardButton'
 import { AccessDenied } from '../../components/guards'
 import { ScheduleView } from '../../components/ScheduleView'
 import { AttendanceList, GradesTable } from '../../components/StudentRecords'
@@ -33,7 +34,7 @@ export function ChildPage() {
     <>
       <PageHeader title={studentName(student)} subtitle={groupLabel(db, student.groupId)} />
       <Tabs label="Información del alumno" value={view} onChange={setView} options={[{ value: 'calificaciones', label: 'Calificaciones' }, { value: 'asistencia', label: 'Asistencia' }, { value: 'tareas', label: 'Tareas' }, { value: 'horario', label: 'Horario' }, { value: 'pagos', label: 'Pagos' }]} />
-      {view === 'calificaciones' && <Card title="Boleta del ciclo 2026-2027"><GradesTable db={db} studentId={student.id} /></Card>}
+      {view === 'calificaciones' && <Card title="Boleta del ciclo 2026-2027" action={<ReportCardButton studentId={student.id} />}><GradesTable db={db} studentId={student.id} /></Card>}
       {view === 'asistencia' && <Card title={`Asistencia de ${student.firstName}`}><AttendanceList db={db} studentId={student.id} limit={20} /></Card>}
       {view === 'tareas' && (
         <Card title="Tareas">

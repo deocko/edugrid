@@ -30,7 +30,7 @@ export function Login() {
   const [resetDone, setResetDone] = useState(false)
   if (!db) return null
 
-  const teacherOptions = db.teachers.map((t) => {
+  const teacherOptions = db.teachers.filter((t) => t.active).map((t) => {
     const groups = db.groups.filter((g) => g.homeroomTeacherId === t.id).map((g) => groupLabel(db, g))
     return { id: t.id, label: `${t.firstName} ${t.lastName} · ${t.specialty}${groups.length ? ` (titular de ${groups.join(', ')})` : ''}` }
   })
