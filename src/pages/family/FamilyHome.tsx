@@ -49,11 +49,7 @@ export function FamilyHome() {
             const isOpen = open.has(k.id)
             const panel = `expediente-${k.id}`
             return (
-              <li key={k.id} className="relative pt-4">
-                {/* Pestaña de folder: el expediente de cada hijo */}
-                <span aria-hidden="true" className={`${FOLDER_COLORS[idx % FOLDER_COLORS.length]} absolute top-0 left-4 inline-flex h-5 items-center gap-1 rounded-t-xl border border-b-0 border-[var(--s)] bg-[var(--s-bg)] px-3 text-[11px] font-semibold text-[var(--s-ink)]`}>
-                  <Icon name="libro" size={12} /> Expediente
-                </span>
+              <li key={k.id}>
                 <article className={`${FOLDER_COLORS[idx % FOLDER_COLORS.length]} relative rounded-2xl border border-l-4 border-l-[var(--s)] bg-surface shadow-sm transition ${isOpen ? 'border-[var(--s)] shadow-md' : 'border-line hover:border-[var(--s)]'}`}>
                   <h2 className="m-0">
                     <button type="button" onClick={() => toggle(k.id)} aria-expanded={isOpen} aria-controls={panel} className="flex w-full items-center gap-3 rounded-2xl p-4 text-left sm:p-5">
@@ -132,7 +128,7 @@ export function FamilyHome() {
   )
 }
 
-/** Color pastel de la pestaña de cada expediente (misma paleta accesible de las materias). */
+/** Color de la franja de cada expediente (misma paleta accesible de las materias). */
 const FOLDER_COLORS = ['subj-azul', 'subj-rosa', 'subj-verde', 'subj-morado', 'subj-naranja']
 
 /** Una línea con lo de hoy: entrada/salida con QR y la última novedad de su docente. */
