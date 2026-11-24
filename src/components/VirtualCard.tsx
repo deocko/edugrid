@@ -67,9 +67,11 @@ export function VirtualCard({
         style={{ transform: flipped ? 'rotateY(180deg)' : 'none' }}
       >
         {/* Frente */}
-        <span className="absolute inset-0 flex flex-col justify-between overflow-hidden rounded-2xl p-5 shadow-lg [backface-visibility:hidden]" style={{ background: FACE[brand ?? 'none'] }} aria-hidden="true">
-          <span className="pointer-events-none absolute -top-16 -right-10 size-48 rounded-full bg-white/10" />
-          <span className="pointer-events-none absolute -bottom-20 -left-10 size-56 rounded-full bg-white/5" />
+        <span className="absolute inset-0 flex flex-col justify-between rounded-2xl p-5 shadow-lg [backface-visibility:hidden]" style={{ background: FACE[brand ?? 'none'] }} aria-hidden="true">
+          <svg className="pointer-events-none absolute inset-0 size-full rounded-2xl" viewBox="0 0 320 202" preserveAspectRatio="none" aria-hidden="true">
+            <circle cx="290" cy="20" r="96" fill="#fff" fillOpacity="0.1" />
+            <circle cx="20" cy="210" r="112" fill="#fff" fillOpacity="0.05" />
+          </svg>
           <span className="relative flex items-start justify-between">
             <span className="text-xs font-semibold tracking-wide text-white/90 uppercase">{schoolName}</span>
             <span className="rounded bg-white/20 px-1.5 text-[10px] font-bold tracking-wider">DEMO</span>
@@ -96,8 +98,8 @@ export function VirtualCard({
           </span>
         </span>
         {/* Reverso */}
-        <span className="absolute inset-0 flex flex-col overflow-hidden rounded-2xl shadow-lg [backface-visibility:hidden] [transform:rotateY(180deg)]" style={{ background: FACE[brand ?? 'none'] }} aria-hidden="true">
-          <span className="mt-6 block h-11 w-full bg-[#0b0f17]" />
+        <span className="absolute inset-0 flex flex-col rounded-2xl shadow-lg [backface-visibility:hidden] [transform:rotateY(180deg)]" style={{ background: FACE[brand ?? 'none'] }} aria-hidden="true">
+          <span className="mt-6 block h-11 w-full shrink-0 bg-[#0b0f17]" />
           <span className="mx-5 mt-4 flex items-center gap-2">
             <span className="flex h-9 flex-1 items-center rounded bg-[repeating-linear-gradient(135deg,#f5f5f0_0_6px,#e6e4dc_6px_12px)] px-2 font-serif text-sm text-[#243247] italic">{holder || 'Firma'}</span>
             <span className="flex h-9 w-14 items-center justify-center rounded bg-white font-mono text-sm font-bold text-[#101d32]">{cvv ? cvv.replace(/./g, '•') : '•••'}</span>
