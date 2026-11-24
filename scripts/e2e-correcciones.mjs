@@ -144,8 +144,8 @@ if ((await page.getByRole('radio', { name: 'Asistió' }).first().getAttribute('a
 await as('familia', '/familia')
 await openFolders()
 const home = await page.locator('main').innerText()
-if (!/Asistencia de hoy:\s*Asistió/.test(home)) fail('El inicio de Laura no muestra la asistencia de hoy')
-if (!home.includes('Entró 07:42')) fail('El inicio de Laura no muestra la entrada de las 07:42')
+if (!/Asistencia de hoy[\s\S]{0,80}Asistió/.test(home)) fail('El inicio de Laura no muestra la asistencia de hoy')
+if (!home.includes('Entrada registrada · 07:42')) fail('El inicio de Laura no muestra la entrada de las 07:42')
 step('La entrada de Regina a las 07:42 aparece como «Asistió» en el pase de lista y en el inicio de Laura')
 
 // 7b. Una entrada nueva con QR marca la asistencia automáticamente
@@ -162,7 +162,7 @@ step(`Escanear la entrada de ${other.firstName} marcó su asistencia (${rec.stat
 // 8. El promedio de Mateo es 7.9 en Papá, Alumno y Admin
 await as('familia', '/familia', { reset: true })
 await openFolders()
-const avgFam = (await page.locator('article', { hasText: 'Mateo' }).first().innerText()).match(/Promedio 1er trim\.\s*([\d.]+)/)?.[1]
+const avgFam = (await page.locator('article', { hasText: 'Mateo' }).first().innerText()).match(/([\d.]+)\s*Promedio\b/)?.[1]
 await as('mateo', '/alumno/calificaciones')
 const avgAlu = (await page.getByRole('table', { name: /Calificaciones/ }).locator('tfoot').innerText()).match(/Promedio\s*([\d.]+)/)?.[1]
 await as('admin', '/alumnos/al2')
@@ -263,7 +263,7 @@ await page.getByRole('dialog', { name: 'Adeudo vencido' }).getByRole('link').fir
 await page.waitForURL(/pagos\/estado\//)
 await as('familia', '/familia')
 await openFolders()
-await page.locator('main').getByRole('link', { name: /^Asistencia/ }).first().click()
+await page.locator('main').getByRole('link', { name: /%\s*Asistencia/ }).first().click()
 await page.waitForURL(/vista=asistencia/)
 await page.getByRole('tab', { name: 'Asistencia', selected: true }).waitFor()
 await as('secundaria', '/alumno')
@@ -285,7 +285,7 @@ await page.screenshot({ path: `${OUT}/familia-expedientes-cerrados.png`, fullPag
 await folders.first().click()
 await page.getByRole('button', { name: /Contraer expediente/ }).waitFor()
 const opened = await page.locator('main ul[aria-label="Expedientes de tus hijos"]').innerText()
-if (!opened.includes('Asistencia de hoy') || !opened.includes('Ver todo de Regina')) fail('Al abrir el expediente no aparecen sus datos')
+if (!opened.includes('Asistencia de hoy') || !opened.includes('Ver expediente de Regina') || !opened.includes('Última observación docente')) fail('Al abrir el expediente no aparecen sus datos')
 await page.screenshot({ path: `${OUT}/familia-expediente-abierto.png`, fullPage: true })
 step('Familia: cada hijo es un expediente contraído (nombre, foto y nivel) que se abre con sus datos')
 
