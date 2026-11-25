@@ -36,7 +36,7 @@ Ya la guardaste en tu gestor de contraseñas. Si necesitas copiarla otra vez:
    - Toca **Add**.
 7. Toca **Deploy** y espera a que termine.
 
-> El primer despliegue sale de la rama `main`, que todavía no tiene la base de datos (está en el PR del mensaje 9). Es normal que esa versión se vea como la demo de siempre o no cargue bien. La versión con base de datos es la de la Parte 3.
+> El primer despliegue sale de la rama `main`, que todavía está vacía (el código está en los PR de cada mensaje), así que **falla con «vite: command not found»**. Es normal. La versión con base de datos es la de la Parte 3.
 
 ## Parte 3 · Abrir la versión con base de datos
 
