@@ -82,6 +82,15 @@ export function StoreProvider({ children, repository }: { children: ReactNode; r
 
   const refresh = useCallback(async () => setDb(await getRepo().snapshot()), [getRepo])
 
+  // Adaptador en línea: datos nuevos que llegan por detrás y guardados que fallaron.
+  useEffect(() => {
+    const repo = getRepo()
+    return repo.suscribir?.((e) => {
+      if (e.tipo === 'error') setSaveError(e.mensaje)
+      void repo.snapshot().then(setDb)
+    })
+  }, [getRepo])
+
   const writeAudit = useCallback(
     async (s: Session | null, a: AuditInput) => {
       if (!s) return
@@ -131,6 +140,8 @@ export function StoreProvider({ children, repository }: { children: ReactNode; r
         try {
           await fn(getRepo())
           if (audit) await writeAudit(session, audit)
+          // Con base de datos en línea, espera a que el servidor confirme (un solo lote).
+          await getRepo().confirmar?.()
           setSaveError(null)
         } catch (e) {
           setSaveError(e instanceof Error ? e.message : 'Error desconocido')

@@ -1,15 +1,17 @@
 import type { Database, TableName } from '../../src/data/types'
 import type { Consulta, Ejecutor } from './db.js'
-import { migrar, puedeUsarRol, ROL_APP } from './esquema.js'
+import { prepararEsquema, ROL_APP } from './esquema.js'
 import { NOMBRES_TABLAS, tablaSql } from './tablas.js'
 
-/** Cambio que la app pide guardar. Es el mismo contrato que `EdugridRepository`. */
-export type Operacion =
+/** Cambio de datos que la app pide guardar. Es el mismo contrato que `EdugridRepository`. */
+export type Cambio =
   | { op: 'insert' | 'upsert'; tabla: TableName; filas: { id: string }[] }
   | { op: 'update'; tabla: TableName; id: string; cambios: Record<string, unknown>; quitar?: string[] }
   | { op: 'remove'; tabla: TableName; id: string }
   | { op: 'meta'; cambios: Record<string, unknown>; quitar?: string[] }
-  | { op: 'reiniciar' }
+
+/** Un cambio, varios cambios juntos en una sola transacción (lote), o restablecer la demo. */
+export type Operacion = Cambio | { op: 'lote'; operaciones: Cambio[] } | { op: 'reiniciar' }
 
 export class NoEncontrado extends Error {}
 
@@ -72,8 +74,7 @@ export function prepararBase(db: Ejecutor, escuela: string, semilla: () => Datab
   let listo = listas.get(escuela)
   if (!listo) {
     listo = (async () => {
-      await migrar(db)
-      conRol.set(db, await puedeUsarRol(db))
+      conRol.set(db, (await prepararEsquema(db)).puedeUsarRol)
       const existe = await una(db, escuela, { text: 'select 1 from "escuelas" where school_id = $1', params: [escuela] })
       if (existe.length === 0 && cargarDemo) await cargarSemilla(db, escuela, semilla())
     })().catch((e: unknown) => {
@@ -106,36 +107,41 @@ export async function leerTodo(db: Ejecutor, escuela: string): Promise<Database>
   return datos
 }
 
-export async function aplicar(db: Ejecutor, escuela: string, o: Operacion, semilla: () => Database): Promise<void> {
+/** Las consultas de un cambio. Si el registro no existe, `edugrid_exigir` cancela toda la transacción. */
+function consultasDe(escuela: string, o: Cambio): Consulta[] {
   switch (o.op) {
     case 'insert':
     case 'upsert':
-      if (o.filas.length) await una(db, escuela, insertarFilas(escuela, o.tabla, o.filas))
-      return
-    case 'update': {
-      const filas = await una(db, escuela, {
-        text: `update ${tablaSql(o.tabla)} set data = (data - $4::text[]) || $3::jsonb, actualizado = now()
-where school_id = $1 and id = $2 returning id`,
-        params: [escuela, o.id, json(o.cambios), o.quitar ?? []],
-      })
-      if (filas.length === 0) throw new NoEncontrado(`No se encontró el registro ${o.id}`)
-      return
-    }
+      return o.filas.length ? [insertarFilas(escuela, o.tabla, o.filas)] : []
+    case 'update':
+      return [
+        {
+          text: `with u as (
+  update ${tablaSql(o.tabla)} set data = (data - $4::text[]) || $3::jsonb, actualizado = now()
+  where school_id = $1 and id = $2 returning 1
+) select edugrid_exigir(count(*), $5) from u`,
+          params: [escuela, o.id, json(o.cambios), o.quitar ?? [], `No se encontró el registro ${o.id}`],
+        },
+      ]
     case 'remove':
-      await una(db, escuela, { text: `delete from ${tablaSql(o.tabla)} where school_id = $1 and id = $2`, params: [escuela, o.id] })
-      return
-    case 'meta': {
-      const filas = await una(db, escuela, {
-        text: `update "escuelas" set data = (data - $3::text[]) || $2::jsonb, actualizado = now() where school_id = $1 returning school_id`,
-        params: [escuela, json(o.cambios), o.quitar ?? []],
-      })
-      if (filas.length === 0) throw new NoEncontrado('Esta escuela todavía no tiene datos.')
-      return
-    }
-    case 'reiniciar':
-      await cargarSemilla(db, escuela, semilla())
-      return
+      return [{ text: `delete from ${tablaSql(o.tabla)} where school_id = $1 and id = $2`, params: [escuela, o.id] }]
+    case 'meta':
+      return [
+        {
+          text: `with u as (
+  update "escuelas" set data = (data - $3::text[]) || $2::jsonb, actualizado = now() where school_id = $1 returning 1
+) select edugrid_exigir(count(*), $4) from u`,
+          params: [escuela, json(o.cambios), o.quitar ?? [], 'Esta escuela todavía no tiene datos.'],
+        },
+      ]
   }
+}
+
+export async function aplicar(db: Ejecutor, escuela: string, o: Operacion, semilla: () => Database): Promise<void> {
+  if (o.op === 'reiniciar') return cargarSemilla(db, escuela, semilla())
+  const cambios = o.op === 'lote' ? o.operaciones : [o]
+  const consultas = cambios.flatMap((c) => consultasDe(escuela, c))
+  if (consultas.length) await enEscuela(db, escuela, consultas)
 }
 
 /** Conteos rápidos para la página de salud. */

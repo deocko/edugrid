@@ -38,12 +38,15 @@ const TIPOS: Record<string, string> = {
 }
 const puerto = Number(process.env.PORT ?? 3000)
 const RUTAS = { '/api/datos': manejarDatos, '/api/salud': manejarSalud } as const
+/** Solo para pruebas: simula una red lenta (por ejemplo EDUGRID_LATENCIA_MS=800). */
+const latencia = Number(process.env.EDUGRID_LATENCIA_MS ?? 0)
 
 createServer(async (req, res) => {
   try {
     const url = new URL(req.url ?? '/', `http://localhost:${puerto}`)
     const api = RUTAS[url.pathname as keyof typeof RUTAS]
     if (api) {
+      if (latencia) await new Promise((r) => setTimeout(r, latencia))
       const trozos: Buffer[] = []
       for await (const t of req) trozos.push(t as Buffer)
       const sinCuerpo = req.method === 'GET' || req.method === 'HEAD' || trozos.length === 0

@@ -20,6 +20,17 @@ const servidor = async () => {
   return r.json()
 }
 
+// Los cambios viajan al servidor por detrás: se espera (hasta 10 s) a que la base los tenga.
+const enLaBase = async (cond, msg) => {
+  const fin = Date.now() + 10000
+  for (;;) {
+    const d = await servidor()
+    if (cond(d)) return d
+    if (Date.now() > fin) fail(msg)
+    await new Promise((r) => setTimeout(r, 250))
+  }
+}
+
 const browser = await chromium.launch()
 const errors = []
 const nuevaPagina = async (viewport = { width: 1280, height: 900 }) => {
@@ -42,7 +53,7 @@ await a.goto(`${BASE}#/`)
 await a.getByText('Datos: Base de datos en línea').waitFor()
 await a.getByRole('button', { name: 'Restablecer datos demo' }).click()
 await a.getByRole('button', { name: 'Sí, restablecer' }).click()
-await a.waitForLoadState('networkidle')
+await a.getByText('Listo: los datos demo se restablecieron').waitFor()
 const tras = await servidor()
 for (const t of ['students', 'guardians', 'charges', 'gradeRecords', 'attendance'])
   if (canon(tras[t]) !== canon(seed[t])) fail(`La tabla ${t} no quedó igual a la semilla`)
@@ -51,9 +62,7 @@ step('Restablecer datos demo carga la semilla en la base de datos (nada se guard
 
 // 2. Iniciar sesión desde la pantalla queda en la bitácora de la base
 await a.getByRole('button', { name: /Entrar como Administrador/ }).first().click()
-await a.waitForLoadState('networkidle')
-const bitacora = (await servidor()).audit
-if (!bitacora.some((x) => x.action === 'Inició sesión' && x.role === 'admin')) fail('El inicio de sesión no llegó a la bitácora de la base')
+await enLaBase((d) => d.audit.some((x) => x.action === 'Inició sesión' && x.role === 'admin'), 'El inicio de sesión no llegó a la bitácora de la base')
 step('El inicio de sesión del administrador se guardó en la bitácora de la base')
 
 // 3. La familia guarda su correo, teléfono y foto en un celular...
@@ -68,10 +77,9 @@ const png = Buffer.from(await cel.evaluate(() => { const c = document.createElem
 const [chooser] = await Promise.all([cel.waitForEvent('filechooser', { timeout: 5000 }), cel.getByText('Agregar foto de perfil', { exact: true }).click()])
 await chooser.setFiles({ name: 'perfil.png', mimeType: 'image/png', buffer: png })
 await cel.getByText('Cambiar foto de perfil', { exact: true }).waitFor()
-await cel.waitForLoadState('networkidle')
-const tutor = (await servidor()).guardians.find((g) => g.id === 'tu0')
-if (tutor.email !== 'laura.bd@ejemplo.mx' || tutor.phone !== '5587654321') fail('El correo y el teléfono no llegaron a la base')
-if (!tutor.profilePhoto?.startsWith('data:image/')) fail('La foto de perfil no llegó a la base')
+const tu0 = (d) => d.guardians.find((g) => g.id === 'tu0')
+await enLaBase((d) => tu0(d).email === 'laura.bd@ejemplo.mx' && tu0(d).phone === '5587654321', 'El correo y el teléfono no llegaron a la base')
+await enLaBase((d) => tu0(d).profilePhoto?.startsWith('data:image/'), 'La foto de perfil no llegó a la base')
 step('La familia guarda correo, teléfono y foto de perfil y quedan en la base de datos')
 
 // 4. ...y en otro dispositivo (otro navegador, sin nada guardado) aparecen igual
@@ -99,7 +107,7 @@ await a.evaluate(() => localStorage.removeItem('edugrid.demo.sesion'))
 await a.goto(`${BASE}?v=${++v}#/`)
 await a.getByRole('button', { name: 'Restablecer datos demo' }).click()
 await a.getByRole('button', { name: 'Sí, restablecer' }).click()
-await a.waitForLoadState('networkidle')
+await a.getByText('Listo: los datos demo se restablecieron').waitFor()
 const otraVez = (await servidor()).guardians.find((g) => g.id === 'tu0')
 if (otraVez.email !== seed.guardians.find((g) => g.id === 'tu0').email) fail('Restablecer no regresó los datos de la semilla')
 step('Restablecer de nuevo regresa los datos de ejemplo')

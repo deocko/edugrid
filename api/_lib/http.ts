@@ -1,7 +1,7 @@
 import type { Database } from '../../src/data/types'
 import { FaltaConfiguracion, type Ejecutor } from './db.js'
 import { MIGRACIONES } from './esquema.js'
-import { aislamiento, aplicar, contar, leerTodo, NoEncontrado, prepararBase, type Operacion } from './servicio.js'
+import { aislamiento, aplicar, contar, leerTodo, NoEncontrado, prepararBase, type Cambio, type Operacion } from './servicio.js'
 import { esTabla } from './tablas.js'
 
 export interface Entorno {
@@ -25,6 +25,17 @@ export function leerOperacion(cuerpo: unknown): Operacion {
   if (!esObjeto(cuerpo)) throw new Invalida('Se esperaba un objeto JSON.')
   const { op } = cuerpo
   if (op === 'reiniciar') return { op }
+  if (op === 'lote') {
+    const ops = cuerpo.operaciones
+    if (!Array.isArray(ops) || ops.length > 500) throw new Invalida('El lote debe ser una lista de hasta 500 cambios.')
+    return { op, operaciones: ops.map(leerCambio) }
+  }
+  return leerCambio(cuerpo)
+}
+
+function leerCambio(cuerpo: unknown): Cambio {
+  if (!esObjeto(cuerpo)) throw new Invalida('Se esperaba un objeto JSON.')
+  const { op } = cuerpo
   if (op === 'meta') {
     if (!esObjeto(cuerpo.cambios)) throw new Invalida('Faltan los cambios.')
     return { op, cambios: cuerpo.cambios, quitar: listaDeTexto(cuerpo.quitar) }
@@ -66,6 +77,9 @@ const responder = (h: Headers, estado: number, cuerpo: unknown) => new Response(
 function fallo(h: Headers, e: unknown): Response {
   if (e instanceof Invalida) return responder(h, 400, { error: e.message })
   if (e instanceof NoEncontrado) return responder(h, 404, { error: e.message })
+  // edugrid_exigir: un registro del lote no existe; Postgres ya deshizo todo el lote.
+  if (typeof e === 'object' && e !== null && (e as { code?: unknown }).code === 'P0002')
+    return responder(h, 404, { error: (e as { message?: string }).message ?? 'No se encontró el registro.' })
   if (e instanceof FaltaConfiguracion) return responder(h, 503, { error: e.message })
   console.error('[edugrid-api]', e)
   return responder(h, 500, { error: 'No se pudo conectar con la base de datos. Intenta de nuevo en un momento.' })

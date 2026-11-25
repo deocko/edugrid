@@ -55,6 +55,7 @@ console.log('Prueba de la API de EDUGRID con PGlite')
 
 // 1. Primera visita: crea tablas y carga la semilla.
 const api = new ApiRepository(BASE, 0)
+let r: Response
 const primera = await api.snapshot()
 assert.deepEqual(primera, normal(semilla))
 ok('la base vacía se prepara sola y devuelve la semilla DEMO idéntica (mismo orden)')
@@ -74,7 +75,7 @@ ok('se crearon 31 tablas de datos + escuelas + control de migraciones; todas con
 const salud = (await (await fetch(`${BASE}/salud`)).json()) as { ok: boolean; registros: Record<string, number>; migracion: number }
 assert.equal(salud.ok, true)
 assert.equal(salud.registros.students, semilla.students.length)
-assert.equal(salud.migracion, 1)
+assert.equal(salud.migracion, 2)
 assert.match(String((salud as { aislamiento?: string }).aislamiento), /Row Level Security/)
 ok(`/api/salud responde: ${salud.registros.students} alumnos, migración ${salud.migracion}`)
 
@@ -92,16 +93,33 @@ const operar = async (r: EdugridRepository) => {
   await r.updateMeta({ checkinPlaces: ['Puerta principal', 'Puerta DEMO'] })
 }
 await operar(local)
+let peticiones = 0
+const fetchReal = globalThis.fetch
+globalThis.fetch = ((...a: Parameters<typeof fetch>) => (peticiones++, fetchReal(...a))) as typeof fetch
 await operar(api)
+await api.confirmar()
+globalThis.fetch = fetchReal
+assert.equal(peticiones, 1, 'los 6 cambios seguidos deben viajar en un solo lote')
 const esperado = normal(await local.snapshot())
 const enApi = await api.snapshot()
 assert.deepEqual(enApi, esperado)
 const desdeServidor = await new ApiRepository(BASE).snapshot()
 assert.deepEqual(desdeServidor, esperado)
-ok('insert, update (incluye borrar un campo), upsert, remove y meta quedan igual que en el adaptador local')
+ok('insert, update (incluye borrar un campo), upsert, remove y meta quedan igual que en el adaptador local, en una sola petición')
+
+// Un lote es todo o nada: si un registro no existe, no se guarda ningún cambio del lote.
+const antes = await new ApiRepository(BASE).snapshot()
+r = await post({ op: 'lote', operaciones: [
+  { op: 'update', tabla: 'students', id: s0.id, cambios: { firstName: 'No debe quedar' } },
+  { op: 'update', tabla: 'students', id: 'no-existe', cambios: { firstName: 'X' } },
+] })
+assert.equal(r.status, 404)
+assert.match(((await r.json()) as { error: string }).error, /No se encontró el registro no-existe/)
+assert.deepEqual(await new ApiRepository(BASE).snapshot(), antes)
+ok('un lote con un registro inexistente se deshace completo')
 
 // 4. Errores claros.
-let r = await post({ op: 'insert', tabla: 'students; drop table students', filas: [] })
+r = await post({ op: 'insert', tabla: 'students; drop table students', filas: [] })
 assert.equal(r.status, 400)
 r = await post({ op: 'update', tabla: 'students', id: 'no-existe', cambios: { firstName: 'X' } })
 assert.equal(r.status, 404)
@@ -169,12 +187,20 @@ ok('RLS: sin escuela no se ve nada, cada escuela ve solo lo suyo y no puede escr
 
 // 8. Volver a arrancar no repite migraciones ni borra datos.
 await api.update('students', s0.id, { firstName: 'Sigue aquí' })
+await api.confirmar()
 olvidarPreparacion()
 const despues = await new ApiRepository(BASE).snapshot()
 assert.equal(despues.students[0]!.firstName, 'Sigue aquí')
 const migs = await ejecutor.consulta('select count(*)::int as n from "edugrid_migraciones"')
-assert.equal(migs[0]?.n, 1)
-ok('un arranque nuevo no repite migraciones ni toca los datos guardados')
+assert.equal(migs[0]?.n, 2)
+// Una base que se quedó en la migración 1 (como la de Neon antes de este cambio) recibe la 2 sola.
+await ejecutor.consulta('delete from "edugrid_migraciones" where version = 2')
+await ejecutor.consulta('drop function edugrid_exigir(bigint, text)')
+olvidarPreparacion()
+r = await post({ op: 'lote', operaciones: [{ op: 'update', tabla: 'students', id: 'no-existe', cambios: {} }] })
+assert.equal(r.status, 404)
+assert.equal((await ejecutor.consulta('select count(*)::int as n from "edugrid_migraciones"'))[0]?.n, 2)
+ok('un arranque nuevo no repite migraciones ni toca los datos; una base en la migración 1 recibe la 2')
 
 // 9. Sin semilla automática la base queda vacía y lo dice.
 await pg.exec('drop schema public cascade; create schema public;')

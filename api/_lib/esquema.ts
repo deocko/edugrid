@@ -50,6 +50,18 @@ export const MIGRACIONES: { version: number; nombre: string; sql: string[] }[] =
       ...TODAS.flatMap(rls),
     ],
   },
+  {
+    version: 2,
+    nombre: 'Función edugrid_exigir para cancelar un lote si un registro no existe',
+    sql: [
+      `create or replace function edugrid_exigir(n bigint, mensaje text) returns void language plpgsql as $$
+begin
+  if n = 0 then
+    raise exception using errcode = 'P0002', message = mensaje;
+  end if;
+end $$`,
+    ],
+  },
 ]
 
 const CREAR_CONTROL = `create table if not exists "edugrid_migraciones" (
@@ -78,6 +90,25 @@ exception when others then
   raise notice 'EDUGRID: no se pudo preparar el rol ${ROL_APP}: %', sqlerrm;
 end $$`
 
+const PUEDE_ROL = `case when exists (select 1 from pg_roles where rolname = '${ROL_APP}') then pg_has_role(current_user, '${ROL_APP}', 'SET') else false end`
+
+/**
+ * Prepara la base y dice si las consultas pueden usar el rol edugrid_app.
+ * Camino rápido (lo normal en cada arranque del servidor): una sola consulta
+ * confirma que no falta ninguna migración. Si falta algo, aplica lo que falte.
+ */
+export async function prepararEsquema(db: Ejecutor): Promise<{ aplicadas: number[]; puedeUsarRol: boolean }> {
+  const ultima = MIGRACIONES.at(-1)?.version ?? 0
+  try {
+    const [f] = await db.consulta(`select coalesce(max(version), 0)::int as v, ${PUEDE_ROL} as puede from "edugrid_migraciones"`)
+    if (Number(f?.v) === ultima) return { aplicadas: [], puedeUsarRol: f?.puede === true }
+  } catch {
+    // La tabla de control todavía no existe: base nueva.
+  }
+  const aplicadas = await migrar(db)
+  return { aplicadas, puedeUsarRol: await puedeUsarRol(db) }
+}
+
 /** Aplica las migraciones que falten. Se puede llamar muchas veces sin problema. */
 export async function migrar(db: Ejecutor): Promise<number[]> {
   await db.consulta(CREAR_CONTROL)
@@ -92,7 +123,7 @@ export async function migrar(db: Ejecutor): Promise<number[]> {
     await db.transaccion(consultas)
     aplicadas.push(m.version)
   }
-  // Los permisos se repasan siempre, así cubren también las tablas de migraciones nuevas.
+  // Los permisos se repasan después de migrar, así cubren también las tablas nuevas.
   await db.consulta(PERMISOS)
   return aplicadas
 }
@@ -100,8 +131,7 @@ export async function migrar(db: Ejecutor): Promise<number[]> {
 /** ¿Puede este usuario cambiarse al rol edugrid_app? Entonces RLS se aplica aunque sea dueño de las tablas. */
 export async function puedeUsarRol(db: Ejecutor): Promise<boolean> {
   const [fila] = await db.consulta(
-    `select case when exists (select 1 from pg_roles where rolname = $1) then pg_has_role(current_user, $1, 'SET') else false end as puede`,
-    [ROL_APP],
+    `select ${PUEDE_ROL} as puede`,
   )
   return fila?.puede === true
 }
