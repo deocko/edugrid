@@ -1,6 +1,7 @@
 import { useMemo, useState, type FormEvent } from 'react'
 import { Link, useSearchParams } from 'react-router'
-import { Avatar, Badge, Button, Card, EmptyState, Field, Input, Modal, Notice, PageHeader, Select, Table, Switch, TD, TH } from '../../components/ui'
+import { Badge, Button, Card, EmptyState, Field, Input, Modal, Notice, PageHeader, Select, Table, Switch, TD, TH } from '../../components/ui'
+import { PersonAvatarButton } from '../../components/PersonPhotos'
 import type { Guardian, Level, Student } from '../../data/types'
 import { formatMoney, nowISO, uid, plural } from '../../lib/format'
 import { studentBalance } from '../../lib/finance'
@@ -101,7 +102,7 @@ export function Students() {
                   <tr key={s.id}>
                     <td className={TD}>
                       <div className="flex items-center gap-3">
-                        <Avatar name={studentName(s)} src={s.photo} size={36} />
+                        <PersonAvatarButton table="students" id={s.id} name={studentName(s)} photo={s.photo} profilePhoto={s.profilePhoto} size={36} />
                         <div className="min-w-0">
                           <Link to={`/alumnos/${s.id}`} className="font-semibold text-link no-underline hover:underline">
                             {studentName(s)}

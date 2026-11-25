@@ -5,6 +5,7 @@ import { Avatar, Badge, Button, Card, EmptyState, LinkButton, PageHeader } from 
 import { ATT_LABEL, attendanceOfDay, attendanceSummary } from '../../lib/attendance'
 import { formatDate, formatMoney, nowISO, todayISO } from '../../lib/format'
 import { studentBalance } from '../../lib/finance'
+import { avatarOf } from '../../lib/profile'
 import { LEVEL_LABEL, averageFor, formatAverage, groupLabel, isPreschool, levelOfGroup, userKey, visibleAnnouncements, visibleEvents, visibleStudents } from '../../lib/scope'
 import { useApp } from '../../state/context'
 import { checkinsOfDay } from '../../lib/presence'
@@ -53,7 +54,7 @@ export function FamilyHome() {
                 <article className={`${FOLDER_COLORS[idx % FOLDER_COLORS.length]} relative overflow-hidden rounded-3xl border border-line border-l-[6px] border-l-[var(--s)] bg-surface shadow-sm transition ${isOpen ? 'shadow-md' : 'hover:shadow-md'}`}>
                   <h2 className="m-0">
                     <button type="button" onClick={() => toggle(k.id)} aria-expanded={isOpen} aria-controls={panel} className="flex w-full items-center gap-3 rounded-3xl p-4 text-left sm:gap-4 sm:p-5">
-                      <Avatar name={`${k.firstName} ${k.lastName}`} src={k.photo} size={64} />
+                      <Avatar name={`${k.firstName} ${k.lastName}`} src={avatarOf(k)} size={64} />
                       <span aria-hidden="true" className="hidden h-14 w-px shrink-0 bg-line min-[400px]:block" />
                       <span className="min-w-0 flex-1">
                         <span className="block text-lg leading-tight font-extrabold text-heading sm:text-xl">{k.firstName} {k.lastName}</span>

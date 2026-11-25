@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router'
+import { PersonAvatarButton, PersonPhotos } from '../../components/PersonPhotos'
 import { Badge, Button, Card, Field, Input, Modal, Notice, PageHeader, Table, Switch, TD, TH } from '../../components/ui'
 import type { Teacher } from '../../data/types'
 import { uid, plural } from '../../lib/format'
@@ -44,9 +45,14 @@ export function Teachers() {
               return (
                 <tr key={t.id}>
                   <td className={TD}>
-                    <p className="font-semibold text-heading">{t.firstName} {t.lastName}</p>
-                    <p className="text-xs text-muted">{t.specialty}</p>
-                    {!t.active && <Badge tone="aviso">Baja</Badge>}
+                    <div className="flex items-center gap-3">
+                      <PersonAvatarButton table="teachers" id={t.id} name={`${t.firstName} ${t.lastName}`} photo={t.photo} profilePhoto={t.profilePhoto} size={36} />
+                      <div className="min-w-0">
+                        <p className="font-semibold text-heading">{t.firstName} {t.lastName}</p>
+                        <p className="text-xs text-muted">{t.specialty}</p>
+                        {!t.active && <Badge tone="aviso">Baja</Badge>}
+                      </div>
+                    </div>
                   </td>
                   <td className={TD}>
                     {homeroom.length > 0 && <p className="text-sm">Titular: {homeroom.map((g) => groupLabel(db, g)).join(', ')}</p>}
@@ -79,6 +85,8 @@ function TeacherForm({ teacher, onDone }: { teacher: Teacher | null; onDone: () 
   const { db, act } = useApp()
   const [form, setForm] = useState<Draft>(teacher ? { firstName: teacher.firstName, lastName: teacher.lastName, specialty: teacher.specialty, email: teacher.email, phone: teacher.phone } : EMPTY)
   const [error, setError] = useState('')
+  // Las fotos se leen en vivo: se guardan al momento, sin esperar a «Guardar».
+  const current = teacher ? db.teachers.find((t) => t.id === teacher.id) : undefined
   const busy = teacher ? db.groups.filter((g) => g.homeroomTeacherId === teacher.id).length + db.assignments.filter((a) => a.teacherId === teacher.id).length : 0
 
   const submit = async (e: FormEvent) => {
@@ -99,6 +107,7 @@ function TeacherForm({ teacher, onDone }: { teacher: Teacher | null; onDone: () 
 
   return (
     <form onSubmit={(e) => void submit(e)} className="grid gap-3 sm:grid-cols-2" noValidate>
+      {current && <div className="sm:col-span-2"><PersonPhotos table="teachers" id={current.id} name={`${current.firstName} ${current.lastName}`} photo={current.photo} profilePhoto={current.profilePhoto} /></div>}
       <Field label="Nombre(s)">{(id) => <Input id={id} value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} />}</Field>
       <Field label="Apellidos">{(id) => <Input id={id} value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} />}</Field>
       <Field label="Especialidad">{(id) => <Input id={id} value={form.specialty} onChange={(e) => setForm({ ...form, specialty: e.target.value })} />}</Field>

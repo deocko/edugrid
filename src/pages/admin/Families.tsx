@@ -1,6 +1,7 @@
 import { useMemo, useState, type FormEvent } from 'react'
 import { Link } from 'react-router'
-import { Avatar, Badge, Button, Card, EmptyState, Field, Input, Modal, Notice, PageHeader, Select } from '../../components/ui'
+import { PersonAvatarButton, PersonPhotos } from '../../components/PersonPhotos'
+import { Badge, Button, Card, EmptyState, Field, Input, Modal, Notice, PageHeader, Select } from '../../components/ui'
 import type { Guardian, Student } from '../../data/types'
 import { nowISO, plural, uid } from '../../lib/format'
 import { groupLabel, studentName } from '../../lib/scope'
@@ -39,7 +40,7 @@ export function Families() {
           <ul className="divide-y divide-line">
             {list.slice(0, 80).map(({ g, kids }) => (
               <li key={g.id} className="flex flex-wrap items-center gap-3 py-3">
-                <Avatar name={`${g.firstName} ${g.lastName}`} size={40} />
+                <PersonAvatarButton table="guardians" id={g.id} name={`${g.firstName} ${g.lastName}`} photo={g.photo} profilePhoto={g.profilePhoto} size={40} />
                 <div className="min-w-0 flex-1">
                   <p className="font-semibold text-heading">{g.firstName} {g.lastName} <span className="font-normal text-muted">· {g.relation}</span></p>
                   <p className="text-sm text-muted">{g.phone}{g.email ? ` · ${g.email}` : ''}</p>
@@ -72,6 +73,8 @@ function FamilyForm({ guardian, onDone }: { guardian: Guardian | null; onDone: (
     consent: !!guardian?.consentAt,
   })
   const initial = db.students.filter((s) => guardian && s.guardianIds.includes(guardian.id)).map((s) => s.id)
+  // Las fotos se leen en vivo: se guardan al momento, sin esperar a «Guardar cambios».
+  const current = guardian ? db.guardians.find((g) => g.id === guardian.id) : undefined
   const [kids, setKids] = useState<string[]>(initial)
   const [q, setQ] = useState('')
   const [error, setError] = useState('')
@@ -121,6 +124,7 @@ function FamilyForm({ guardian, onDone }: { guardian: Guardian | null; onDone: (
 
   return (
     <form onSubmit={(e) => void submit(e)} className="space-y-4" noValidate>
+      {guardian && <PersonPhotos table="guardians" id={guardian.id} name={`${guardian.firstName} ${guardian.lastName}`} photo={current?.photo} profilePhoto={current?.profilePhoto} />}
       <div className="grid gap-3 sm:grid-cols-2">
         <Field label="Nombre(s)">{(id) => <Input id={id} value={form.firstName} onChange={(e) => set('firstName', e.target.value)} autoComplete="off" />}</Field>
         <Field label="Apellidos">{(id) => <Input id={id} value={form.lastName} onChange={(e) => set('lastName', e.target.value)} autoComplete="off" />}</Field>
