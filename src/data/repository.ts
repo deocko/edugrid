@@ -1,5 +1,8 @@
 import type { Database, Meta, TableName, Tables } from './types'
 
+/** Aviso de un adaptador que trabaja en segundo plano (el adaptador en línea). */
+export type EventoRepositorio = { tipo: 'datos' } | { tipo: 'error'; mensaje: string }
+
 /**
  * Contrato de acceso a datos. La interfaz de usuario solo conoce este contrato,
  * así que para conectar Supabase (u otro backend) basta con escribir un nuevo
@@ -19,4 +22,8 @@ export interface EdugridRepository {
   updateMeta(patch: Partial<Meta>): Promise<void>
   /** Vuelve a cargar los datos de ejemplo. */
   reset(): Promise<void>
+  /** Espera a que lo pendiente quede guardado en el servidor (solo adaptadores en línea). */
+  confirmar?(): Promise<void>
+  /** Avisa cuando llegan datos nuevos del servidor o falla un guardado en segundo plano. */
+  suscribir?(fn: (e: EventoRepositorio) => void): () => void
 }

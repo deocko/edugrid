@@ -77,7 +77,7 @@ QA_MARCA=montesol node scripts/qa.mjs  # QA completo con la marca de una escuela
 
 ## Despliegue en GitHub Pages
 
-El flujo `.github/workflows/deploy.yml` revisa tipos, lint y build en cada PR, y publica en GitHub Pages al hacer merge a `main`. En el repositorio activa **Settings → Pages → Source: GitHub Actions**. La app se publica en `https://<usuario>.github.io/edugrid/`.
+El flujo `.github/workflows/deploy.yml` revisa tipos, lint, la prueba de la API y el build en cada PR, y publica en GitHub Pages al hacer merge a `main`. En el repositorio activa **Settings → Pages → Source: GitHub Actions**. La app se publica en `https://<usuario>.github.io/edugrid/`.
 
 ## Tecnología
 
@@ -86,9 +86,44 @@ El flujo `.github/workflows/deploy.yml` revisa tipos, lint y build en cada PR, y
 - **Sin CDNs en tiempo de ejecución**: ni Google Fonts ni librerías externas; todo va dentro de la app (fuente del sistema, íconos SVG propios, jsPDF empaquetado). Funciona igual en WiFi y en datos móviles.
 - Mobile-first: navegación inferior en celular y tableta, barra lateral en escritorio. Modo claro, oscuro o según el dispositivo.
 
-## Datos y conexión futura con Supabase
+## Datos: en el navegador o en la base de datos (Neon)
 
-La interfaz solo habla con el contrato `EdugridRepository` (`src/data/repository.ts`). Hoy lo implementa `LocalStorageRepository` (guarda en el navegador y arranca con `src/data/seed.json`). Para conectar Supabase se escribe otro adaptador con los mismos métodos (`snapshot`, `list`, `insert`, `update`, `upsert`, `remove`, `updateMeta`, `reset`) y se pasa a `<StoreProvider repository={...}>`, sin tocar las pantallas.
+La interfaz solo habla con el contrato `EdugridRepository` (`src/data/repository.ts`). Hay dos adaptadores y la app elige sola:
+
+| Dónde corre | Adaptador | Dónde quedan los datos |
+| --- | --- | --- |
+| GitHub Pages / `npm run dev` | `LocalStorageRepository` | En el navegador de cada persona (demo) |
+| Vercel, o el servidor Node (`npm run servidor`) | `ApiRepository` (`src/data/apiAdapter.ts`) | En Postgres (Neon), por la API `/api` |
+
+La pantalla de inicio dice cuál se está usando («Datos: …»).
+
+**API** (`api/`): dos rutas, `/api/datos` (GET trae todo; POST guarda un cambio) y `/api/salud` (revisa la conexión). La lógica está en `api/_lib/` y es Node estándar (`Request` → `Response`): los archivos `api/datos.ts` y `api/salud.ts` son solo la envoltura para Vercel, y `servidor/index.ts` la sirve igual en un VPS (Coolify, Dokploy) sin reescribir nada.
+
+**Base de datos**: al primer uso la API crea las tablas (migraciones en `api/_lib/esquema.ts`, registradas en `edugrid_migraciones`) y, si la escuela no tiene datos, carga la semilla DEMO. Hay una tabla por cada tipo de `src/data/types.ts` (`students`, `payments`, `grade_records`…) con `school_id`, `id`, `data` (jsonb) y `actualizado`, más la tabla `escuelas` con la configuración de cada una.
+
+**Aislamiento por escuela**: todas las tablas llevan `school_id` desde el inicio. Cada consulta filtra por la escuela y, además, Postgres lo hace cumplir con Row Level Security (`force row level security`, rol `edugrid_app`): sin escuela fijada no se ve nada y una escuela no puede leer ni escribir filas de otra. `/api/salud` dice qué protección está activa. Por ahora la escuela sale de `EDUGRID_ESCUELA` (por omisión `demo`); con el inicio de sesión real saldrá de la cuenta de la persona.
+
+Variables del servidor (solo en el hosting, nunca en el código):
+
+| Variable | Para qué |
+| --- | --- |
+| `DATABASE_URL` | Cadena de conexión de Neon (obligatoria) |
+| `EDUGRID_ESCUELA` | Escuela que atiende este servidor (opcional, `demo`) |
+| `EDUGRID_SEMILLA_DEMO=no` | No cargar los datos de ejemplo en una base vacía |
+| `EDUGRID_PERMITIR_REINICIO=no` | Apagar «Restablecer datos demo» |
+| `EDUGRID_ORIGENES` | Dominios extra que pueden llamar a la API (por ejemplo `https://deocko.github.io`) |
+
+Pruebas sin Neon ni internet (Postgres en memoria con PGlite):
+
+```bash
+npm run prueba:api                         # API, migraciones, aislamiento entre escuelas y RLS
+npm run build:servidor && npm run servidor # app + API en http://localhost:3000
+node scripts/e2e-base-datos.mjs            # con el servidor anterior: la app guarda y lee de la base
+```
+
+Las fotos se guardan por ahora dentro de los datos; más adelante irán a un almacenamiento de archivos (R2/S3).
+
+Guía para publicar en Vercel paso a paso: [docs/GUIA-VERCEL-NEON.md](docs/GUIA-VERCEL-NEON.md).
 
 ## Permisos y datos de menores
 
