@@ -83,7 +83,7 @@ export const ADMIN_SETTINGS: SettingsItem[] = [
   { to: '/admin/escuela', label: 'Ciclos y grupos', icon: 'estructura', description: 'Ciclos, grados, grupos y materias', color: 'indigo' },
   { to: '/pagos', label: 'Pagos', icon: 'pagos', description: 'Cargos, cobros y adeudos', color: 'ambar' },
   { to: '/facturacion', label: 'Facturación', icon: 'factura', description: 'CFDI de demostración', color: 'rojo' },
-  { to: '/admin/configuracion', label: 'Marca y entradas', icon: 'ajustes', description: 'Logo, colores y lugares de entrada', color: 'azul' },
+  { to: '/admin/configuracion', label: 'Marca y entradas', icon: 'ajustes', description: 'Logo, colores, tarjetas y menú, lugares de entrada', color: 'azul' },
   { to: '/admin/permisos', label: 'Permisos', icon: 'escudo', description: 'Qué ve cada perfil', color: 'morado' },
   { to: '/admin/bitacora', label: 'Bitácora', icon: 'bitacora', description: 'Accesos y cambios', color: 'gris' },
   { to: '/privacidad', label: 'Privacidad', icon: 'candado', description: 'Aviso de privacidad', color: 'turquesa' },

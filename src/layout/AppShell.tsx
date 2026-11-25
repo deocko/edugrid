@@ -9,7 +9,7 @@ import { hubFor, inHub, moduleForPath, NAV } from './nav'
 import { ByEdugrid, SchoolLogo } from '../brand/SchoolBrand'
 import { brandingOf } from '../lib/branding'
 import { profileOf } from '../lib/profile'
-import { artFor } from './headerArt'
+import { appearanceOf, cardColorFor, menuColorFor } from '../lib/appearance'
 
 const darkQuery = () => window.matchMedia('(prefers-color-scheme: dark)')
 const subscribeDark = (cb: () => void) => {
@@ -98,6 +98,9 @@ export function AppShell() {
   const barLabels = [...primary.map((it) => it.short ?? it.label), ...(rest.length ? [hub.label] : [])]
   const me = profileOf(db, session)
   const onProfile = location.pathname === '/perfil'
+  const look = appearanceOf(db.meta)
+  const cardColor = cardColorFor(look, location.pathname)
+  const menuColor = menuColorFor(look, location.pathname)
 
   const badge = (to: string) =>
     to === '/avisos' && unread > 0 && session.role !== 'admin' ? (
@@ -190,7 +193,7 @@ export function AppShell() {
           </div>
         </header>
 
-        <main id="contenido" className={`subj-${artFor(location.pathname).color} mx-auto w-full max-w-6xl flex-1 px-4 pt-5 pb-28 lg:pb-10`} key={location.pathname}>
+        <main id="contenido" className={`${cardColor ? `subj-${cardColor}` : ''} mx-auto w-full max-w-6xl flex-1 px-4 pt-5 pb-28 lg:pb-10`} key={location.pathname}>
           {moduleName && (
             <p className="mb-1 text-sm font-bold text-link" data-modulo>
               {moduleName}
@@ -217,7 +220,7 @@ export function AppShell() {
 
       {/* Navegación inferior (móvil y tableta): barra flotante de íconos; la sección activa se muestra como botón con su nombre */}
       <nav className="pointer-events-none fixed inset-x-0 bottom-0 z-40 px-2 pb-[calc(env(safe-area-inset-bottom)+0.5rem)] min-[360px]:px-3 lg:hidden no-print" aria-label="Navegación principal">
-        <ul className="pointer-events-auto mx-auto flex max-w-md items-center justify-between gap-0.5 rounded-full border border-line bg-surface/95 p-1.5 shadow-[0_8px_30px_rgb(16_29_50/0.18)] backdrop-blur dark:shadow-[0_8px_30px_rgb(0_0_0/0.5)]">
+        <ul className={`${menuColor ? `subj-${menuColor} bg-[var(--s-bg)] border-[color-mix(in_srgb,var(--s)_28%,var(--c-line))]` : 'border-line bg-surface/95'} pointer-events-auto mx-auto flex max-w-md items-center justify-between gap-0.5 rounded-full border p-1.5 shadow-[0_8px_30px_rgb(16_29_50/0.18)] backdrop-blur dark:shadow-[0_8px_30px_rgb(0_0_0/0.5)]`}>
           {primary.map((it) => (
             <li key={it.to} className="flex justify-center has-[[aria-current=page]]:min-w-0">
               <NavLink to={it.to} end={it.end} className={({ isActive }) => pillClass(isActive)}>

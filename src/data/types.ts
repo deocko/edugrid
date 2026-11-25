@@ -401,6 +401,14 @@ export interface Meta {
   branding?: Branding
   /** Catálogo de lugares donde se escanean entradas y salidas. */
   checkinPlaces?: string[]
+  /** Colores de tarjetas y del menú de abajo. Si falta, se usan los de cada sección. */
+  appearance?: Appearance
+}
+
+/** Fondo pastel de tarjetas y menú: el de cada sección, uno fijo de la paleta o blanco. */
+export interface Appearance {
+  cards: 'seccion' | 'blanco' | SubjectColor
+  menu: 'tarjetas' | 'blanco' | SubjectColor
 }
 
 /** Tablas que maneja el repositorio. Cada una es una lista de filas con `id`. */

@@ -355,6 +355,25 @@ if (!reg.profilePhoto?.startsWith('data:image/jpeg') || reg.photo !== seed.stude
 await page.setViewportSize({ width: 1280, height: 900 })
 step('Mi perfil: se abre desde la barra lateral y desde «Más», guarda foto, correo y teléfono; la foto institucional no cambia')
 
+// 19. Dirección elige el color de las tarjetas y del menú de abajo para toda la escuela
+await page.setViewportSize({ width: 390, height: 844 })
+await as('familia', '/avisos', { reset: true })
+const barBg = () => page.getByRole('navigation', { name: 'Navegación principal' }).last().locator('ul').evaluate((e) => getComputedStyle(e).backgroundColor)
+const before = await barBg()
+if (/0\.95|255, 255, 255/.test(before)) fail('El menú de abajo no toma el color de las tarjetas')
+await as('admin', '/admin/configuracion')
+await page.getByRole('radiogroup', { name: 'Fondo de las tarjetas' }).getByRole('radio', { name: 'Verde' }).click()
+await page.getByText('Guardado: Tarjetas: Verde').waitFor()
+await page.getByRole('radiogroup', { name: 'Fondo del menú de abajo' }).getByRole('radio', { name: /Sin color/ }).click()
+await page.getByText('Guardado: Menú: sin color').waitFor()
+const look = (await db()).meta.appearance
+if (look.cards !== 'verde' || look.menu !== 'blanco') fail('No se guardaron los colores de tarjetas y menú')
+await as('familia', '/avisos')
+const after = await barBg()
+if (after === before || !/0\.95|255, 255, 255/.test(after)) fail(`El menú de abajo no quedó en blanco (${after})`)
+await page.setViewportSize({ width: 1280, height: 900 })
+step('Dirección elige el color de tarjetas y del menú de abajo; el menú toma el color de las tarjetas por omisión')
+
 if (errors.length) fail(`Errores en la página: ${errors.join(' | ')}`)
 await browser.close()
 console.log('Correcciones del mensaje 8: todo en orden.')

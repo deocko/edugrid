@@ -1,7 +1,10 @@
 import { useState, type FormEvent } from 'react'
 import { Logo } from '../../brand/Logo'
 import { Badge, Button, Card, Field, FilePickButton, Input, Notice, PageHeader } from '../../components/ui'
-import type { Branding } from '../../data/types'
+import type { Appearance, Branding, SubjectColor } from '../../data/types'
+import { Icon } from '../../components/Icon'
+import { appearanceOf, DEFAULT_APPEARANCE } from '../../lib/appearance'
+import { SUBJECT_COLORS } from '../../lib/subjects'
 import { DEFAULT_BRANDING, SCHOOL_PRESETS, brandTokens, brandingOf, isHex, logoToPng, placesOf, type SchoolPreset } from '../../lib/branding'
 import { useApp } from '../../state/context'
 
@@ -15,6 +18,7 @@ export function SchoolSettings() {
       <div className="space-y-4">
         <PresetPicker />
         <IdentityForm />
+        <AppearanceForm />
         <PlacesCatalog />
       </div>
     </>
@@ -175,6 +179,90 @@ function IdentityForm() {
         </div>
       </form>
     </Card>
+  )
+}
+
+/** Colores de las tarjetas y del menú de abajo (celular y tableta), para toda la escuela. */
+function AppearanceForm() {
+  const { db, act } = useApp()
+  const look = appearanceOf(db.meta)
+  const [saved, setSaved] = useState('')
+  const set = async (patch: Partial<Appearance>, label: string) => {
+    const next = { ...look, ...patch }
+    await act((repo) => repo.updateMeta({ appearance: next }), { action: 'Cambió los colores de tarjetas y menú', detail: label })
+    setSaved(label)
+  }
+  const colorName = (c: SubjectColor) => SUBJECT_COLORS.find((x) => x.value === c)?.label ?? c
+  return (
+    <Card title="Colores de tarjetas y menú">
+      <p className="mb-4 text-sm text-muted">Elige el fondo pastel de las tarjetas y del menú de abajo en el celular. Se aplica al momento para toda la escuela, en modo claro y oscuro.</p>
+      <div className="space-y-5">
+        <SwatchGroup
+          legend="Fondo de las tarjetas"
+          value={look.cards}
+          special={[
+            { value: 'seccion', label: 'Color de cada sección' },
+            { value: 'blanco', label: 'Sin color' },
+          ]}
+          onChange={(v) => void set({ cards: v as Appearance['cards'] }, `Tarjetas: ${v === 'seccion' ? 'color de cada sección' : v === 'blanco' ? 'sin color' : colorName(v as SubjectColor)}`)}
+        />
+        <SwatchGroup
+          legend="Fondo del menú de abajo"
+          value={look.menu}
+          special={[
+            { value: 'tarjetas', label: 'Igual que las tarjetas' },
+            { value: 'blanco', label: 'Sin color' },
+          ]}
+          onChange={(v) => void set({ menu: v as Appearance['menu'] }, `Menú: ${v === 'tarjetas' ? 'igual que las tarjetas' : v === 'blanco' ? 'sin color' : colorName(v as SubjectColor)}`)}
+        />
+      </div>
+      <div className="mt-4 flex flex-wrap items-center gap-3">
+        <Button variant="secundario" onClick={() => void set(DEFAULT_APPEARANCE, 'Colores originales')}>Volver a los colores originales</Button>
+        <span role="status" aria-live="polite">{saved && <Badge tone="exito">Guardado: {saved}</Badge>}</span>
+      </div>
+    </Card>
+  )
+}
+
+function SwatchGroup({ legend, value, special, onChange }: { legend: string; value: string; special: { value: string; label: string }[]; onChange: (v: string) => void }) {
+  const chip = (on: boolean) => `inline-flex min-h-11 items-center gap-2 rounded-full border-2 px-3 text-sm font-semibold transition ${on ? 'border-heading text-heading' : 'border-line text-heading hover:border-muted'}`
+  return (
+    <fieldset>
+      <legend className="mb-2 block text-sm font-semibold text-heading">{legend}</legend>
+      <div role="radiogroup" aria-label={legend} className="flex flex-wrap gap-2">
+        {special.map((o) => {
+          const on = value === o.value
+          return (
+            <button key={o.value} type="button" role="radio" aria-checked={on} onClick={() => onChange(o.value)} className={`${chip(on)} bg-surface`}>
+              {o.value === 'blanco' ? (
+                <span aria-hidden="true" className="size-5 rounded-full border border-line bg-surface" />
+              ) : (
+                <span aria-hidden="true" className="size-5 rounded-full bg-[conic-gradient(#f9d9c3,#d8e7fb,#d9f1e2,#f8d9ea,#e6dcfa,#f9d9c3)]" />
+              )}
+              {o.label}
+              {on && <Icon name="check" size={16} />}
+            </button>
+          )
+        })}
+        {SUBJECT_COLORS.map((c) => {
+          const on = value === c.value
+          return (
+            <button
+              key={c.value}
+              type="button"
+              role="radio"
+              aria-checked={on}
+              aria-label={c.label}
+              title={c.label}
+              onClick={() => onChange(c.value)}
+              className={`subj-${c.value} inline-flex size-11 items-center justify-center rounded-full border-2 transition ${on ? 'border-heading' : 'border-transparent hover:border-line'}`}
+            >
+              <span className="inline-flex size-8 items-center justify-center rounded-full border border-[var(--s)] bg-[var(--s-bg)] text-[var(--s-ink)]">{on && <Icon name="check" size={16} />}</span>
+            </button>
+          )
+        })}
+      </div>
+    </fieldset>
   )
 }
 
