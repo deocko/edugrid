@@ -13,6 +13,7 @@ import { ejecutorNeon, type Ejecutor } from '../api/_lib/db'
 import { ejecutorPglite } from '../servidor/pglite'
 import { manejarDatos, manejarSalud, type Entorno } from '../api/_lib/http'
 import { olvidarPreparacion } from '../api/_lib/servicio'
+import { MIGRACIONES } from '../api/_lib/esquema'
 import { ApiRepository } from '../src/data/apiAdapter'
 import { LocalStorageRepository } from '../src/data/localAdapter'
 import type { EdugridRepository } from '../src/data/repository'
@@ -61,21 +62,21 @@ assert.deepEqual(primera, normal(semilla))
 ok('la base vacía se prepara sola y devuelve la semilla DEMO idéntica (mismo orden)')
 
 const tablas = await ejecutor.consulta(`select count(*)::int as n from information_schema.tables where table_schema = 'public'`)
-assert.equal(tablas[0]?.n, 31 + 2)
+assert.equal(tablas[0]?.n, 31 + 2 + 5)
 const sinSchool = await ejecutor.consulta(
   `select table_name from information_schema.tables t where table_schema = 'public' and table_name <> 'edugrid_migraciones'
    and not exists (select 1 from information_schema.columns c where c.table_name = t.table_name and c.column_name = 'school_id')`,
 )
 assert.deepEqual(sinSchool, [])
 const conRls = await ejecutor.consulta(`select count(*)::int as n from pg_class where relnamespace = 'public'::regnamespace and relkind = 'r' and relrowsecurity and relforcerowsecurity`)
-assert.equal(conRls[0]?.n, 31 + 1)
-ok('se crearon 31 tablas de datos + escuelas + control de migraciones; todas con school_id y RLS forzado')
+assert.equal(conRls[0]?.n, 31 + 1 + 5)
+ok('se crearon 31 tablas de datos + escuelas + 5 de cuentas + control de migraciones; todas con school_id y RLS forzado')
 
 // 2. Salud.
 const salud = (await (await fetch(`${BASE}/salud`)).json()) as { ok: boolean; registros: Record<string, number>; migracion: number }
 assert.equal(salud.ok, true)
 assert.equal(salud.registros.students, semilla.students.length)
-assert.equal(salud.migracion, 2)
+assert.equal(salud.migracion, MIGRACIONES.length)
 assert.match(String((salud as { aislamiento?: string }).aislamiento), /Row Level Security/)
 ok(`/api/salud responde: ${salud.registros.students} alumnos, migración ${salud.migracion}`)
 
@@ -192,14 +193,14 @@ olvidarPreparacion()
 const despues = await new ApiRepository(BASE).snapshot()
 assert.equal(despues.students[0]!.firstName, 'Sigue aquí')
 const migs = await ejecutor.consulta('select count(*)::int as n from "edugrid_migraciones"')
-assert.equal(migs[0]?.n, 2)
+assert.equal(migs[0]?.n, MIGRACIONES.length)
 // Una base que se quedó en la migración 1 (como la de Neon antes de este cambio) recibe la 2 sola.
 await ejecutor.consulta('delete from "edugrid_migraciones" where version = 2')
 await ejecutor.consulta('drop function edugrid_exigir(bigint, text)')
 olvidarPreparacion()
 r = await post({ op: 'lote', operaciones: [{ op: 'update', tabla: 'students', id: 'no-existe', cambios: {} }] })
 assert.equal(r.status, 404)
-assert.equal((await ejecutor.consulta('select count(*)::int as n from "edugrid_migraciones"'))[0]?.n, 2)
+assert.equal((await ejecutor.consulta('select count(*)::int as n from "edugrid_migraciones"'))[0]?.n, MIGRACIONES.length)
 ok('un arranque nuevo no repite migraciones ni toca los datos; una base en la migración 1 recibe la 2')
 
 // 9. Sin semilla automática la base queda vacía y lo dice.

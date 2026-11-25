@@ -6,6 +6,9 @@ export const ROL_APP = 'edugrid_app'
 
 const TODAS = ['"escuelas"', ...NOMBRES_TABLAS.map(tablaSql)]
 
+/** Tablas de cuentas (Mensaje 10). También llevan school_id y la misma política RLS. */
+export const TABLAS_CUENTAS = ['"usuarios"', '"perfiles"', '"invitaciones"', '"sesiones"', '"recuperaciones"']
+
 /**
  * Aislamiento por escuela con Row Level Security: cada tabla solo deja ver y
  * cambiar las filas cuyo school_id es la escuela de la transacción
@@ -62,6 +65,97 @@ begin
 end $$`,
     ],
   },
+  {
+    version: 3,
+    nombre: 'Cuentas reales: escuelas con prueba de 30 días, usuarios, perfiles, invitaciones y sesiones',
+    sql: [
+      // Solo se agregan columnas: la escuela demo y todo lo del Mensaje 9 sigue igual.
+      // El id de la escuela es school_id y su fecha de alta, «creada» (created_at la repite).
+      `alter table "escuelas"
+  add column if not exists nombre text,
+  add column if not exists niveles text[] not null default '{}',
+  add column if not exists marca jsonb,
+  add column if not exists trial_ends_at timestamptz,
+  add column if not exists created_at timestamptz generated always as (creada) stored`,
+      // Una cuenta por correo en cada escuela. La contraseña solo se guarda como hash (scrypt) y la pone la persona.
+      `create table if not exists "usuarios" (
+  school_id text not null references "escuelas" (school_id) on delete cascade,
+  id text not null,
+  correo text not null check (correo = lower(correo)),
+  hash_contrasena text,
+  nombre text not null,
+  estado text not null default 'invitado' check (estado in ('invitado', 'activo')),
+  created_at timestamptz not null default now(),
+  primary key (school_id, id),
+  unique (school_id, correo)
+)`,
+      // Una cuenta puede tener varios perfiles (por ejemplo docente y familia). Cada perfil apunta a su ficha.
+      `create table if not exists "perfiles" (
+  school_id text not null,
+  id text not null,
+  usuario_id text not null,
+  tipo text not null check (tipo in ('administrador', 'docente', 'familia', 'alumno')),
+  personal_id text,
+  docente_id text,
+  alumno_id text,
+  tutor_id text,
+  created_at timestamptz not null default now(),
+  primary key (school_id, id),
+  foreign key (school_id, usuario_id) references "usuarios" (school_id, id) on delete cascade,
+  check (num_nonnulls(personal_id, docente_id, alumno_id, tutor_id) = 1)
+)`,
+      `create unique index if not exists perfiles_unico on "perfiles" (school_id, usuario_id, tipo, coalesce(personal_id, docente_id, alumno_id, tutor_id))`,
+      // Del token solo se guarda su huella (sha-256): quien lea la base no puede usar las ligas.
+      `create table if not exists "invitaciones" (
+  school_id text not null references "escuelas" (school_id) on delete cascade,
+  id text not null,
+  correo text not null,
+  nombre text not null,
+  tipo text not null check (tipo in ('administrador', 'docente', 'familia', 'alumno')),
+  personal_id text,
+  docente_id text,
+  alumno_id text,
+  tutor_id text,
+  token text not null unique,
+  expira_at timestamptz not null,
+  usada_at timestamptz,
+  created_at timestamptz not null default now(),
+  primary key (school_id, id)
+)`,
+      `create table if not exists "sesiones" (
+  school_id text not null,
+  id text not null,
+  usuario_id text not null,
+  perfil_id text,
+  token text not null unique,
+  expira_at timestamptz not null,
+  cerrada_at timestamptz,
+  created_at timestamptz not null default now(),
+  primary key (school_id, id),
+  foreign key (school_id, usuario_id) references "usuarios" (school_id, id) on delete cascade
+)`,
+      `create table if not exists "recuperaciones" (
+  school_id text not null,
+  id text not null,
+  usuario_id text not null,
+  token text not null unique,
+  expira_at timestamptz not null,
+  usada_at timestamptz,
+  created_at timestamptz not null default now(),
+  primary key (school_id, id),
+  foreign key (school_id, usuario_id) references "usuarios" (school_id, id) on delete cascade
+)`,
+      ...TABLAS_CUENTAS.flatMap(rls),
+      // Para iniciar sesión solo con correo y contraseña: la transacción fija `edugrid.correo`
+      // y ve únicamente las cuentas con ESE correo (y sus escuelas), nada más.
+      `drop policy if exists por_correo on "usuarios"`,
+      `create policy por_correo on "usuarios" for select
+  using (correo = current_setting('edugrid.correo', true))`,
+      `drop policy if exists por_correo on "escuelas"`,
+      `create policy por_correo on "escuelas" for select
+  using (school_id in (select u.school_id from "usuarios" u where u.correo = current_setting('edugrid.correo', true)))`,
+    ],
+  },
 ]
 
 const CREAR_CONTROL = `create table if not exists "edugrid_migraciones" (
@@ -100,8 +194,8 @@ const PUEDE_ROL = `case when exists (select 1 from pg_roles where rolname = '${R
 export async function prepararEsquema(db: Ejecutor): Promise<{ aplicadas: number[]; puedeUsarRol: boolean }> {
   const ultima = MIGRACIONES.at(-1)?.version ?? 0
   try {
-    const [f] = await db.consulta(`select coalesce(max(version), 0)::int as v, ${PUEDE_ROL} as puede from "edugrid_migraciones"`)
-    if (Number(f?.v) === ultima) return { aplicadas: [], puedeUsarRol: f?.puede === true }
+    const [f] = await db.consulta(`select coalesce(max(version), 0)::int as v, count(*)::int as n, ${PUEDE_ROL} as puede from "edugrid_migraciones"`)
+    if (Number(f?.v) === ultima && Number(f?.n) === MIGRACIONES.length) return { aplicadas: [], puedeUsarRol: f?.puede === true }
   } catch {
     // La tabla de control todavía no existe: base nueva.
   }

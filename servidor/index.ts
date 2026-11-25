@@ -1,6 +1,6 @@
 /**
  * Servidor Node de EDUGRID: sirve la app ya compilada (dist/) y la API (/api/datos,
- * /api/salud) con los mismos manejadores que usa Vercel. Sirve para correr EDUGRID
+ * /api/salud, /api/cuenta/…) con los mismos manejadores que usa Vercel. Sirve para correr EDUGRID
  * en un VPS (Coolify, Dokploy…) o en la computadora.
  *
  * - Con DATABASE_URL usa Neon (o cualquier Postgres al que llegue el driver de Neon).
@@ -12,7 +12,7 @@ import { createServer } from 'node:http'
 import { existsSync, readFileSync, statSync } from 'node:fs'
 import { extname, join, normalize } from 'node:path'
 import { ejecutorNeon, type Ejecutor } from '../api/_lib/db'
-import { manejarDatos, manejarSalud, type Entorno } from '../api/_lib/http'
+import { manejarCuenta, manejarDatos, manejarSalud, type Entorno } from '../api/_lib/http'
 import type { Database } from '../src/data/types'
 
 let ejecutor: Ejecutor
@@ -44,7 +44,7 @@ const latencia = Number(process.env.EDUGRID_LATENCIA_MS ?? 0)
 createServer(async (req, res) => {
   try {
     const url = new URL(req.url ?? '/', `http://localhost:${puerto}`)
-    const api = RUTAS[url.pathname as keyof typeof RUTAS]
+    const api = url.pathname.startsWith('/api/cuenta/') ? manejarCuenta : RUTAS[url.pathname as keyof typeof RUTAS]
     if (api) {
       if (latencia) await new Promise((r) => setTimeout(r, latencia))
       const trozos: Buffer[] = []

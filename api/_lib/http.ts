@@ -3,12 +3,34 @@ import { FaltaConfiguracion, type Ejecutor } from './db.js'
 import { MIGRACIONES } from './esquema.js'
 import { aislamiento, aplicar, contar, leerTodo, NoEncontrado, prepararBase, type Cambio, type Operacion } from './servicio.js'
 import { esTabla } from './tablas.js'
+import { correoDe } from './correo.js'
+import {
+  aceptarInvitacion,
+  cambiarPerfil,
+  cerrarSesion,
+  ErrorCuenta,
+  iniciarSesion,
+  invitar,
+  leerPersonas,
+  leerRegistro,
+  leerSesion,
+  recuperar,
+  registrarEscuela,
+  restablecer,
+  simularPrueba,
+  verInvitacion,
+  type Ligas,
+  type Opciones,
+} from './cuentas.js'
+import type { SesionPublica } from '../../src/data/cuentaTipos.js'
 
 export interface Entorno {
   /** Conexión a la base (se crea al pedirla para poder avisar si falta DATABASE_URL). */
   ejecutor: () => Ejecutor
   semilla: () => Database
   variables: Record<string, string | undefined>
+  /** Reloj del servidor (las pruebas lo pueden adelantar). */
+  ahora?: () => Date
 }
 
 class Invalida extends Error {}
@@ -66,7 +88,7 @@ function encabezados(req: Request, variables: Entorno['variables']): Headers {
   if (origen && permitidos.includes(origen)) {
     h.set('access-control-allow-origin', origen)
     h.set('access-control-allow-methods', 'GET, POST, OPTIONS')
-    h.set('access-control-allow-headers', 'content-type')
+    h.set('access-control-allow-headers', 'content-type, authorization')
     h.set('vary', 'origin')
   }
   return h
@@ -75,6 +97,7 @@ function encabezados(req: Request, variables: Entorno['variables']): Headers {
 const responder = (h: Headers, estado: number, cuerpo: unknown) => new Response(JSON.stringify(cuerpo), { status: estado, headers: h })
 
 function fallo(h: Headers, e: unknown): Response {
+  if (e instanceof ErrorCuenta) return responder(h, e.estado, { error: e.message })
   if (e instanceof Invalida) return responder(h, 400, { error: e.message })
   if (e instanceof NoEncontrado) return responder(h, 404, { error: e.message })
   // edugrid_exigir: un registro del lote no existe; Postgres ya deshizo todo el lote.
@@ -98,7 +121,31 @@ export const escuelaDe = (v: Entorno['variables']): string => {
   return e
 }
 
-/** /api/datos — GET devuelve todo; POST guarda un cambio. */
+/** Token de sesión que manda el navegador en «Authorization: Bearer …». */
+const tokenDe = (req: Request): string | null => {
+  const m = /^Bearer\s+(\S+)$/i.exec(req.headers.get('authorization') ?? '')
+  return m ? m[1]! : null
+}
+
+const opcionesDe = (v: Entorno['variables'], entorno: Entorno): Opciones => ({
+  ahora: entorno.ahora ?? (() => new Date()),
+  puedeSimularPrueba: (v.EDUGRID_SIMULAR_PRUEBA ?? '').toLowerCase() === 'si' || v.VERCEL_ENV === 'preview' || v.VERCEL_ENV === 'development',
+  contacto: (v.EDUGRID_CONTACTO ?? '').trim(),
+})
+
+/** Sesión obligatoria: si el token no sirve, 401 y la app vuelve a pedir correo y contraseña. */
+async function sesionDe(req: Request, db: Ejecutor, op: Opciones): Promise<SesionPublica> {
+  const token = tokenDe(req)
+  const s = token ? await leerSesion(db, token, op) : null
+  if (!s) throw new ErrorCuenta(401, 'Tu sesión terminó. Vuelve a iniciar sesión.')
+  return s
+}
+
+/**
+ * /api/datos — GET devuelve todo; POST guarda un cambio.
+ * Con sesión, la escuela sale de la cuenta (nunca de lo que mande el navegador);
+ * sin sesión, es la escuela demo (botón «Ver demo»).
+ */
 export async function manejarDatos(req: Request, entorno: Entorno): Promise<Response> {
   const h = encabezados(req, entorno.variables)
   if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: h })
@@ -116,12 +163,107 @@ export async function manejarDatos(req: Request, entorno: Entorno): Promise<Resp
       if (operacion.op === 'reiniciar' && (entorno.variables.EDUGRID_PERMITIR_REINICIO ?? 'si').toLowerCase() === 'no')
         return responder(h, 403, { error: 'Restablecer los datos demo está desactivado en este servidor.' })
     }
-    const escuela = escuelaDe(entorno.variables)
     const db = entorno.ejecutor()
-    await prepararBase(db, escuela, entorno.semilla, cargarDemo(entorno.variables))
+    let escuela = escuelaDe(entorno.variables)
+    let demo = true
+    if (tokenDe(req)) {
+      const sesion = await sesionDe(req, db, opcionesDe(entorno.variables, entorno))
+      if (sesion.escuela.pruebaVencida) return responder(h, 402, { error: 'La prueba gratis de tu escuela terminó.', prueba: 'vencida' })
+      if (!sesion.perfil) return responder(h, 403, { error: 'Elige con qué perfil quieres entrar.' })
+      // Restablecer carga la semilla DEMO: en una escuela real borraría sus datos.
+      if (operacion?.op === 'reiniciar') return responder(h, 403, { error: 'Restablecer datos demo solo existe en el Colegio Demo.' })
+      escuela = sesion.escuela.id
+      demo = false
+    }
+    await prepararBase(db, escuela, entorno.semilla, demo && cargarDemo(entorno.variables))
     if (!operacion) return responder(h, 200, await leerTodo(db, escuela))
     await aplicar(db, escuela, operacion, entorno.semilla)
     return responder(h, 200, { ok: true })
+  } catch (e) {
+    return fallo(h, e)
+  }
+}
+
+/** Dirección de la app para las ligas de los correos. */
+function urlApp(req: Request, v: Entorno['variables']): string {
+  const fija = (v.EDUGRID_URL_APP ?? '').trim().replace(/\/+$/, '')
+  if (fija) return fija
+  const origen = req.headers.get('origin')
+  const permitidos = (v.EDUGRID_ORIGENES ?? '').split(',').map((s) => s.trim()).filter(Boolean)
+  if (origen && permitidos.includes(origen)) return origen
+  return new URL(req.url).origin
+}
+
+async function leerCuerpo(req: Request): Promise<Record<string, unknown>> {
+  try {
+    const c = (await req.json()) as unknown
+    return typeof c === 'object' && c !== null && !Array.isArray(c) ? (c as Record<string, unknown>) : {}
+  } catch {
+    throw new Invalida('El cuerpo no es JSON válido.')
+  }
+}
+
+/**
+ * /api/cuenta/<acción> — inicio de sesión real y alta de escuelas.
+ *   POST registro        Alta de escuela + administrador (wizard). Abre sesión.
+ *   POST iniciar         Correo + contraseña. Abre sesión.
+ *   POST cerrar          Cierra la sesión del token.
+ *   GET  sesion          Sesión actual (usuario, perfiles, escuela y prueba).
+ *   POST perfil          Cambia el perfil con el que se usa la app.
+ *   POST recuperar       Manda la liga para crear una contraseña nueva.
+ *   POST restablecer     Con esa liga, pone la contraseña nueva y entra.
+ *   POST invitar         (administrador) Invita por correo a docentes, familias y alumnos.
+ *   GET  invitacion      Datos de una invitación (?token=…).
+ *   POST aceptar         Acepta la invitación con su contraseña y entra.
+ *   POST prueba          (solo desarrollo y vista previa) Vence o reinicia la prueba de 30 días.
+ */
+export async function manejarCuenta(req: Request, entorno: Entorno): Promise<Response> {
+  const h = encabezados(req, entorno.variables)
+  if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: h })
+  const url = new URL(req.url)
+  const accion = url.pathname.replace(/\/+$/, '').split('/').pop() ?? ''
+  const v = entorno.variables
+  try {
+    const op = opcionesDe(v, entorno)
+    const db = entorno.ejecutor()
+    const correo = correoDe(v)
+    const ligas: Ligas = { app: urlApp(req, v), correo, mostrar: correo.demo && v.VERCEL_ENV !== 'production' }
+    const metodo = req.method
+    const post = metodo === 'POST'
+    if (metodo === 'GET' && accion === 'sesion') return responder(h, 200, await sesionDe(req, db, op))
+    if (metodo === 'GET' && accion === 'invitacion') return responder(h, 200, await verInvitacion(db, url.searchParams.get('token'), op))
+    if (!post) return responder(h, metodo === 'GET' ? 404 : 405, { error: 'Acción desconocida.' })
+    const cuerpo = await leerCuerpo(req)
+    switch (accion) {
+      case 'registro':
+        return responder(h, 201, await registrarEscuela(db, leerRegistro(cuerpo), op, escuelaDe(v)))
+      case 'iniciar':
+        return responder(h, 200, await iniciarSesion(db, cuerpo, op))
+      case 'cerrar': {
+        const t = tokenDe(req)
+        if (t) await cerrarSesion(db, t, op)
+        return responder(h, 200, { ok: true })
+      }
+      case 'perfil':
+        return responder(h, 200, await cambiarPerfil(db, await sesionDe(req, db, op), cuerpo.perfilId, op))
+      case 'recuperar': {
+        const r = await recuperar(db, cuerpo.correo, ligas, op)
+        return responder(h, 200, { ok: true, mensaje: 'Si ese correo tiene cuenta, te enviamos una liga para crear una contraseña nueva. Revisa tu bandeja de entrada.', ...(ligas.mostrar ? { ligas: r.ligas } : {}) })
+      }
+      case 'restablecer':
+        return responder(h, 200, await restablecer(db, cuerpo, op))
+      case 'invitar': {
+        const sesion = await sesionDe(req, db, op)
+        if (sesion.escuela.pruebaVencida) return responder(h, 402, { error: 'La prueba gratis de tu escuela terminó.', prueba: 'vencida' })
+        return responder(h, 200, { correo: correo.nombre, demo: correo.demo, resultados: await invitar(db, sesion, leerPersonas(cuerpo), ligas, op) })
+      }
+      case 'aceptar':
+        return responder(h, 200, await aceptarInvitacion(db, cuerpo, op))
+      case 'prueba':
+        return responder(h, 200, await simularPrueba(db, await sesionDe(req, db, op), cuerpo.accion, op))
+      default:
+        return responder(h, 404, { error: 'Acción desconocida.' })
+    }
   } catch (e) {
     return fallo(h, e)
   }
