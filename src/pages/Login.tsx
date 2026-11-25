@@ -30,7 +30,7 @@ const CARDS: RoleCard[] = [
 ]
 
 export function Login() {
-  const { db, login, resetDemo } = useStore()
+  const { db, login, resetDemo, repo } = useStore()
   const navigate = useNavigate()
   const [choice, setChoice] = useState<Record<Role, string>>({ admin: 'adm1', docente: 't14', familia: 'tu0', alumno: 'al1' })
   const [busy, setBusy] = useState<Role | null>(null)
@@ -144,6 +144,7 @@ export function Login() {
               <Link to="/privacidad" className="font-semibold text-link underline">
                 Lee el aviso de privacidad
               </Link>
+              <span className="mt-1 block text-xs" data-testid="origen-datos">Datos: {repo.name}</span>
             </span>
           </div>
           {confirmReset ? (

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { ApiRepository, apiUrl } from '../data/apiAdapter'
 import { LocalStorageRepository } from '../data/localAdapter'
 import type { EdugridRepository } from '../data/repository'
 import type { Database, Session } from '../data/types'
@@ -33,9 +34,15 @@ export function StoreProvider({ children, repository }: { children: ReactNode; r
   const [db, setDb] = useState<Database | null>(null)
   const [session, setSession] = useState<Session | null>(readSession)
   const [theme, setThemeState] = useState<ThemeChoice>(readTheme)
+  /** Aviso cuando un cambio no se pudo guardar (por ejemplo, sin internet con la base de datos en línea). */
+  const [saveError, setSaveError] = useState<string | null>(null)
 
   const getRepo = useCallback((): EdugridRepository => {
-    if (!repoRef.current) repoRef.current = new LocalStorageRepository()
+    if (!repoRef.current) {
+      // Con una API configurada los datos viven en la base de datos; si no, en este navegador.
+      const api = apiUrl()
+      repoRef.current = api ? new ApiRepository(api) : new LocalStorageRepository()
+    }
     return repoRef.current
   }, [])
 
@@ -121,8 +128,15 @@ export function StoreProvider({ children, repository }: { children: ReactNode; r
         }
       },
       act: async (fn, audit) => {
-        await fn(getRepo())
-        if (audit) await writeAudit(session, audit)
+        try {
+          await fn(getRepo())
+          if (audit) await writeAudit(session, audit)
+          setSaveError(null)
+        } catch (e) {
+          setSaveError(e instanceof Error ? e.message : 'Error desconocido')
+          await refresh().catch(() => undefined)
+          throw e
+        }
         await refresh()
       },
       log: async (audit) => {
@@ -137,5 +151,20 @@ export function StoreProvider({ children, repository }: { children: ReactNode; r
     [status, error, db, session, theme, getRepo, refresh, writeAudit],
   )
 
-  return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>
+  return (
+    <StoreContext.Provider value={value}>
+      {children}
+      {saveError && (
+        <div role="alert" className="fixed inset-x-3 bottom-24 z-[60] mx-auto flex max-w-md items-start gap-3 rounded-2xl bg-red-700 p-4 text-sm text-white shadow-lg lg:bottom-6">
+          <p className="flex-1">
+            <strong className="block">No se guardó el cambio</strong>
+            {saveError}
+          </p>
+          <button type="button" className="rounded-lg px-2 py-1 font-semibold underline" onClick={() => setSaveError(null)}>
+            Cerrar
+          </button>
+        </div>
+      )}
+    </StoreContext.Provider>
+  )
 }

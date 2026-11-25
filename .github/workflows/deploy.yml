@@ -27,6 +27,8 @@ jobs:
       - run: npm ci
       - run: npx tsc --noEmit
       - run: npm run lint
+      - name: API y base de datos (Postgres en memoria con PGlite)
+        run: npm run prueba:api
       - name: La semilla demo es determinista (regenerarla no cambia nada)
         run: npm run seed && git diff --exit-code src/data/seed.json
       - run: npm run build
