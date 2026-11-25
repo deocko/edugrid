@@ -200,7 +200,7 @@ function EnrollForm({ onDone }: { onDone: (s: Student, invitadas: ResultadoInvit
             {(id) => (
               <Select id={id} value={form.groupId} onChange={(e) => set('groupId', e.target.value)}>
                 <option value="">Elige un grupo</option>
-                {LEVELS.map((l) => (
+                {LEVELS.filter((l) => db.groups.some((g) => levelOfGroup(db, g.id) === l)).map((l) => (
                   <optgroup key={l} label={LEVEL_LABEL[l]}>
                     {db.groups.filter((g) => levelOfGroup(db, g.id) === l).map((g) => (
                       <option key={g.id} value={g.id}>{groupLabel(db, g)}</option>
@@ -210,6 +210,12 @@ function EnrollForm({ onDone }: { onDone: (s: Student, invitadas: ResultadoInvit
               </Select>
             )}
           </Field>
+          {db.groups.length === 0 && (
+            <p className="mt-2 text-sm text-warning" role="status">
+              Tu escuela todavía no tiene grupos. Créalos en{' '}
+              <Link to="/admin/escuela" className="font-semibold text-link underline">Ciclos y grupos</Link> o importa tus alumnos desde Excel (los grupos se crean solos).
+            </p>
+          )}
         </div>
       </fieldset>
 

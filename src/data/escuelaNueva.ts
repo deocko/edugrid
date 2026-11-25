@@ -25,7 +25,7 @@ export const TODAS_LAS_TABLAS: TableName[] = [
 
 /**
  * Datos con los que arranca una escuela que se da de alta sola: su nombre, el
- * ciclo escolar en curso con tres trimestres, los grados y materias de los
+ * ciclo escolar en curso con tres trimestres, los grados (con un grupo A) y materias de los
  * niveles que atiende y la ficha de su administrador. Todo lo demás, vacío.
  */
 export function datosEscuelaNueva(o: { id: string; nombre: string; niveles: Level[]; correoContacto: string; admin: { id: string; nombre: string; correo: string }; hoy: Date }): Database {
@@ -49,7 +49,11 @@ export function datosEscuelaNueva(o: { id: string; nombre: string; niveles: Leve
     { id: 'p3', cycleId: ciclo.id, name: '3er trimestre', startDate: `${y + 1}-03-15`, endDate: `${y + 1}-07-09` },
   ]
   for (const n of niveles) {
-    GRADOS_POR_NIVEL[n].forEach((name, i) => db.grades.push({ id: `g-${n}-${i + 1}`, level: n, name, order: i + 1 }))
+    GRADOS_POR_NIVEL[n].forEach((name, i) => {
+      db.grades.push({ id: `g-${n}-${i + 1}`, level: n, name, order: i + 1 })
+      // Un grupo «A» por grado para poder inscribir desde el primer día (sin titular todavía).
+      db.groups.push({ id: `gr-${n}-${i + 1}A`, gradeId: `g-${n}-${i + 1}`, cycleId: ciclo.id, name: 'A', homeroomTeacherId: '', room: '' })
+    })
     MATERIAS_POR_NIVEL[n].forEach(([name, color], i) => db.subjects.push({ id: `s-${n}-${i + 1}`, name, level: n, color }))
   }
   return db
