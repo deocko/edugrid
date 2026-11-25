@@ -1,4 +1,7 @@
-import { Link } from 'react-router'
+import { Link, useLocation } from 'react-router'
+import { BannerPrueba } from '../cuenta/PruebaTerminada'
+import { ReporteImportacion, type Reporte } from '../../components/ImportarExcel'
+import type { TipoImportacion } from '../../lib/importar'
 import { Badge, Card, DemoBadge, LinkButton, PageHeader, Stat } from '../../components/ui'
 import { formatDate, formatMoney, todayISO, plural } from '../../lib/format'
 import { chargeView } from '../../lib/finance'
@@ -7,6 +10,7 @@ import { useApp } from '../../state/context'
 
 export function AdminHome() {
   const { db, session } = useApp()
+  const importacion = (useLocation().state as { importacion?: { tipo: TipoImportacion; reporte: Reporte } } | null)?.importacion
   const active = db.students.filter((s) => s.status === 'activo')
   const today = todayISO()
   const month = today.slice(0, 7)
@@ -35,7 +39,7 @@ export function AdminHome() {
         title={`Hola, ${session.name.split(' ').slice(0, 2).join(' ')}`}
         subtitle={
           <span className="inline-flex flex-wrap items-center gap-2">
-            {db.meta.school.name} <DemoBadge />
+            {db.meta.school.name} <DemoBadge soloDemo />
           </span>
         }
         actions={
@@ -53,6 +57,12 @@ export function AdminHome() {
         }
       />
 
+      <BannerPrueba />
+      {importacion && (
+        <Card title="Datos cargados desde Excel" className="mb-4">
+          <ReporteImportacion tipo={importacion.tipo} reporte={importacion.reporte} />
+        </Card>
+      )}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Stat label="Alumnos activos" value={active.length} hint={`${plural(db.groups.length, 'grupo', 'grupos')} en 5 niveles`} icon="alumnos" tone="info" to="/admin/alumnos" action="Ver alumnos" />
         <Stat label="Asistencia (5 días)" value={`${presentRate}%`} hint="Presentes y retardos" icon="asistencia" tone="exito" progress={presentRate / 100} to="/docente/asistencia" action="Ver listas" />

@@ -5,6 +5,9 @@ import type { Teacher } from '../../data/types'
 import { uid, plural } from '../../lib/format'
 import { groupLabel, subjectName } from '../../lib/scope'
 import { useApp } from '../../state/context'
+import { ImportarExcel, ListaInvitaciones } from '../../components/ImportarExcel'
+import { useInvitar } from '../../lib/invitar'
+import type { ResultadoInvitacion } from '../../data/cuentaTipos'
 
 type Draft = Omit<Teacher, 'id' | 'active'>
 const EMPTY: Draft = { firstName: '', lastName: '', specialty: '', email: '', phone: '' }
@@ -13,11 +16,13 @@ export function Teachers() {
   const { db } = useApp()
   const [editing, setEditing] = useState<Teacher | 'nuevo' | null>(null)
   const [showInactive, setShowInactive] = useState(false)
+  const [invitadas, setInvitadas] = useState<ResultadoInvitacion[]>([])
   const list = db.teachers.filter((t) => (showInactive ? !t.active : t.active))
 
   return (
     <>
-      <PageHeader title="Docentes" subtitle={plural(db.teachers.filter((t) => t.active).length, 'docente activo', 'docentes activos')} actions={<Button icon="mas" onClick={() => setEditing('nuevo')}>Registrar docente</Button>} />
+      <PageHeader title="Docentes" subtitle={plural(db.teachers.filter((t) => t.active).length, 'docente activo', 'docentes activos')} actions={<><Button icon="mas" onClick={() => setEditing('nuevo')}>Registrar docente</Button><ImportarExcel tipo="docentes" /></>} />
+      {invitadas.length > 0 && <Card className="mb-4"><ListaInvitaciones resultados={invitadas} /></Card>}
       <Card>
         <Switch className="mb-3" checked={showInactive} onChange={setShowInactive} label={`Mostrar docentes dados de baja (${db.teachers.filter((t) => !t.active).length})`} />
         <Table caption="Catálogo de docentes">
@@ -69,14 +74,15 @@ export function Teachers() {
         </p>
       </Card>
       <Modal open={editing !== null} onClose={() => setEditing(null)} title={editing === 'nuevo' ? 'Registrar docente' : 'Editar docente'}>
-        {editing !== null && <TeacherForm teacher={editing === 'nuevo' ? null : editing} onDone={() => setEditing(null)} />}
+        {editing !== null && <TeacherForm teacher={editing === 'nuevo' ? null : editing} onDone={(r) => { setEditing(null); setInvitadas(r ?? []) }} />}
       </Modal>
     </>
   )
 }
 
-function TeacherForm({ teacher, onDone }: { teacher: Teacher | null; onDone: () => void }) {
-  const { db, act } = useApp()
+function TeacherForm({ teacher, onDone }: { teacher: Teacher | null; onDone: (invitadas?: ResultadoInvitacion[]) => void }) {
+  const { db, act, esDemo } = useApp()
+  const invitar = useInvitar()
   const [form, setForm] = useState<Draft>(teacher ? { firstName: teacher.firstName, lastName: teacher.lastName, specialty: teacher.specialty, email: teacher.email, phone: teacher.phone } : EMPTY)
   const [error, setError] = useState('')
   const busy = teacher ? db.groups.filter((g) => g.homeroomTeacherId === teacher.id).length + db.assignments.filter((a) => a.teacherId === teacher.id).length : 0
@@ -86,9 +92,11 @@ function TeacherForm({ teacher, onDone }: { teacher: Teacher | null; onDone: () 
     if (!form.firstName.trim() || !form.lastName.trim() || !form.specialty.trim()) return setError('Escribe nombre, apellidos y especialidad.')
     if (form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) return setError('El correo no tiene un formato válido.')
     const name = `${form.firstName} ${form.lastName}`
-    if (teacher) await act((repo) => repo.update('teachers', teacher.id, form), { action: 'Editó docente', detail: name })
-    else await act((repo) => repo.insert('teachers', [{ id: uid('t'), ...form, active: true }]), { action: 'Registró docente', detail: name })
-    onDone()
+    if (teacher) return void (await act((repo) => repo.update('teachers', teacher.id, form), { action: 'Editó docente', detail: name }), onDone())
+    const id = uid('t')
+    await act((repo) => repo.insert('teachers', [{ id, ...form, active: true }]), { action: 'Registró docente', detail: name })
+    // Con correo, recibe su invitación para crear su contraseña.
+    onDone(await invitar([{ tipo: 'docente', referencia: id, correo: form.email.trim().toLowerCase(), nombre: name }]))
   }
 
   const toggleActive = async () => {
@@ -116,6 +124,11 @@ function TeacherForm({ teacher, onDone }: { teacher: Teacher | null; onDone: () 
         {teacher && (
           <Button variant={teacher.active ? 'peligro' : 'secundario'} disabled={teacher.active && busy > 0} onClick={() => void toggleActive()}>
             {teacher.active ? 'Dar de baja' : 'Reactivar'}
+          </Button>
+        )}
+        {teacher && !esDemo && teacher.email && (
+          <Button variant="secundario" icon="enviar" onClick={() => void invitar([{ tipo: 'docente', referencia: teacher.id, correo: teacher.email.toLowerCase(), nombre: `${teacher.firstName} ${teacher.lastName}` }]).then(onDone)}>
+            Enviar invitación
           </Button>
         )}
         <Button type="submit" icon="check">Guardar</Button>

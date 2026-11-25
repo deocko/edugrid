@@ -4,7 +4,16 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "functions": {
-    "api/datos.ts": { "includeFiles": "src/data/seed.json", "maxDuration": 30 },
-    "api/salud.ts": { "includeFiles": "src/data/seed.json", "maxDuration": 30 }
+    "api/datos.ts": {
+      "includeFiles": "src/data/seed.json",
+      "maxDuration": 30
+    },
+    "api/salud.ts": {
+      "includeFiles": "src/data/seed.json",
+      "maxDuration": 30
+    },
+    "api/cuenta/[accion].ts": {
+      "maxDuration": 30
+    }
   }
 }

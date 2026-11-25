@@ -5,6 +5,9 @@ import type { Guardian, Student } from '../../data/types'
 import { nowISO, plural, uid } from '../../lib/format'
 import { groupLabel, studentName } from '../../lib/scope'
 import { useApp } from '../../state/context'
+import { ImportarExcel, ListaInvitaciones } from '../../components/ImportarExcel'
+import { useInvitar } from '../../lib/invitar'
+import type { ResultadoInvitacion } from '../../data/cuentaTipos'
 
 const RELATIONS: Guardian['relation'][] = ['Madre', 'Padre', 'Tutora', 'Tutor']
 const PHONE_RE = /^[\d\s+()-]{10,}$/
@@ -16,6 +19,7 @@ export function Families() {
   const [q, setQ] = useState('')
   const [editing, setEditing] = useState<Guardian | 'nuevo' | null>(null)
   const [done, setDone] = useState('')
+  const [invitadas, setInvitadas] = useState<ResultadoInvitacion[]>([])
   const list = useMemo(() => {
     const term = q.trim().toLowerCase()
     return [...db.guardians]
@@ -26,8 +30,9 @@ export function Families() {
 
   return (
     <>
-      <PageHeader title="Familias" subtitle="Mamás, papás y tutores. Una misma persona puede tener varios hijos en la escuela." actions={<Button icon="mas" onClick={() => setEditing('nuevo')}>Dar de alta familia</Button>} />
+      <PageHeader title="Familias" subtitle="Mamás, papás y tutores. Una misma persona puede tener varios hijos en la escuela." actions={<><Button icon="mas" onClick={() => setEditing('nuevo')}>Dar de alta familia</Button><ImportarExcel tipo="familias" /></>} />
       {done && <div className="mb-4"><Notice tone="exito" icon="check">{done}</Notice></div>}
+      {invitadas.length > 0 && <Card className="mb-4"><ListaInvitaciones resultados={invitadas} /></Card>}
       <Card>
         <div className="mb-3 max-w-sm">
           <Field label="Buscar por nombre, teléfono o hijo">{(id) => <Input id={id} type="search" value={q} onChange={(e) => setQ(e.target.value)} />}</Field>
@@ -55,14 +60,15 @@ export function Families() {
         )}
       </Card>
       <Modal open={editing !== null} onClose={() => setEditing(null)} title={editing === 'nuevo' ? 'Dar de alta familia' : 'Editar familia e hijos'}>
-        {editing !== null && <FamilyForm guardian={editing === 'nuevo' ? null : editing} onDone={(text) => { setEditing(null); setDone(text) }} />}
+        {editing !== null && <FamilyForm guardian={editing === 'nuevo' ? null : editing} onDone={(text, r) => { setEditing(null); setDone(text); setInvitadas(r ?? []) }} />}
       </Modal>
     </>
   )
 }
 
-function FamilyForm({ guardian, onDone }: { guardian: Guardian | null; onDone: (text: string) => void }) {
-  const { db, act } = useApp()
+function FamilyForm({ guardian, onDone }: { guardian: Guardian | null; onDone: (text: string, invitadas?: ResultadoInvitacion[]) => void }) {
+  const { db, act, esDemo } = useApp()
+  const invitar = useInvitar()
   const [form, setForm] = useState({
     firstName: guardian?.firstName ?? '',
     lastName: guardian?.lastName ?? '',
@@ -116,7 +122,11 @@ function FamilyForm({ guardian, onDone }: { guardian: Guardian | null; onDone: (
       },
       { action: guardian ? 'Actualizó familia' : 'Dio de alta familia', detail: `${data.firstName} ${data.lastName} · ${plural(kids.length, 'hijo', 'hijos')}` },
     )
-    onDone(`${data.firstName} ${data.lastName} quedó ${guardian ? 'actualizada' : 'registrada'} con ${plural(kids.length, 'hijo', 'hijos')}. Ya puede entrar como Familia y ver la credencial QR de cada uno.`)
+    const invitadas = guardian ? [] : await invitar([{ tipo: 'familia', referencia: id, correo: data.email.toLowerCase(), nombre: `${data.firstName} ${data.lastName}` }])
+    onDone(
+      `${data.firstName} ${data.lastName} quedó ${guardian ? 'actualizada' : 'registrada'} con ${plural(kids.length, 'hijo', 'hijos')}.${esDemo ? ' Ya puede entrar como Familia y ver la credencial QR de cada uno.' : data.email ? '' : ' Sin correo: invítala después.'}`,
+      invitadas,
+    )
   }
 
   return (
@@ -152,7 +162,12 @@ function FamilyForm({ guardian, onDone }: { guardian: Guardian | null; onDone: (
         <span>La madre, padre o tutor leyó el <Link to="/privacidad" className="font-semibold text-link underline" target="_blank">aviso de privacidad</Link> y da su consentimiento.</span>
       </label>
       {error && <Notice tone="peligro">{error}</Notice>}
-      <div className="flex justify-end">
+      <div className="flex flex-wrap justify-end gap-2">
+        {guardian && !esDemo && guardian.email && (
+          <Button variant="secundario" icon="enviar" onClick={() => void invitar([{ tipo: 'familia', referencia: guardian.id, correo: guardian.email.toLowerCase(), nombre: `${guardian.firstName} ${guardian.lastName}` }]).then((r) => onDone(`Invitación para ${guardian.firstName} ${guardian.lastName}.`, r))}>
+            Enviar invitación
+          </Button>
+        )}
         <Button type="submit" icon="check">{guardian ? 'Guardar cambios' : 'Dar de alta'}</Button>
       </div>
     </form>

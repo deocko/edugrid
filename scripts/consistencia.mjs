@@ -97,7 +97,7 @@ check('3 Familia ve solo los avisos de sus niveles (Feria de primaria sí; kinde
 // 4. Selector de docente
 const ctx = await browser.newContext()
 const page = await ctx.newPage()
-await page.goto(BASE)
+await page.goto(`${BASE}#/demo`)
 await page.waitForLoadState('networkidle')
 const opt = await page.locator('#cuenta-docente option:checked').innerText()
 check('4 Selector Docente: «Carmen Escobedo Salinas · 4° de primaria A (titular)»', opt === 'Carmen Escobedo Salinas · 4° de primaria A (titular)', opt)

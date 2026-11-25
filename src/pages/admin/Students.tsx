@@ -8,6 +8,10 @@ import { LEVEL_LABEL, LEVELS, groupLabel, levelOfGroup, studentName } from '../.
 import { newQrCode } from '../../lib/qr'
 import { useApp } from '../../state/context'
 import { GuardianPicker } from '../../components/GuardianPicker'
+import { ImportarExcel, ListaInvitaciones } from '../../components/ImportarExcel'
+import { useInvitar } from '../../lib/invitar'
+import type { ResultadoInvitacion } from '../../data/cuentaTipos'
+import { isPreschool } from '../../lib/scope'
 
 const CURP_RE = /^[A-Z]{4}\d{6}[HM][A-Z]{5}[A-Z0-9]\d$/
 
@@ -19,6 +23,7 @@ export function Students() {
   const [groupId, setGroupId] = useState('')
   const [showWithdrawn, setShowWithdrawn] = useState(false)
   const [created, setCreated] = useState<Student | null>(null)
+  const [invitadas, setInvitadas] = useState<ResultadoInvitacion[]>([])
   const open = params.get('alta') === '1'
 
   const list = useMemo(() => {
@@ -37,9 +42,12 @@ export function Students() {
         title="Alumnos"
         subtitle={`${plural(db.students.filter((s) => s.status === 'activo').length, 'alumno inscrito', 'alumnos inscritos')} en el ciclo actual`}
         actions={
-          <Button icon="mas" onClick={() => setParams({ alta: '1' })}>
-            Inscribir alumno
-          </Button>
+          <>
+            <Button icon="mas" onClick={() => setParams({ alta: '1' })}>
+              Inscribir alumno
+            </Button>
+            <ImportarExcel tipo="alumnos" />
+          </>
         }
       />
       {created && (
@@ -54,6 +62,7 @@ export function Students() {
               Generar cargo
             </Link>
           </Notice>
+          {invitadas.length > 0 && <div className="mt-3"><ListaInvitaciones resultados={invitadas} /></div>}
         </div>
       )}
       <Card>
@@ -122,8 +131,9 @@ export function Students() {
       </Card>
       <Modal open={open} onClose={() => setParams({})} title="Inscribir alumno">
         <EnrollForm
-          onDone={(s) => {
+          onDone={(s, r) => {
             setCreated(s)
+            setInvitadas(r)
             setParams({})
           }}
         />
@@ -132,8 +142,9 @@ export function Students() {
   )
 }
 
-function EnrollForm({ onDone }: { onDone: (s: Student) => void }) {
-  const { db, act } = useApp()
+function EnrollForm({ onDone }: { onDone: (s: Student, invitadas: ResultadoInvitacion[]) => void }) {
+  const { db, act, esDemo } = useApp()
+  const invitar = useInvitar()
   const [form, setForm] = useState({ firstName: '', lastName: '', birthDate: '', curp: '', groupId: '', guardianMode: 'nuevo' as 'nuevo' | 'existente', guardianId: '', gFirst: '', gLast: '', gRelation: 'Madre' as Guardian['relation'], gEmail: '', gPhone: '', consent: false })
   const [error, setError] = useState('')
   const set = <K extends keyof typeof form>(k: K, v: (typeof form)[K]) => setForm((f) => ({ ...f, [k]: v }))
@@ -156,7 +167,7 @@ function EnrollForm({ onDone }: { onDone: (s: Student) => void }) {
         : null
     if (newGuardian) guardianId = newGuardian.id
     const seq = db.students.length + 1
-    const student: Student = { id: uid('al'), firstName: form.firstName.trim(), lastName: form.lastName.trim(), birthDate: form.birthDate, curp: curp || 'PENDIENTE', groupId: form.groupId, guardianIds: [guardianId], enrollmentId: `DEMO-${String(seq).padStart(4, '0')}`, status: 'activo', createdAt: now, qrCode: newQrCode(db.students.map((x) => x.qrCode)) }
+    const student: Student = { id: uid('al'), firstName: form.firstName.trim(), lastName: form.lastName.trim(), birthDate: form.birthDate, curp: curp || 'PENDIENTE', groupId: form.groupId, guardianIds: [guardianId], enrollmentId: `${esDemo ? 'DEMO' : 'MAT'}-${String(seq).padStart(4, '0')}`, status: 'activo', createdAt: now, qrCode: newQrCode(db.students.map((x) => x.qrCode)) }
     await act(
       async (repo) => {
         if (newGuardian) await repo.insert('guardians', [newGuardian])
@@ -165,7 +176,15 @@ function EnrollForm({ onDone }: { onDone: (s: Student) => void }) {
       },
       { action: 'Inscribió alumno', detail: `${studentName(student)} en ${groupLabel(db, student.groupId)}` },
     )
-    onDone(student)
+    // La familia nueva con correo recibe su invitación; el alumno (desde primaria) también, al correo de su tutor.
+    const correo = newGuardian?.email.trim().toLowerCase() ?? ''
+    const invitadas = newGuardian && correo
+      ? await invitar([
+          { tipo: 'familia', referencia: newGuardian.id, correo, nombre: `${newGuardian.firstName} ${newGuardian.lastName}` },
+          ...(isPreschool(levelOfGroup(db, student.groupId)) ? [] : [{ tipo: 'alumno' as const, referencia: student.id, correo, nombre: studentName(student) }]),
+        ])
+      : []
+    onDone(student, invitadas)
   }
 
   return (
@@ -181,7 +200,7 @@ function EnrollForm({ onDone }: { onDone: (s: Student) => void }) {
             {(id) => (
               <Select id={id} value={form.groupId} onChange={(e) => set('groupId', e.target.value)}>
                 <option value="">Elige un grupo</option>
-                {LEVELS.map((l) => (
+                {LEVELS.filter((l) => db.groups.some((g) => levelOfGroup(db, g.id) === l)).map((l) => (
                   <optgroup key={l} label={LEVEL_LABEL[l]}>
                     {db.groups.filter((g) => levelOfGroup(db, g.id) === l).map((g) => (
                       <option key={g.id} value={g.id}>{groupLabel(db, g)}</option>
@@ -191,6 +210,12 @@ function EnrollForm({ onDone }: { onDone: (s: Student) => void }) {
               </Select>
             )}
           </Field>
+          {db.groups.length === 0 && (
+            <p className="mt-2 text-sm text-warning" role="status">
+              Tu escuela todavía no tiene grupos. Créalos en{' '}
+              <Link to="/admin/escuela" className="font-semibold text-link underline">Ciclos y grupos</Link> o importa tus alumnos desde Excel (los grupos se crean solos).
+            </p>
+          )}
         </div>
       </fieldset>
 

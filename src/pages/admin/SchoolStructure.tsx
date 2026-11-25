@@ -34,7 +34,7 @@ function GroupsView() {
 
   const submit = async (e: FormEvent) => {
     e.preventDefault()
-    if (!gradeId || !teacherId || !name.trim() || !active) return setMsg('Elige grado, nombre del grupo y titular.')
+    if (!gradeId || !name.trim() || !active) return setMsg('Elige grado y nombre del grupo.')
     if (db.groups.some((g) => g.gradeId === gradeId && g.name === name.trim().toUpperCase())) return setMsg('Ese grupo ya existe.')
     const id = uid('gr')
     const level = db.grades.find((g) => g.id === gradeId)?.level
@@ -42,11 +42,11 @@ function GroupsView() {
     await act(
       async (repo) => {
         await repo.insert('groups', [{ id, gradeId, cycleId: active.id, name: name.trim().toUpperCase(), homeroomTeacherId: teacherId, room: `Salón ${100 + db.groups.length + 1}` }])
-        await repo.insert('assignments', subjects.map((s) => ({ id: uid('a'), groupId: id, subjectId: s.id, teacherId })))
+        if (teacherId) await repo.insert('assignments', subjects.map((s) => ({ id: uid('a'), groupId: id, subjectId: s.id, teacherId })))
       },
       { action: 'Creó grupo', detail: `${db.grades.find((g) => g.id === gradeId)?.name} ${name.toUpperCase()}` },
     )
-    setMsg('Grupo creado. Las materias del nivel se asignaron al titular; puedes cambiarlas después.')
+    setMsg(teacherId ? 'Grupo creado. Las materias del nivel se asignaron al titular; puedes cambiarlas después.' : 'Grupo creado sin titular. Cuando registres a tus docentes, asígnalo desde el grupo.')
   }
 
   return (
@@ -59,7 +59,7 @@ function GroupsView() {
                 <li key={g.id} className="flex flex-wrap items-center justify-between gap-2 py-2 text-sm">
                   <div>
                     <p className="font-semibold text-heading">{groupLabel(db, g)}</p>
-                    <p className="text-muted">Titular: {teacherName(db, g.homeroomTeacherId)} · {g.room}</p>
+                    <p className="text-muted">Titular: {g.homeroomTeacherId ? teacherName(db, g.homeroomTeacherId) : 'sin asignar'}{g.room ? ` · ${g.room}` : ''}</p>
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
                     <Badge tone="info">{plural(db.students.filter((s) => s.groupId === g.id && s.status === 'activo').length, 'alumno', 'alumnos')}</Badge>
@@ -90,7 +90,7 @@ function GroupsView() {
           <Field label="Titular">
             {(id) => (
               <Select id={id} value={teacherId} onChange={(e) => setTeacherId(e.target.value)}>
-                <option value="">Elige un docente</option>
+                <option value="">Sin titular por ahora</option>
                 {db.teachers.filter((t) => t.active).map((t) => (
                   <option key={t.id} value={t.id}>{t.firstName} {t.lastName}</option>
                 ))}

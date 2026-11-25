@@ -48,9 +48,13 @@ export class ApiRepository implements EdugridRepository {
   private revalidando = false
   private readonly oyentes = new Set<(e: EventoRepositorio) => void>()
 
-  constructor(base: string, vigenciaMs = 60_000) {
+  /** Token de la sesión real. Sin token, la API atiende al Colegio Demo. */
+  private readonly token: string | null
+
+  constructor(base: string, vigenciaMs = 60_000, token: string | null = null) {
     this.base = base.replace(/\/+$/, '')
     this.vigenciaMs = vigenciaMs
+    this.token = token
     if (typeof document !== 'undefined')
       document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'visible' && this.vieja()) void this.revalidar()
@@ -69,11 +73,15 @@ export class ApiRepository implements EdugridRepository {
   private async pedir<T>(init?: RequestInit): Promise<T> {
     let res: Response
     try {
-      res = await fetch(`${this.base}/datos`, { ...init, headers: { 'content-type': 'application/json' } })
+      const headers: Record<string, string> = { 'content-type': 'application/json' }
+      if (this.token) headers.authorization = `Bearer ${this.token}`
+      res = await fetch(`${this.base}/datos`, { ...init, headers })
     } catch {
       throw new Error('Sin conexión con el servidor de EDUGRID. Revisa tu internet e intenta de nuevo.')
     }
     const cuerpo = (await res.json().catch(() => null)) as { error?: string } | null
+    if (res.status === 401 && this.token) this.emitir({ tipo: 'sesion' })
+    if (res.status === 402) this.emitir({ tipo: 'prueba' })
     if (!res.ok) throw new Error(cuerpo?.error ?? `El servidor respondió con error ${res.status}.`)
     return cuerpo as T
   }

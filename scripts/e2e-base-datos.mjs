@@ -49,7 +49,7 @@ const entrarComo = async (page, sesion, path) => {
 
 // 1. «Restablecer datos demo» deja la base igual que la semilla del repositorio
 const a = await nuevaPagina()
-await a.goto(`${BASE}#/`)
+await a.goto(`${BASE}#/demo`)
 await a.getByText('Datos: Base de datos en línea').waitFor()
 await a.getByRole('button', { name: 'Restablecer datos demo' }).click()
 await a.getByRole('button', { name: 'Sí, restablecer' }).click()
@@ -104,7 +104,7 @@ step('Si el servidor falla, aparece «No se guardó el cambio» y la base no cam
 // 6. Al volver a restablecer, los cambios se van y regresa la semilla
 await a.goto(`${BASE}#/`)
 await a.evaluate(() => localStorage.removeItem('edugrid.demo.sesion'))
-await a.goto(`${BASE}?v=${++v}#/`)
+await a.goto(`${BASE}?v=${++v}#/demo`)
 await a.getByRole('button', { name: 'Restablecer datos demo' }).click()
 await a.getByRole('button', { name: 'Sí, restablecer' }).click()
 await a.getByText('Listo: los datos demo se restablecieron').waitFor()

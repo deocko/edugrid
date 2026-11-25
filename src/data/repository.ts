@@ -1,7 +1,13 @@
 import type { Database, Meta, TableName, Tables } from './types'
 
 /** Aviso de un adaptador que trabaja en segundo plano (el adaptador en línea). */
-export type EventoRepositorio = { tipo: 'datos' } | { tipo: 'error'; mensaje: string }
+export type EventoRepositorio =
+  | { tipo: 'datos' }
+  | { tipo: 'error'; mensaje: string }
+  /** La sesión ya no sirve (401): hay que volver a iniciar sesión. */
+  | { tipo: 'sesion' }
+  /** La prueba gratis de la escuela terminó (402). */
+  | { tipo: 'prueba' }
 
 /**
  * Contrato de acceso a datos. La interfaz de usuario solo conoce este contrato,

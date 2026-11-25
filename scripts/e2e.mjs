@@ -16,11 +16,12 @@ const page = await ctx.newPage()
 page.on('pageerror', (e) => { console.error('Error de página:', e.message); process.exitCode = 1 })
 
 const go = async (path) => { await page.goto(`${BASE}#${path}`); await page.waitForLoadState('networkidle') }
-const logout = async () => { await page.getByRole('button', { name: 'Salir de la cuenta demo' }).click(); await page.waitForURL(/#\/$/) }
+// Salir de la demo vuelve al inicio de sesión; las pruebas regresan a «Ver demo» para entrar como otra persona.
+const logout = async () => { await page.getByRole('button', { name: 'Salir de la cuenta demo' }).click(); await page.waitForURL(/#\/$/); await go('/demo') }
 
 await go('/')
 await page.evaluate(() => localStorage.clear())
-await go('/')
+await go('/demo')
 await page.getByRole('button', { name: 'Entrar como Administrador' }).click()
 await page.waitForURL(/#\/admin$/)
 step('Admin entró a su panel')

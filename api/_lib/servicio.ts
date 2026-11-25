@@ -25,8 +25,16 @@ const conRol = new WeakMap<Ejecutor, boolean>()
  * `edugrid.escuela` (lo que usan las políticas RLS) y, si se puede, cambia al rol
  * edugrid_app. Además, cada consulta filtra por school_id por su cuenta.
  */
-async function enEscuela(db: Ejecutor, escuela: string, consultas: Consulta[]): Promise<Record<string, unknown>[][]> {
-  const previas: Consulta[] = [{ text: `select set_config('edugrid.escuela', $1, true)`, params: [escuela] }]
+export async function enEscuela(db: Ejecutor, escuela: string, consultas: Consulta[]): Promise<Record<string, unknown>[][]> {
+  return enContexto(db, { 'edugrid.escuela': escuela }, consultas)
+}
+
+/**
+ * Igual que enEscuela, pero con los ajustes que se pidan. Para iniciar sesión se fija
+ * `edugrid.correo` (sin escuela): las políticas RLS solo dejan ver las cuentas con ese correo.
+ */
+export async function enContexto(db: Ejecutor, ajustes: Record<string, string>, consultas: Consulta[]): Promise<Record<string, unknown>[][]> {
+  const previas: Consulta[] = Object.entries(ajustes).map(([k, v]) => ({ text: `select set_config($1, $2, true)`, params: [k, v] }))
   if (conRol.get(db)) previas.push({ text: `set local role ${ROL_APP}` })
   const r = await db.transaccion([...previas, ...consultas])
   return r.slice(previas.length)
@@ -41,7 +49,7 @@ export const aislamiento = (db: Ejecutor): 'rls' | 'filtro' => (conRol.get(db) ?
  * Todas las consultas reciben la escuela (`school_id`) como primer parámetro y
  * filtran por ella: así una escuela nunca lee ni cambia datos de otra.
  */
-function insertarFilas(escuela: string, tabla: TableName, filas: unknown[]): Consulta {
+export function insertarFilas(escuela: string, tabla: TableName, filas: unknown[]): Consulta {
   return {
     text: `insert into ${tablaSql(tabla)} (school_id, id, data)
 select $1, f->>'id', f from jsonb_array_elements($2::jsonb) with ordinality as e(f, n) order by n
@@ -64,6 +72,23 @@ export async function cargarSemilla(db: Ejecutor, escuela: string, semilla: Data
   await enEscuela(db, escuela, consultas)
 }
 
+let esquemas = new WeakMap<Ejecutor, Promise<void>>()
+
+/** Crea las tablas que falten (una vez por conexión) y averigua si se puede usar el rol edugrid_app. */
+export function asegurarEsquema(db: Ejecutor): Promise<void> {
+  let listo = esquemas.get(db)
+  if (!listo) {
+    listo = prepararEsquema(db)
+      .then((r) => void conRol.set(db, r.puedeUsarRol))
+      .catch((e: unknown) => {
+        esquemas.delete(db)
+        throw e
+      })
+    esquemas.set(db, listo)
+  }
+  return listo
+}
+
 const listas = new Map<string, Promise<void>>()
 
 /**
@@ -74,7 +99,7 @@ export function prepararBase(db: Ejecutor, escuela: string, semilla: () => Datab
   let listo = listas.get(escuela)
   if (!listo) {
     listo = (async () => {
-      conRol.set(db, (await prepararEsquema(db)).puedeUsarRol)
+      await asegurarEsquema(db)
       const existe = await una(db, escuela, { text: 'select 1 from "escuelas" where school_id = $1', params: [escuela] })
       if (existe.length === 0 && cargarDemo) await cargarSemilla(db, escuela, semilla())
     })().catch((e: unknown) => {
@@ -87,7 +112,10 @@ export function prepararBase(db: Ejecutor, escuela: string, semilla: () => Datab
 }
 
 /** Solo para pruebas: olvida que la base ya se preparó. */
-export const olvidarPreparacion = () => listas.clear()
+export const olvidarPreparacion = () => {
+  listas.clear()
+  esquemas = new WeakMap()
+}
 
 /** Todos los datos en una sola consulta, en el orden en que se guardaron. */
 export async function leerTodo(db: Ejecutor, escuela: string): Promise<Database> {

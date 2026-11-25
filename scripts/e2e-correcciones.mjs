@@ -43,7 +43,7 @@ const pick = (d) => JSON.stringify({ groups: d.groups, students: d.students, tea
 const resetFromLogin = async () => {
   await page.goto(`${BASE}#/`)
   await page.evaluate(() => localStorage.removeItem('edugrid.demo.sesion'))
-  await page.goto(`${BASE}?v=${++v}#/`)
+  await page.goto(`${BASE}?v=${++v}#/demo`)
   await page.getByRole('button', { name: 'Restablecer datos demo' }).click()
   await page.getByRole('button', { name: 'Sí, restablecer' }).click()
   await page.waitForFunction(() => !!localStorage.getItem('edugrid.demo.db.v1'))

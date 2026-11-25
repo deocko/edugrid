@@ -15,22 +15,34 @@ export const formatDateTime = (iso: string) =>
   parse(iso).toLocaleString('es-MX', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
 
 /**
- * Día simulado de la demo. Todas las pantallas usan esta fecha como "hoy" para que
- * los datos no se contradigan según el día en que alguien abra la demo.
+ * Día simulado de la demo. Todas las pantallas del Colegio Demo usan esta fecha como
+ * "hoy" para que los datos no se contradigan según el día en que alguien abra la demo.
+ * Las escuelas reales (con inicio de sesión) usan la fecha de verdad.
  */
 export const DEMO_TODAY = '2026-11-24'
 
-export const todayISO = () => DEMO_TODAY
-
-/** Fecha simulada con la hora local actual (nunca en el futuro respecto al día de la demo). */
-export const nowISO = () => {
-  const d = new Date()
-  const p = (n: number) => String(n).padStart(2, '0')
-  return `${DEMO_TODAY}T${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`
+let fechaReal = false
+/** La app la activa al entrar con una cuenta real y la apaga al volver a la demo. */
+export const usarFechaReal = (real: boolean) => {
+  fechaReal = real
 }
 
-/** Fecha simulada como objeto Date (mediodía local). */
-export const demoDate = () => new Date(`${DEMO_TODAY}T12:00:00`)
+const p2 = (n: number) => String(n).padStart(2, '0')
+const hoyReal = () => {
+  const d = new Date()
+  return `${d.getFullYear()}-${p2(d.getMonth() + 1)}-${p2(d.getDate())}`
+}
+
+export const todayISO = () => (fechaReal ? hoyReal() : DEMO_TODAY)
+
+/** Fecha de hoy con la hora local actual (en la demo, el día simulado). */
+export const nowISO = () => {
+  const d = new Date()
+  return `${todayISO()}T${p2(d.getHours())}:${p2(d.getMinutes())}:${p2(d.getSeconds())}`
+}
+
+/** Hoy como objeto Date (mediodía local). */
+export const demoDate = () => new Date(`${todayISO()}T12:00:00`)
 
 export const uid = (prefix: string) => `${prefix}-${crypto.randomUUID().slice(0, 8)}`
 

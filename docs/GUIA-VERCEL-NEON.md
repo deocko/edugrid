@@ -73,8 +73,20 @@ Solo si las necesitas, en **Settings → Environment Variables**:
 | `EDUGRID_SEMILLA_DEMO` | `no` | Que una base vacía no se llene con los datos de ejemplo. |
 | `EDUGRID_ESCUELA` | p. ej. `montesol` | Escuela que atiende este despliegue (por omisión `demo`). |
 
+### Cuentas reales y correos (Mensaje 10)
+
+| Variable | Valor | Para qué |
+| --- | --- | --- |
+| `RESEND_API_KEY` | la llave de Resend (márcala **Sensitive**) | Mandar de verdad los correos de invitación y de recuperar contraseña. Sin ella, EDUGRID **no envía nada**: muestra la liga en pantalla (solo fuera de Production) y la anota en el log. |
+| `EDUGRID_CORREO_REMITENTE` | p. ej. `EDUGRID <no-responder@tudominio.mx>` | Remitente de los correos. Debe ser de un dominio verificado en Resend. |
+| `EDUGRID_URL_APP` | p. ej. `https://app.tudominio.mx` | Dirección que llevan las ligas de los correos. Si no se pone, se usa la del sitio que hizo la petición. |
+| `EDUGRID_CONTACTO` | un correo o una liga | A dónde lleva el botón «Contactar para contratar» cuando termina la prueba. |
+| `EDUGRID_SIMULAR_PRUEBA` | `si` | Muestra «Solo pruebas: terminar la prueba» en el tablero. En las versiones Preview ya aparece solo; nunca lo actives en Production. |
+
+Las contraseñas se guardan solo como hash (scrypt) en la tabla `usuarios`; los tokens de sesión, invitación y recuperación, solo como huella (sha-256). Ninguna llave va en el código.
+
 ## Más adelante
 
-- **Rama production de Neon:** cuando haya inicio de sesión real y datos de una escuela de verdad, en Vercel se pone la cadena de **production** solo para el entorno **Production**, con `EDUGRID_SEMILLA_DEMO=no`. La rama **dev** se queda para pruebas.
+- **Rama production de Neon:** ahora que hay inicio de sesión real, cuando entren datos de una escuela de verdad, en Vercel se pone la cadena de **production** solo para el entorno **Production**, con `EDUGRID_SEMILLA_DEMO=no`. La rama **dev** se queda para pruebas.
 - **Cambiar de hosting:** la API es Node estándar. Si después prefieres un VPS con Coolify o Dokploy, se usa `npm run build:servidor` y `npm run servidor` con la misma `DATABASE_URL`, sin reescribir nada.
 - **Archivos** (fotos, tareas, recibos): irán a un almacenamiento de archivos (R2/S3), no a la base de datos.

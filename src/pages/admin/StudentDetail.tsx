@@ -39,7 +39,7 @@ export function StudentDetail() {
         title={studentName(student)}
         subtitle={
           <span className="inline-flex flex-wrap items-center gap-2">
-            {groupLabel(db, student.groupId)} · {ageFrom(student.birthDate)} años · Matrícula {student.enrollmentId} <DemoBadge />
+            {groupLabel(db, student.groupId)} · {ageFrom(student.birthDate)} años · Matrícula {student.enrollmentId} <DemoBadge soloDemo />
           </span>
         }
         actions={

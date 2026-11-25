@@ -12,7 +12,8 @@ export interface School {
   address: string
   phone: string
   email: string
-  demo: true
+  /** true solo en el Colegio Demo EDUGRID; las escuelas que se dan de alta solas llevan false. */
+  demo: boolean
 }
 
 export interface StaffMember {

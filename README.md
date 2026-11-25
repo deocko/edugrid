@@ -29,9 +29,17 @@ EDUGRID es una plataforma web de gestión escolar para escuelas privadas en Méx
 
 > En esta demo las notificaciones aparecen dentro de la app. Las notificaciones push al celular necesitan un servidor (por ejemplo Supabase) y se conectarán con el adaptador de datos real.
 
+## Inicio de sesión y alta de escuelas
+
+- **Iniciar sesión** (pantalla de inicio): correo y contraseña. La contraseña solo viaja a la API y se guarda como hash; «Olvidé mi contraseña» manda una liga que vence en 1 hora.
+- **Registrar mi escuela** (`#/registro-escuela`): 4 pasos (Escuela, Administrador, Cargar datos desde Excel —opcional—, Resumen). La escuela queda con **30 días de prueba**; al vencer se muestra «Tu prueba terminó».
+- **Excel** en Alumnos, Docentes y Familias: «Descargar plantilla» e «Importar Excel» con vista previa y errores por fila antes de confirmar. Las columnas están en `src/lib/importar.ts` (las usan la plantilla y el importador).
+- **Invitaciones**: cada persona dada de alta con correo recibe una liga para crear su contraseña. Una cuenta por correo: si ya tiene cuenta en esa escuela, solo se agrega el perfil. Sin `RESEND_API_KEY` los correos no se envían y la liga aparece en pantalla.
+- Todo esto necesita el servidor (Vercel o `npm run servidor`); en GitHub Pages solo existe la demo.
+
 ## Cuentas demo
 
-No hay contraseñas. En la pantalla de inicio elige **Entrar como Administrador / Docente / Familia / Alumno** y, si quieres, la cuenta:
+No hay contraseñas. En la pantalla de inicio toca **Ver demo** y elige **Entrar como Administrador / Docente / Familia / Alumno** y, si quieres, la cuenta:
 
 | Perfil | Cuenta sugerida | Qué ve |
 | --- | --- | --- |
@@ -40,7 +48,7 @@ No hay contraseñas. En la pantalla de inicio elige **Entrar como Administrador 
 | Familia | Laura Ortega Salinas (2 hijos: Regina en 4° de primaria A y Mateo en 2° de primaria A) | Solo sus hijos |
 | Alumno | Alumno de 4° de primaria (vista sencilla) o de secundaria/prepa | Solo lo suyo |
 
-El botón **Restablecer datos demo** (en la pantalla de inicio) pide confirmación y vuelve a cargar los datos de ejemplo. La demo simula que hoy es **martes 24 de noviembre de 2026**.
+El botón **Restablecer datos demo** (en «Ver demo») pide confirmación y vuelve a cargar los datos de ejemplo. La demo simula que hoy es **martes 24 de noviembre de 2026**.
 
 ## Cómo correrlo en tu computadora
 

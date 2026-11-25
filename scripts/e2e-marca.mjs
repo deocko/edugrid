@@ -65,7 +65,7 @@ step('Docente, familia y alumno ven el logo de la escuela arriba y Â«by EDUGRIDÂ
 
 // 4. Pantalla de entrada con la marca de la escuela
 await page.evaluate(() => localStorage.removeItem('edugrid.demo.sesion'))
-await page.goto(`${BASE}?v=${++v}#/`)
+await page.goto(`${BASE}?v=${++v}#/demo`)
 await page.getByRole('heading', { level: 1, name: 'Colegio Arboleda (DEMO)' }).waitFor()
 await page.screenshot({ path: `${OUT}/marca-login.png` })
 step('La pantalla de entrada muestra el nombre y logo de la escuela')
