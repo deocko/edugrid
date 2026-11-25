@@ -25,7 +25,7 @@ export function GradesPage() {
   const students = useMemo(() => db.students.filter((s) => s.groupId === groupId && s.status === 'activo').sort((a, b) => a.lastName.localeCompare(b.lastName)), [db, groupId])
   const records = db.gradeRecords.filter((r) => r.groupId === groupId && r.subjectId === subjectId && r.periodId === periodId)
   const closure = db.closures.find((c) => c.groupId === groupId && c.subjectId === subjectId && c.periodId === periodId)
-  const current = (sid: string) => draft[sid] ?? (records.find((r) => r.studentId === sid)?.score.toString() ?? '')
+  const current = (sid: string) => draft[sid] ?? ((() => { const sc = records.find((r) => r.studentId === sid)?.score; return sc === undefined ? '' : String(Math.round(sc * 10) / 10) })())
 
   const reset = () => { setDraft({}); setMsg(null) }
 

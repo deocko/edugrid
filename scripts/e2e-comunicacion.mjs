@@ -34,8 +34,11 @@ await browser0.close()
 execFileSync('ffmpeg', ['-y', '-loglevel', 'error', '-loop', '1', '-i', `${OUT}/qr-regina.png`, '-vf', 'scale=640:480:force_original_aspect_ratio=decrease,pad=640:480:(ow-iw)/2:(oh-ih)/2:white,format=yuv420p', '-t', '3', '-r', '10', `${OUT}/qr-regina.y4m`])
 
 const browser = await chromium.launch({ args: ['--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream', `--use-file-for-fake-video-capture=${OUT}/qr-regina.y4m`] })
-const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 }, permissions: ['camera'] })
+// Hora de la escuela (el día demo es fijo, pero la hora sale del reloj): así la prueba no depende de la zona ni de la hora del equipo.
+const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 }, permissions: ['camera'], timezoneId: 'America/Mexico_City' })
 const page = await ctx.newPage()
+// Mediodía en la escuela: la regla de «escaneo repetido» compara con las entradas de la mañana de la semilla.
+await ctx.clock.setSystemTime(new Date('2026-11-24T12:30:00-06:00'))
 page.on('pageerror', (e) => { console.error('Error de página:', e.message); process.exitCode = 1 })
 // Carga completa (cambia ?v) para que la app lea la sesión que se acaba de poner en el navegador
 let n = 0
@@ -47,9 +50,10 @@ await page.evaluate(() => localStorage.clear())
 await go('/')
 await as('admin')
 await go('/admin/entradas')
-await page.getByRole('button', { name: 'Abrir cámara' }).click()
+// Con el permiso de cámara ya dado, el escáner se abre solo al entrar (no hay que volver a tocar «Abrir cámara»)
+await page.getByRole('button', { name: 'Apagar cámara' }).waitFor({ timeout: 10000 })
 await page.getByText('Salida: Regina Méndez Ortega').waitFor({ timeout: 15000 })
-step('Cámara: el QR de Regina se leyó y registró su SALIDA (ya tenía entrada a las 07:42)')
+step('Cámara: se abrió sola (permiso ya dado) y el QR de Regina registró su SALIDA (ya tenía entrada a las 07:42)')
 await page.getByRole('button', { name: 'Apagar cámara' }).click()
 
 // 2. Código escrito a mano: Mateo sale; volver a escanear al instante no duplica

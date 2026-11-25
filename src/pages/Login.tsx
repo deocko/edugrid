@@ -19,6 +19,9 @@ interface RoleCard {
   icon: IconName
 }
 
+/** Color pastel de cada tarjeta de acceso. */
+const LOGIN_COLORS: Record<Role, string> = { admin: 'subj-indigo', docente: 'subj-verde', familia: 'subj-rosa', alumno: 'subj-azul' }
+
 const CARDS: RoleCard[] = [
   { role: 'admin', name: 'Administrador', title: 'Entrar como Administrador', description: 'Dirección y administración: alumnos, pagos, avisos y facturación.', icon: 'escudo' },
   { role: 'docente', name: 'Docente', title: 'Entrar como Docente', description: 'Pasa lista, captura calificaciones y deja tareas a tus grupos.', icon: 'docente' },
@@ -100,7 +103,7 @@ export function Login() {
 
         <div className="grid gap-4 sm:grid-cols-2">
           {CARDS.map((c) => (
-            <section key={c.role} className="flex min-w-0 flex-col gap-3 rounded-2xl border border-line bg-surface p-5 sm:p-6">
+            <section key={c.role} className={`${LOGIN_COLORS[c.role]} card-tint flex min-w-0 flex-col gap-3 rounded-2xl border p-5 shadow-sm sm:p-6`}>
               <div className="flex items-start gap-3">
                 <span className="rounded-xl bg-info-bg p-2.5 text-info">
                   <Icon name={c.icon} size={24} />

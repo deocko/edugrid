@@ -1,6 +1,5 @@
-import { useState } from 'react'
-import { download } from '../cfdi/service'
-import { canDownloadFiles } from '../lib/env'
+import { useEffect, useState } from 'react'
+import { canDownloadFiles, embeddedDownloads, saveFile } from '../lib/env'
 import { buildReportCardPdf } from '../lib/reportCard'
 import { studentName } from '../lib/scope'
 import { useApp } from '../state/context'
@@ -12,17 +11,19 @@ export function ReportCardButton({ studentId }: { studentId: string }) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const student = db.students.find((s) => s.id === studentId)
+  // En una vista previa incrustada, se pide de antemano el permiso de guardar archivos para que el clic responda rápido.
+  useEffect(() => {
+    if (!canDownloadFiles()) void embeddedDownloads()
+  }, [])
   const run = async () => {
-    if (!canDownloadFiles()) {
-      setError('En esta vista previa no se pueden descargar archivos. En el producto real, aquí se descarga tu boleta en PDF.')
-      return
-    }
     setBusy(true)
     setError('')
     try {
       const blob = await buildReportCardPdf(db, studentId)
-      download(blob, `Boleta-DEMO-${student?.enrollmentId ?? studentId}.pdf`)
-      void log({ action: 'Descargó boleta', detail: studentName(student), kind: 'acceso' })
+      const result = await saveFile(blob, `Boleta-DEMO-${student?.enrollmentId ?? studentId}.pdf`)
+      if (result === 'ok') void log({ action: 'Descargó boleta', detail: studentName(student), kind: 'acceso' })
+      else if (result === 'no-disponible') setError('En esta vista previa no se pueden descargar archivos. En el producto real, aquí se descarga tu boleta en PDF.')
+      else setError('No se guardó la boleta. Puedes intentarlo de nuevo.')
     } catch {
       setError('No se pudo generar la boleta.')
     } finally {

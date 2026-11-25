@@ -27,7 +27,7 @@ export function FamilyPayments() {
         </div>
       )}
       {!hasCards && (
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-line bg-surface p-4">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 card-tint rounded-2xl border p-4 shadow-sm">
           <p className="text-sm text-ink">Guarda una tarjeta para pagar desde aquí en un paso.</p>
           <LinkButton to="/familia/tarjetas" icon="tarjeta">Agregar tarjeta</LinkButton>
         </div>

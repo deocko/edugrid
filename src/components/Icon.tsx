@@ -2,6 +2,7 @@
 // Trazo fino de 1.75 y puntas redondeadas para un estilo limpio y moderno.
 // Los nombres en español se mantienen para que el resto del código no dependa de la librería.
 import {
+  ArrowRight,
   Baby,
   Bell,
   BookOpen,
@@ -10,6 +11,7 @@ import {
   Camera,
   ChartNoAxesColumn,
   Check,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   Clock3,
@@ -47,6 +49,9 @@ import {
   WalletCards,
   X,
   type LucideIcon,
+  MessageSquare,
+  UserRound,
+  Wallet,
 } from 'lucide-react'
 
 const ICONS = {
@@ -94,6 +99,11 @@ const ICONS = {
   tarjeta: CreditCard,
   girar: RotateCw,
   borrar: Trash2,
+  abajo: ChevronDown,
+  flecha: ArrowRight,
+  persona: UserRound,
+  cartera: Wallet,
+  observacion: MessageSquare,
 } satisfies Record<string, LucideIcon>
 
 export type IconName = keyof typeof ICONS

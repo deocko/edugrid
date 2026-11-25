@@ -1,14 +1,13 @@
-import { useRef, useState } from 'react'
+import { useState } from 'react'
 import type { Student } from '../data/types'
 import { compressAvatar } from '../lib/photo'
 import { studentName } from '../lib/scope'
 import { useApp } from '../state/context'
-import { Avatar, Button, Notice } from './ui'
+import { Avatar, Button, FilePickButton, Notice } from './ui'
 
 /** Foto del alumno en su expediente. Solo la dirección la puede subir, cambiar o quitar. */
 export function StudentPhoto({ student }: { student: Student }) {
   const { session, act } = useApp()
-  const input = useRef<HTMLInputElement>(null)
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
   const canEdit = session.role === 'admin'
@@ -25,7 +24,6 @@ export function StudentPhoto({ student }: { student: Student }) {
       setError(e instanceof Error ? e.message : 'No se pudo guardar la foto.')
     } finally {
       setBusy(false)
-      if (input.current) input.current.value = ''
     }
   }
 
@@ -34,10 +32,9 @@ export function StudentPhoto({ student }: { student: Student }) {
       <Avatar name={name} src={student.photo} size={96} />
       {canEdit && (
         <div className="flex flex-col gap-2">
-          <input ref={input} type="file" accept="image/*" className="sr-only" tabIndex={-1} aria-hidden="true" onChange={(e) => void pick(e.target.files?.[0])} />
-          <Button variant="secundario" icon="camara" disabled={busy} onClick={() => input.current?.click()}>
+          <FilePickButton icon="camara" accept="image/*" disabled={busy} onFile={(f) => void pick(f)}>
             {busy ? 'Guardando…' : student.photo ? 'Cambiar foto' : 'Agregar foto'}
-          </Button>
+          </FilePickButton>
           {student.photo && (
             <Button variant="fantasma" icon="cerrar" onClick={() => void act((repo) => repo.update('students', student.id, { photo: null }), { action: 'Quitó foto de alumno', detail: name })}>
               Quitar foto

@@ -23,10 +23,10 @@ const sessions = {
 }
 const routes = {
   login: ['/'],
-  admin: ['/admin', '/admin/alumnos', '/admin/alumnos?alta=1', '/alumnos/al1', '/admin/docentes', '/admin/escuela', '/admin/permisos', '/admin/bitacora', '/avisos', '/pagos', '/pagos?registrar=1&alumno=al2', '/pagos?vista=cargos', '/pagos?vista=conceptos', '/pagos/estado/al2', '/facturacion', '/facturacion/configuracion', '/docente/calificaciones', '/admin/entradas', '/admin/familias', '/admin/aulas', '/admin/clases', '/notificaciones', '/admin/configuracion'],
-  docente: ['/docente', '/docente/asistencia', '/docente/calificaciones', '/docente/tareas', '/docente/horario', '/avisos', '/docente/entradas', '/docente/novedades', '/docente/chat', '/docente/chat?c=ch1'],
-  familia: ['/familia', '/familia/hijo/al1', '/familia/hijo/al1?vista=dia', '/familia/pagos', '/familia/calendario', '/avisos', '/pagos/estado/al2', '/privacidad', '/familia/qr', '/familia/chat', '/familia/chat?c=ch1', '/notificaciones', '/familia/tarjetas'],
-  alumnoPrim: ['/alumno', '/alumno/horario', '/alumno/tareas', '/alumno/calificaciones', '/alumno/qr'],
+  admin: ['/admin', '/admin/alumnos', '/admin/alumnos?alta=1', '/alumnos/al1', '/admin/docentes', '/admin/escuela', '/admin/permisos', '/admin/bitacora', '/avisos', '/pagos', '/pagos?registrar=1&alumno=al2', '/pagos?vista=cargos', '/pagos?vista=conceptos', '/pagos/estado/al2', '/facturacion', '/facturacion/configuracion', '/docente/calificaciones', '/admin/entradas', '/admin/familias', '/admin/aulas', '/admin/clases', '/notificaciones', '/admin/configuracion', '/admin/calificaciones', '/admin/calendario', '/admin/ajustes', '/docente/asistencia?grupo=gr-primaria-4A', '/perfil', '/admin/lugares-qr'],
+  docente: ['/mas', '/perfil', '/docente', '/docente/asistencia', '/docente/calificaciones', '/docente/tareas', '/docente/horario', '/avisos', '/docente/entradas', '/docente/novedades', '/docente/chat', '/docente/chat?c=ch1'],
+  familia: ['/mas', '/perfil', '/familia', '/familia/hijo/al1', '/familia/hijo/al1?vista=dia', '/familia/pagos', '/familia/calendario', '/avisos', '/pagos/estado/al2', '/privacidad', '/familia/qr', '/familia/chat', '/familia/chat?c=ch1', '/notificaciones', '/familia/tarjetas'],
+  alumnoPrim: ['/mas', '/perfil', '/alumno', '/alumno/horario', '/alumno/tareas', '/alumno/calificaciones', '/alumno/qr'],
   alumnoSec: ['/alumno', '/alumno/calificaciones', '/avisos'],
 }
 // Accesos que deben bloquearse

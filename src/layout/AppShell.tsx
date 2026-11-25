@@ -1,13 +1,17 @@
-import { useState, useSyncExternalStore } from 'react'
+import { useEffect, useSyncExternalStore } from 'react'
 import { Link, NavLink, Outlet, useLocation } from 'react-router'
 import { Icon } from '../components/Icon'
 import { Avatar, DemoBadge, Switch } from '../components/ui'
 import { ROLE_LABEL } from '../lib/permissions'
 import { userKey, visibleAnnouncements } from '../lib/scope'
 import { useApp } from '../state/context'
-import { moduleForPath, NAV } from './nav'
+import { hubFor, inHub, moduleForPath, NAV } from './nav'
+import { Logo } from '../brand/Logo'
 import { ByEdugrid, SchoolLogo } from '../brand/SchoolBrand'
 import { brandingOf } from '../lib/branding'
+import { tapFeedback } from '../lib/haptics'
+import { profileOf } from '../lib/profile'
+import { appearanceOf, cardColorFor, menuColorFor } from '../lib/appearance'
 
 const darkQuery = () => window.matchMedia('(prefers-color-scheme: dark)')
 const subscribeDark = (cb: () => void) => {
@@ -33,16 +37,72 @@ function ThemeSwitch() {
   )
 }
 
+/** Botón de la barra inferior: círculo con ícono, o píldora con ícono y nombre si es la sección activa. */
+const pillClass = (active: boolean) =>
+  `relative flex h-11 items-center justify-center rounded-full no-underline transition-all duration-300 ease-out min-[400px]:h-12 ${
+    active ? 'gap-1.5 bg-primary pr-3.5 pl-3 text-on-primary shadow-md min-[400px]:pr-4' : 'w-11 text-muted hover:bg-surface-2 hover:text-heading min-[400px]:w-12'
+  }`
+
+/** «Configuración» no cabe en celulares angostos: ahí se ve «Ajustes» (el lector de pantalla sigue diciendo «Configuración»). */
+function BarWord({ label }: { label: string }) {
+  if (label !== 'Configuración') return <>{label}</>
+  return (
+    <>
+      <span aria-hidden="true" className="min-[400px]:hidden">Ajustes</span>
+      <span className="sr-only min-[400px]:not-sr-only">{label}</span>
+    </>
+  )
+}
+
+/**
+ * Nombre del botón activo. Todos los nombres de la barra se apilan en la misma celda (los demás,
+ * invisibles), así el botón activo mide siempre lo que mide el nombre más largo.
+ */
+function ActiveLabel({ label, all }: { label: string; all: string[] }) {
+  return (
+    <span className="grid text-[13px] font-bold whitespace-nowrap min-[400px]:text-sm">
+      {all.map((l) => (
+        <span key={l} aria-hidden="true" className="invisible col-start-1 row-start-1">
+          <BarWord label={l} />
+        </span>
+      ))}
+      <span className="col-start-1 row-start-1 text-center">
+        <BarWord label={label} />
+      </span>
+    </span>
+  )
+}
+
+/** Contador de avisos sin leer sobre el ícono (o junto al nombre cuando la sección está activa). */
+function NavCount({ n, active }: { n: number; active: boolean }) {
+  return active ? (
+    <span className="absolute -top-1 -right-1 min-w-5 rounded-full bg-cyan px-1 text-center text-[11px] leading-5 font-bold text-navy ring-2 ring-surface"><span aria-hidden="true">{n}</span><span className="sr-only">, {n} sin leer</span></span>
+  ) : (
+    <span className="absolute top-0.5 right-0.5 min-w-4 rounded-full bg-cyan px-1 text-center text-[10px] leading-4 font-bold text-navy"><span aria-hidden="true">{n}</span><span className="sr-only">, {n} sin leer</span></span>
+  )
+}
+
 export function AppShell() {
   const { session, db, logout } = useApp()
-  const [moreOpen, setMoreOpen] = useState(false)
   const location = useLocation()
+  // Al cambiar de página (o al regresar con «atrás») se empieza siempre desde arriba;
+  // los cambios de pestaña dentro de la misma página (?vista=…) conservan la posición.
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' })
+  }, [location.pathname])
   const items = NAV[session.role]
   const moduleName = moduleForPath(location.pathname)
   const unread = visibleAnnouncements(db, session).filter((a) => !db.receipts.some((r) => r.announcementId === a.id && r.userKey === userKey(session))).length
   const notes = db.notifications.filter((n) => n.userKey === userKey(session) && !n.readAt).length
   const primary = items.slice(0, 4)
   const rest = items.slice(4)
+  const hub = hubFor(session.role)
+  const barLabels = [...primary.map((it) => it.short ?? it.label), ...(rest.length ? [hub.label] : [])]
+  const me = profileOf(db, session)
+  const onProfile = location.pathname === '/perfil'
+  const look = appearanceOf(db.meta)
+  const cardColor = cardColorFor(look, location.pathname)
+  const menuColor = menuColorFor(look, location.pathname)
 
   const badge = (to: string) =>
     to === '/avisos' && unread > 0 && session.role !== 'admin' ? (
@@ -82,11 +142,23 @@ export function AppShell() {
             ))}
           </ul>
         </nav>
-        <div className="border-t border-white/10 p-4 text-xs text-nav-ink">
-          <Link to="/privacidad" className="font-semibold text-nav-ink underline">
-            Aviso de privacidad
+        <div className="border-t border-white/10 p-3">
+          <Link
+            to="/perfil"
+            aria-current={onProfile ? 'page' : undefined}
+            className={`group flex items-center gap-3 rounded-2xl p-2 no-underline transition ${onProfile ? 'bg-primary text-nav-active' : 'text-white hover:bg-white/10'}`}
+          >
+            <Avatar name={me.name} src={me.avatar} size={42} />
+            <span className="min-w-0 flex-1 leading-tight">
+              <span className="block text-sm font-semibold break-words">{me.name}</span>
+              <span className={`block text-xs ${onProfile ? 'text-nav-active' : 'text-nav-ink'}`}>{me.roleLabel}</span>
+              <span className={`mt-0.5 block text-xs font-semibold ${onProfile ? 'text-nav-active' : 'text-nav-ink underline'}`}>Editar mi perfil</span>
+            </span>
+            <Icon name="ajustes" size={18} className={onProfile ? '' : 'text-nav-ink group-hover:text-white'} />
           </Link>
-          <p className="mt-1">Versión demo con datos ficticios.</p>
+          <p className="mt-2 px-2 text-xs text-nav-ink">
+            <Link to="/privacidad" className="font-semibold text-nav-ink underline">Aviso de privacidad</Link> · Demo con datos ficticios.
+          </p>
         </div>
       </aside>
 
@@ -108,13 +180,13 @@ export function AppShell() {
                 {notes > 0 && <span className="absolute top-1.5 right-1.5 min-w-4 rounded-full bg-primary px-1 text-center text-[10px] leading-4 font-bold text-on-primary">{notes}</span>}
               </Link>
               <ThemeSwitch />
-              <div className="hidden items-center gap-2 pl-2 sm:flex">
-                <Avatar name={session.name} size={34} />
-                <div className="max-w-[12rem] leading-tight">
-                  <p className="truncate text-sm font-semibold text-heading">{session.name}</p>
-                  <p className="truncate text-xs text-muted">{ROLE_LABEL[session.role]}</p>
-                </div>
-              </div>
+              <Link to="/perfil" aria-label={`Mi perfil: ${me.name}`} className="hidden min-h-11 items-center gap-2 rounded-xl px-2 no-underline hover:bg-surface-2 sm:inline-flex">
+                <Avatar name={me.name} src={me.avatar} size={34} />
+                <span className="max-w-[12rem] leading-tight">
+                  <span className="block truncate text-sm font-semibold text-heading">{me.name}</span>
+                  <span className="block truncate text-xs text-muted">{ROLE_LABEL[session.role]}</span>
+                </span>
+              </Link>
               <button type="button" onClick={logout} className="inline-flex min-h-11 items-center gap-2 rounded-xl px-3 text-sm font-semibold text-heading hover:bg-surface-2" aria-label="Salir de la cuenta demo">
                 <Icon name="salir" />
                 <span className="hidden md:inline">Salir</span>
@@ -123,83 +195,62 @@ export function AppShell() {
           </div>
         </header>
 
-        <main id="contenido" className="mx-auto w-full max-w-6xl flex-1 px-4 pt-5 pb-28 lg:pb-10" key={location.pathname}>
+        <main id="contenido" className={`${cardColor ? `subj-${cardColor}` : ''} mx-auto w-full max-w-6xl flex-1 px-4 pt-5 pb-28 lg:pb-10`} key={location.pathname}>
           {moduleName && (
             <p className="mb-1 text-sm font-bold text-link" data-modulo>
               {moduleName}
             </p>
           )}
           <Outlet />
-          <div className="mt-8 flex justify-center lg:hidden">
-            <ByEdugrid />
-          </div>
-          <p className="mt-2 text-center text-xs text-muted lg:hidden">
+          <p className="mt-8 text-center text-xs text-muted lg:hidden">
             Datos de ejemplo (DEMO).{' '}
             <Link to="/privacidad" className="font-semibold text-link underline">
               Aviso de privacidad
             </Link>
           </p>
+          {/* Logo de EDUGRID fijo: no cambia con la marca de la escuela */}
+          <div className="mt-3 flex justify-center lg:hidden" data-edugrid-footer>
+            <Logo height={22} tone="auto" />
+          </div>
         </main>
         <footer className="mx-auto hidden w-full max-w-6xl px-4 pb-6 text-xs text-muted lg:block">
-          <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
-            <ByEdugrid />
-            <span>{brandingOf(db.meta).logo ? db.meta.school.name : 'EDUGRID · Administra tu Escuela'} · Datos de ejemplo (DEMO), no corresponden a personas reales.</span>
+          <span className="block">{brandingOf(db.meta).logo ? db.meta.school.name : 'EDUGRID · Administra tu Escuela'} · Datos de ejemplo (DEMO), no corresponden a personas reales.</span>
+          {/* Logo de EDUGRID fijo: no cambia con la marca de la escuela */}
+          <span className="mt-2 flex" data-edugrid-footer>
+            <Logo height={20} tone="auto" />
           </span>
         </footer>
       </div>
 
-      {/* Navegación inferior (móvil y tableta) */}
-      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-surface pb-[env(safe-area-inset-bottom)] lg:hidden no-print" aria-label="Navegación principal">
-        <ul className="mx-auto grid max-w-xl" style={{ gridTemplateColumns: `repeat(${primary.length + (rest.length ? 1 : 0)}, minmax(0, 1fr))` }}>
+      {/* Navegación inferior (móvil y tableta): barra flotante de íconos; la sección activa se muestra como botón con su nombre */}
+      <nav className="pointer-events-none fixed inset-x-0 bottom-0 z-40 px-2 pb-[calc(env(safe-area-inset-bottom)+0.5rem)] min-[360px]:px-3 lg:hidden no-print" aria-label="Navegación principal">
+        <ul className={`${menuColor ? `subj-${menuColor} bg-[var(--s-bg)] border-[color-mix(in_srgb,var(--s)_28%,var(--c-line))]` : 'border-line bg-surface/95'} pointer-events-auto mx-auto flex max-w-md items-center justify-between gap-0.5 rounded-full border p-1.5 shadow-[0_8px_30px_rgb(16_29_50/0.18)] backdrop-blur dark:shadow-[0_8px_30px_rgb(0_0_0/0.5)]`}>
           {primary.map((it) => (
-            <li key={it.to}>
-              <NavLink
-                to={it.to}
-                end={it.end}
-                className={({ isActive }) => `relative flex min-h-14 flex-col items-center justify-center gap-0.5 px-1 py-1.5 text-[11px] font-semibold no-underline ${isActive ? 'text-link' : 'text-muted'}`}
-              >
+            <li key={it.to} className="flex justify-center has-[[aria-current=page]]:min-w-0">
+              <NavLink to={it.to} end={it.end} onClick={(e) => { if (e.currentTarget.getAttribute('aria-current') !== 'page') tapFeedback() }} className={({ isActive }) => pillClass(isActive)}>
                 {({ isActive }) => (
                   <>
-                    {isActive && <span className="absolute top-0 h-1 w-8 rounded-b bg-primary dark:bg-link" aria-hidden="true" />}
                     <Icon name={it.icon} size={22} />
-                    <span className="max-w-full truncate">{it.short ?? it.label}</span>
-                    {it.to === '/avisos' && unread > 0 && session.role !== 'admin' && (
-                      <span className="absolute top-1 right-[calc(50%-20px)] min-w-4 rounded-full bg-cyan px-1 text-[10px] leading-4 font-bold text-navy">{unread}</span>
-                    )}
+                    {isActive ? <ActiveLabel label={it.short ?? it.label} all={barLabels} /> : <span className="sr-only">{it.short ?? it.label}</span>}
+                    {it.to === '/avisos' && unread > 0 && session.role !== 'admin' && <NavCount n={unread} active={isActive} />}
                   </>
                 )}
               </NavLink>
             </li>
           ))}
-          {rest.length > 0 && (
-            <li>
-              <button type="button" onClick={() => setMoreOpen((v) => !v)} aria-expanded={moreOpen} className="flex min-h-14 w-full flex-col items-center justify-center gap-0.5 px-1 py-1.5 text-[11px] font-semibold text-muted">
-                <Icon name={moreOpen ? 'cerrar' : 'menu'} size={22} />
-                Más
-              </button>
-            </li>
-          )}
-        </ul>
-        {moreOpen && (
-          <div className="absolute inset-x-0 bottom-full border-t border-line bg-surface p-3 shadow-lg">
-            <ul className="mx-auto grid max-w-xl grid-cols-2 gap-2 sm:grid-cols-3">
-              {rest.map((it) => (
-                <li key={it.to}>
-                  <NavLink to={it.to} onClick={() => setMoreOpen(false)} className="flex min-h-11 items-center gap-2 rounded-xl bg-surface-2 px-3 py-2 text-sm font-semibold text-heading no-underline">
-                    <Icon name={it.icon} />
-                    {it.label}
-                  </NavLink>
-                </li>
-              ))}
-              <li>
-                <NavLink to="/privacidad" onClick={() => setMoreOpen(false)} className="flex min-h-11 items-center gap-2 rounded-xl bg-surface-2 px-3 py-2 text-sm font-semibold text-heading no-underline">
-                  <Icon name="escudo" />
-                  Privacidad
-                </NavLink>
+          {rest.length > 0 && (() => {
+            const active = inHub(session.role, location.pathname)
+            return (
+              <li className="flex justify-center">
+                <Link to={hub.to} aria-current={active ? 'page' : undefined} onClick={() => { if (!active) tapFeedback() }} className={pillClass(active)}>
+                  <Icon name={session.role === 'admin' ? 'ajustes' : 'menu'} size={22} />
+                  {active ? <ActiveLabel label={hub.label} all={barLabels} /> : <span className="sr-only">{hub.label}</span>}
+                  {session.role !== 'admin' && unread > 0 && hub.items.some((i) => i.to === '/avisos') && <NavCount n={unread} active={active} />}
+                </Link>
               </li>
-            </ul>
-          </div>
-        )}
+            )
+          })()}
+        </ul>
       </nav>
     </div>
   )

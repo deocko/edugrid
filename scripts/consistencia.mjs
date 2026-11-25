@@ -38,7 +38,9 @@ const between = (t, a, b) => {
 }
 
 // 1a. Mateo en 2° de primaria A en todas las vistas
-const mateoFam = await text('familia', '/familia')
+// Los expedientes de los hijos inician contraídos: se abren para leer sus datos
+const openFolders = async (page) => { const closed = page.locator('main button[aria-expanded="false"]'); while (await closed.count()) await closed.first().click() }
+const mateoFam = await text('familia', '/familia', openFolders)
 const mateoAdm = await text('admin', '/alumnos/al2')
 check('1a Mateo en 2° de primaria A (Familia y Admin)', mateoFam.includes('Mateo Méndez Ortega') && /Mateo Méndez Ortega\s+2° de primaria A/.test(mateoFam) && mateoAdm.includes('2° de primaria A') && !/secundaria/.test(mateoAdm.split('Datos generales')[0]))
 
@@ -90,7 +92,7 @@ check('2 4° de primaria sin ecuaciones lineales ni carta formal, ≤3 por día'
 
 // 3. Familia Ortega Salinas no ve la feria de secundaria
 const avisos = await text('familia', '/avisos')
-check('3 Familia no ve «Feria de ciencias de secundaria»', !avisos.includes('Feria de ciencias') && avisos.includes('Festival de invierno'))
+check('3 Familia ve solo los avisos de sus niveles (Feria de primaria sí; kinder y secundaria no)', avisos.includes('Feria de ciencias de primaria') && !avisos.includes('Nuevo horario de entrada en kinder') && !avisos.includes('Campaña de vacunación en secundaria') && avisos.includes('Festival de invierno'))
 
 // 4. Selector de docente
 const ctx = await browser.newContext()
@@ -109,7 +111,7 @@ check('7 Restablecer pide confirmación y muestra éxito', q)
 await ctx.close()
 
 // Promedio de Regina (dato de referencia)
-check('Ref. Regina con promedio 8.5 (Familia)', /Regina Méndez Ortega[\s\S]{0,200}8\.5/.test(mateoFam))
+check('Ref. Regina con promedio 8.5 (Familia)', /Regina Méndez Ortega[\s\S]{0,400}8\.5/.test(mateoFam))
 
 // 5. Factura demo ya emitida con XML y PDF visibles
 const fac = await text('admin', '/facturacion')

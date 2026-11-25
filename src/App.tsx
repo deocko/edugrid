@@ -39,6 +39,10 @@ import { useStore } from './state/context'
 import { BrandStyle } from './brand/SchoolBrand'
 import { SchoolSettings } from './pages/admin/SchoolSettings'
 import { FamilyCards } from './pages/family/FamilyCards'
+import { AdminCalendar } from './pages/admin/AdminCalendar'
+import { SettingsHub } from './pages/admin/SettingsHub'
+import { CheckinPlaces } from './pages/admin/CheckinPlaces'
+import { ProfilePage } from './pages/shared/ProfilePage'
 
 export function App() {
   const { status, error, session, resetDemo } = useStore()
@@ -68,6 +72,7 @@ export function App() {
         {!session && <Route path="/privacidad" element={<Privacy />} />}
         <Route element={session ? <AppShell /> : <Navigate to="/" replace />}>
           <Route path="/privacidad" element={<Privacy />} />
+          <Route path="/perfil" element={<ProfilePage />} />
           <Route path="/admin" element={<RequireRole roles={['admin']}><AdminHome /></RequireRole>} />
           <Route path="/admin/alumnos" element={<RequireRole roles={['admin']}><Students /></RequireRole>} />
           <Route path="/alumnos/:id" element={<RequireRole roles={['admin', 'docente']}><StudentDetail /></RequireRole>} />
@@ -77,7 +82,12 @@ export function App() {
           <Route path="/admin/entradas" element={<RequireRole roles={['admin']}><ScanPage /></RequireRole>} />
           <Route path="/admin/docentes" element={<RequireRole roles={['admin']}><Teachers /></RequireRole>} />
           <Route path="/admin/escuela" element={<RequireRole roles={['admin']}><SchoolStructure /></RequireRole>} />
+          <Route path="/mas" element={<RequireRole roles={['docente', 'familia', 'alumno']}><SettingsHub /></RequireRole>} />
+          <Route path="/admin/ajustes" element={<RequireRole roles={['admin']}><SettingsHub /></RequireRole>} />
+          <Route path="/admin/calificaciones" element={<RequireRole roles={['admin']}><GradesPage /></RequireRole>} />
+          <Route path="/admin/calendario" element={<RequireRole roles={['admin']}><AdminCalendar /></RequireRole>} />
           <Route path="/admin/configuracion" element={<RequireRole roles={['admin']}><SchoolSettings /></RequireRole>} />
+          <Route path="/admin/lugares-qr" element={<RequireRole roles={['admin']}><CheckinPlaces /></RequireRole>} />
           <Route path="/admin/permisos" element={<RequireRole roles={['admin']}><Permissions /></RequireRole>} />
           <Route path="/admin/bitacora" element={<RequireRole roles={['admin']}><AuditLog /></RequireRole>} />
 

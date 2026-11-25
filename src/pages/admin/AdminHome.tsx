@@ -54,10 +54,10 @@ export function AdminHome() {
       />
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Stat label="Alumnos activos" value={active.length} hint={`${plural(db.groups.length, 'grupo', 'grupos')} en 5 niveles`} icon="alumnos" tone="info" />
-        <Stat label="Asistencia (5 días)" value={`${presentRate}%`} hint="Presentes y retardos" icon="asistencia" tone="exito" />
-        <Stat label="Cobrado este mes" value={formatMoney(collected)} hint={`de ${formatMoney(expected)} esperado`} icon="pagos" tone="info" />
-        <Stat label="Adeudo vencido" value={formatMoney(overdueTotal)} hint={`${plural(debtors, 'alumno', 'alumnos')} con atraso`} icon="alerta" tone="peligro" />
+        <Stat label="Alumnos activos" value={active.length} hint={`${plural(db.groups.length, 'grupo', 'grupos')} en 5 niveles`} icon="alumnos" tone="info" to="/admin/alumnos" action="Ver alumnos" />
+        <Stat label="Asistencia (5 días)" value={`${presentRate}%`} hint="Presentes y retardos" icon="asistencia" tone="exito" progress={presentRate / 100} to="/docente/asistencia" action="Ver listas" />
+        <Stat label="Cobrado este mes" value={formatMoney(collected)} hint={`de ${formatMoney(expected)} esperado`} icon="pagos" tone="info" progress={expected ? collected / expected : 0} to="/pagos?vista=cargos" action="Ver cargos" />
+        <Stat label="Adeudo vencido" value={formatMoney(overdueTotal)} hint={`${plural(debtors, 'alumno', 'alumnos')} con atraso`} icon="alerta" tone="peligro" to="/pagos" action="Cobrar" />
       </div>
 
       <div className="mt-4 grid gap-4 lg:grid-cols-3">

@@ -1,6 +1,6 @@
 // Elementos de marca compartidos por los PDF de EDUGRID (facturas y boletas).
 import type { jsPDF } from 'jspdf'
-import { LOGO_CYAN, LOGO_CYAN_D, LOGO_NAVY, LOGO_NAVY_D, LOGO_VIEWBOX } from '../brand/logoPaths'
+import { LOGO_CYAN, LOGO_CYAN_D, LOGO_GRAY, LOGO_GRAY_D, LOGO_NAVY, LOGO_NAVY_D, LOGO_VIEWBOX } from '../brand/logoPaths'
 
 export const NAVY: [number, number, number] = [16, 29, 50]
 export const CYAN: [number, number, number] = [53, 197, 217]
@@ -33,12 +33,15 @@ function toOps(d: string, scale: number, dx: number, dy: number): PathOp[] {
   return ops
 }
 
-/** Logotipo oficial del manual, en vector. tone «invertida» para fondos oscuros. */
+/** Logotipo oficial, en vector. tone «invertida» para fondos oscuros. */
 export function drawLogo(doc: jsPDF, x: number, y: number, width: number, tone: 'color' | 'invertida' = 'color') {
   const scale = width / LOGO_VIEWBOX.w
   const ink: [number, number, number] = tone === 'invertida' ? [255, 255, 255] : hex(LOGO_NAVY)
   doc.setFillColor(...ink)
   doc.path(toOps(LOGO_NAVY_D, scale, x, y))
+  doc.fillEvenOdd()
+  doc.setFillColor(...hex(LOGO_GRAY))
+  doc.path(toOps(LOGO_GRAY_D, scale, x, y))
   doc.fillEvenOdd()
   doc.setFillColor(...hex(LOGO_CYAN))
   doc.path(toOps(LOGO_CYAN_D, scale, x, y))

@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router'
 import { ATT_LABEL } from '../../lib/attendance'
+import { checkinsOfDay } from '../../lib/presence'
 import { Avatar, Button, Card, EmptyState, Field, Input, Notice, PageHeader, Select } from '../../components/ui'
 import type { AttendanceRecord, AttendanceStatus } from '../../data/types'
 import { formatDateLong, todayISO, plural } from '../../lib/format'
@@ -28,11 +29,13 @@ export function AttendancePage() {
   const students = useMemo(() => db.students.filter((s) => s.groupId === groupId && s.status === 'activo').sort((a, b) => a.lastName.localeCompare(b.lastName)), [db, groupId])
   const existing = useMemo(() => Object.fromEntries(db.attendance.filter((a) => a.groupId === groupId && a.date === date).map((a) => [a.studentId, a.status])), [db, groupId, date])
   const value = (id: string): AttendanceStatus | undefined => draft[id] ?? existing[id]
+  const fromQr = useMemo(() => new Set(db.attendance.filter((a) => a.groupId === groupId && a.date === date && a.source === 'qr').map((a) => a.studentId)), [db, groupId, date])
+  const recorded = students.filter((s) => existing[s.id]).length
   const allowed = groups.some((g) => g.id === groupId)
   const weekend = [0, 6].includes(new Date(`${date}T12:00:00`).getDay())
 
   const save = async () => {
-    const rows: AttendanceRecord[] = students.map((s) => ({ id: `as-${groupId}-${s.id}-${date}`, groupId, studentId: s.id, date, status: value(s.id) ?? 'presente', recordedBy: session.personId }))
+    const rows: AttendanceRecord[] = students.map((s) => ({ id: `as-${groupId}-${s.id}-${date}`, groupId, studentId: s.id, date, status: value(s.id) ?? 'presente', recordedBy: session.personId, source: 'docente' }))
     // conserva el id de registros existentes para reemplazarlos
     for (const r of rows) {
       const old = db.attendance.find((a) => a.studentId === r.studentId && a.date === date)
@@ -74,10 +77,24 @@ export function AttendancePage() {
           }
         >
           {weekend && <div className="mb-3"><Notice tone="aviso">La fecha elegida es fin de semana.</Notice></div>}
+          <p className="mb-3 text-sm text-muted" role="status">
+            {recorded === 0
+              ? 'Aún no se ha pasado lista en esta fecha.'
+              : `${recorded} de ${plural(students.length, 'alumno', 'alumnos')} con asistencia registrada${fromQr.size ? `, ${fromQr.size} por su entrada con QR` : ''}. Puedes corregirla y guardar.`}
+          </p>
           <ul className="divide-y divide-line">
             {students.map((s) => (
               <li key={s.id} className="flex flex-col gap-2 py-3 md:flex-row md:items-center md:justify-between">
-                <p className="flex items-center gap-3 font-semibold text-heading"><Avatar name={studentName(s)} src={s.photo} size={36} />{studentName(s)}</p>
+                <div className="flex items-center gap-3">
+                  <Avatar name={studentName(s)} src={s.photo} size={36} />
+                  <div className="min-w-0">
+                    <p className="font-semibold text-heading">{studentName(s)}</p>
+                    {(() => {
+                      const entry = checkinsOfDay(db, s.id, date).find((c) => c.type === 'entrada')
+                      return entry ? <p className="text-xs text-muted">Entró {entry.at.slice(11, 16)} con QR{fromQr.has(s.id) && !draft[s.id] ? ' · marcado automáticamente' : ''}</p> : null
+                    })()}
+                  </div>
+                </div>
                 <div role="radiogroup" aria-label={`Asistencia de ${studentName(s)}`} className="grid grid-cols-4 gap-1.5 md:flex">
                   {STATUSES.map((st) => {
                     const on = value(s.id) === st

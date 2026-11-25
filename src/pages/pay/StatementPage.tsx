@@ -44,9 +44,9 @@ export function StatementPage() {
         }
       />
       <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <div className="rounded-2xl border border-line bg-surface p-4"><p className="text-sm text-muted">Total de cargos</p><p className="text-2xl font-extrabold text-heading">{formatMoney(bal.total)}</p></div>
-        <div className="rounded-2xl border border-line bg-surface p-4"><p className="text-sm text-muted">Pagado</p><p className="text-2xl font-extrabold text-success">{formatMoney(bal.paid)}</p></div>
-        <div className="rounded-2xl border border-line bg-surface p-4"><p className="text-sm text-muted">Saldo pendiente</p><p className={`text-2xl font-extrabold ${bal.overdue ? 'text-danger' : 'text-heading'}`}>{formatMoney(bal.balance)}</p>{bal.overdue > 0 && <p className="text-sm text-danger">{formatMoney(bal.overdue)} vencido</p>}</div>
+        <div className="card-tint rounded-2xl border p-4 shadow-sm"><p className="text-sm text-muted">Total de cargos</p><p className="text-2xl font-extrabold text-heading">{formatMoney(bal.total)}</p></div>
+        <div className="card-tint rounded-2xl border p-4 shadow-sm"><p className="text-sm text-muted">Pagado</p><p className="text-2xl font-extrabold text-success">{formatMoney(bal.paid)}</p></div>
+        <div className="card-tint rounded-2xl border p-4 shadow-sm"><p className="text-sm text-muted">Saldo pendiente</p><p className={`text-2xl font-extrabold ${bal.overdue ? 'text-danger' : 'text-heading'}`}>{formatMoney(bal.balance)}</p>{bal.overdue > 0 && <p className="text-sm text-danger">{formatMoney(bal.overdue)} vencido</p>}</div>
       </div>
       <Card title="Movimientos">
         {charges.length === 0 ? (

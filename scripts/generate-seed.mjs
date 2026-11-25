@@ -2,7 +2,16 @@
 // Uso: node scripts/generate-seed.mjs
 import { writeFileSync } from 'node:fs'
 
+// Generador pseudoaleatorio con semilla fija: el mismo archivo produce exactamente los mismos datos.
+// Estructura, docentes y familias usan la secuencia inicial; desde la asistencia, cada sección
+// arranca con su propia semilla (reseed), así que agregar datos en una sección
+// no cambia los valores de las demás (calificaciones, asistencia, pagos…).
 let s = 20261123
+const reseed = (name) => {
+  let h = 2166136261
+  for (const ch of name) h = Math.imul(h ^ ch.charCodeAt(0), 16777619)
+  s = h | 0
+}
 const rnd = () => {
   s |= 0; s = (s + 0x6d2b79f5) | 0
   let t = Math.imul(s ^ (s >>> 15), 1 | s)
@@ -74,7 +83,8 @@ const subjectTeachers = {
 }
 subjectTeachers['Lectura y Redacción'] = subjectTeachers['Español']
 subjectTeachers['Física'] = subjectTeachers['Ciencias']
-const tutorRotation = ['Español','Matemáticas','Ciencias','Historia','Inglés','Matemáticas']
+// Un titular por grupo: cada docente de materia es titular de un solo grupo de secundaria o prepa.
+const tutorRotation = ['Español','Matemáticas','Ciencias','Historia','Inglés','Educación Física']
 let rot = 0
 for (const def of levelDefs) {
   def.grades.forEach((gname, i) => {
@@ -163,6 +173,7 @@ for (const g of groups) {
 }
 
 // Asistencia: últimos 10 días hábiles
+reseed('asistencia')
 const attendance = []
 const schoolDays = []
 for (let d = new Date(today); schoolDays.length < 10; d.setDate(d.getDate() - 1)) {
@@ -186,7 +197,12 @@ for (const st of students) for (const day of schoolDays) {
 }
 
 // Calificaciones: 1er trimestre completo y cerrado
-const REGINA_P1 = { 'Español': 8.8, 'Matemáticas': 8.2, 'Ciencias Naturales': 8.6, 'Historia': 8.0, 'Inglés': 8.4, 'Educación Física': 9.0 }
+reseed('calificaciones')
+// Familia demo: calificaciones fijas para que sean iguales en todas las vistas y en cada restablecimiento.
+const FIXED_P1 = {
+  al1: { 'Español': 8.8, 'Matemáticas': 8.2, 'Ciencias Naturales': 8.6, 'Historia': 8.0, 'Inglés': 8.4, 'Educación Física': 9.0 }, // Regina: 8.5
+  al2: { 'Español': 7.3, 'Matemáticas': 9.2, 'Ciencias Naturales': 7.2, 'Historia': 7.2, 'Inglés': 8.6, 'Educación Física': 7.7 }, // Mateo: 7.9
+}
 const gradeRecords = [], closures = []
 for (const g of groups) {
   const level = grades.find((x) => x.id === g.gradeId).level
@@ -194,8 +210,7 @@ for (const g of groups) {
   for (const a of assignments.filter((x) => x.groupId === g.id)) {
     for (const st of students.filter((x) => x.groupId === g.id)) {
       let score = preschool ? 2 + Math.floor(rnd() * 3) : Math.min(10, Math.max(6, Math.round((7 + rnd() * 3.4) * 10) / 10))
-      // Regina (caso de referencia de la revisión): promedio 8.5 en el 1er trimestre
-      const fixed = st.id === 'al1' ? REGINA_P1[subjects.find((x) => x.id === a.subjectId)?.name] : undefined
+      const fixed = FIXED_P1[st.id]?.[subjects.find((x) => x.id === a.subjectId)?.name]
       if (fixed !== undefined) score = fixed
       gradeRecords.push({ id: `cal${gradeRecords.length + 1}`, studentId: st.id, groupId: g.id, subjectId: a.subjectId, periodId: 'p1', score, updatedAt: '2026-11-12T18:00:00' })
     }
@@ -203,6 +218,7 @@ for (const g of groups) {
   }
 }
 
+reseed('tareas')
 // Tareas: propias de cada grado, con vencimientos repartidos (máximo 2 por día por grupo)
 const homework = []
 const hwByLevel = {
@@ -236,6 +252,7 @@ for (const g of groups) {
 }
 
 // Avisos y mensajes
+reseed('avisos')
 const staff = [
   { id: 'adm1', name: 'Mtra. Patricia Ruiz', position: 'Dirección general' },
   { id: 'adm2', name: 'Lic. Andrés Cabrera', position: 'Administración y finanzas' },
@@ -244,12 +261,14 @@ const announcements = [
   { id: 'av1', kind: 'aviso', title: 'Junta de Consejo Técnico: no hay clases', body: 'El viernes 27 de noviembre no habrá clases por la sesión de Consejo Técnico Escolar. Las actividades se reanudan el lunes 30.', audience: { type: 'escuela' }, authorId: 'adm1', authorName: 'Mtra. Patricia Ruiz', authorRole: 'admin', createdAt: '2026-11-20T09:00:00', requiresAck: true },
   { id: 'av2', kind: 'aviso', title: 'Festival de invierno', body: 'Les invitamos al festival de invierno el sábado 12 de diciembre a las 10:00 en el patio principal. Cada grupo presentará un número.', audience: { type: 'escuela' }, authorId: 'adm1', authorName: 'Mtra. Patricia Ruiz', authorRole: 'admin', createdAt: '2026-11-18T12:00:00', requiresAck: false },
   { id: 'av3', kind: 'aviso', title: 'Recordatorio de colegiatura de noviembre', body: 'La colegiatura de noviembre vence el día 10. Si ya pagaste, gracias. Puedes consultar tu estado de cuenta en el portal.', audience: { type: 'escuela' }, authorId: 'adm2', authorName: 'Lic. Andrés Cabrera', authorRole: 'admin', createdAt: '2026-11-05T08:00:00', requiresAck: false },
-  { id: 'av4', kind: 'aviso', title: 'Campaña de vacunación en preescolar', body: 'El martes 1 de diciembre habrá campaña de vacunación para maternal y kinder. Firma y entrega el formato de autorización.', audience: { type: 'nivel', level: 'kinder' }, authorId: 'adm1', authorName: 'Mtra. Patricia Ruiz', authorRole: 'admin', createdAt: '2026-11-19T10:00:00', requiresAck: true },
-  { id: 'av5', kind: 'aviso', title: 'Feria de ciencias de secundaria', body: 'Los equipos de secundaria presentarán sus proyectos el jueves 3 de diciembre. Familias bienvenidas de 9:00 a 11:00.', audience: { type: 'nivel', level: 'secundaria' }, authorId: 'adm1', authorName: 'Mtra. Patricia Ruiz', authorRole: 'admin', createdAt: '2026-11-17T10:00:00', requiresAck: false },
+  { id: 'av4', kind: 'aviso', title: 'Nuevo horario de entrada en kinder', body: 'A partir del lunes 30 de noviembre la entrada de kinder será de 8:15 a 8:30 por la puerta de preescolar.', audience: { type: 'nivel', level: 'kinder' }, authorId: 'adm1', authorName: 'Mtra. Patricia Ruiz', authorRole: 'admin', createdAt: '2026-11-19T10:00:00', requiresAck: true },
+  { id: 'av5', kind: 'aviso', title: 'Feria de ciencias de primaria', body: 'Los grupos de 1° a 6° de primaria presentarán sus proyectos el jueves 3 de diciembre. Familias bienvenidas de 9:00 a 11:00.', audience: { type: 'nivel', level: 'primaria' }, authorId: 'adm1', authorName: 'Mtra. Patricia Ruiz', authorRole: 'admin', createdAt: '2026-11-19T12:00:00', requiresAck: false },
+  { id: 'av6', kind: 'aviso', title: 'Campaña de vacunación en secundaria', body: 'El martes 1 de diciembre habrá campaña de vacunación para secundaria. Firma y entrega el formato de autorización.', audience: { type: 'nivel', level: 'secundaria' }, authorId: 'adm1', authorName: 'Mtra. Patricia Ruiz', authorRole: 'admin', createdAt: '2026-11-17T10:00:00', requiresAck: true },
 ]
-const g4 = grp('primaria', 4), s2 = grp('secundaria', 2)
+const g4 = grp('primaria', 4), g2 = grp('primaria', 2), s2 = grp('secundaria', 2)
 announcements.push(
   { id: 'm1', kind: 'mensaje', title: 'Material para la clase del miércoles', body: 'Por favor envíen una caja de zapatos y pegamento para el proyecto de Ciencias Naturales.', audience: { type: 'grupo', groupId: g4.id }, authorId: g4.homeroomTeacherId, authorName: '', authorRole: 'docente', createdAt: '2026-11-21T14:00:00', requiresAck: true },
+  { id: 'm3', kind: 'mensaje', title: 'Lecturas para el lunes', body: 'Recuerden que el viernes 27 no hay clases por Consejo Técnico. El lunes traigan su libro de lecturas.', audience: { type: 'grupo', groupId: g2.id }, authorId: g2.homeroomTeacherId, authorName: '', authorRole: 'docente', createdAt: '2026-11-21T13:00:00', requiresAck: false },
   { id: 'm2', kind: 'mensaje', title: 'Examen de Matemáticas', body: 'El examen del bloque será el lunes 30. Repasen las páginas 40 a 52.', audience: { type: 'grupo', groupId: s2.id }, authorId: subjectTeachers['Matemáticas'].id, authorName: '', authorRole: 'docente', createdAt: '2026-11-20T16:00:00', requiresAck: true },
 )
 for (const a of announcements) if (!a.authorName) { const t = teachers.find((x) => x.id === a.authorId); a.authorName = `${t.firstName} ${t.lastName}` }
@@ -261,8 +280,8 @@ for (const gu of guardians.slice(1, 25)) if (rnd() > 0.4) receipts.push({ id: `r
 
 const events = [
   { id: 'ev1', title: 'Junta de Consejo Técnico (sin clases)', date: '2026-11-27', description: 'Suspensión de clases para alumnos.', audience: { type: 'escuela' } },
-  { id: 'ev2', title: 'Feria de ciencias', date: '2026-12-03', description: 'Proyectos de secundaria.', audience: { type: 'nivel', level: 'secundaria' } },
-  { id: 'ev3', title: 'Campaña de vacunación', date: '2026-12-01', description: 'Maternal y kinder.', audience: { type: 'nivel', level: 'kinder' } },
+  { id: 'ev2', title: 'Feria de ciencias', date: '2026-12-03', description: 'Proyectos de 1° a 6° de primaria.', audience: { type: 'nivel', level: 'primaria' } },
+  { id: 'ev3', title: 'Campaña de vacunación', date: '2026-12-01', description: 'Alumnos de secundaria.', audience: { type: 'nivel', level: 'secundaria' } },
   { id: 'ev4', title: 'Vence colegiatura de diciembre', date: '2026-12-10', description: 'Fecha límite de pago.', audience: { type: 'escuela' } },
   { id: 'ev5', title: 'Festival de invierno', date: '2026-12-12', description: 'Patio principal, 10:00.', audience: { type: 'escuela' } },
   { id: 'ev6', title: 'Vacaciones de invierno', date: '2026-12-21', endDate: '2027-01-06', description: 'Regreso a clases el 7 de enero.', audience: { type: 'escuela' } },
@@ -270,6 +289,7 @@ const events = [
 ]
 
 // Pagos
+reseed('pagos')
 const concepts = [
   { id: 'cp1', name: 'Inscripción 2026-2027', kind: 'inscripcion', amounts: { maternal: 4500, kinder: 5200, primaria: 6200, secundaria: 6900, preparatoria: 7400 }, satProductCode: '86121500', satUnitCode: 'E48', active: true },
   { id: 'cp2', name: 'Colegiatura mensual', kind: 'colegiatura', amounts: { maternal: 3900, kinder: 4300, primaria: 5100, secundaria: 5800, preparatoria: 6300 }, satProductCode: '86121500', satUnitCode: 'E48', active: true },
@@ -301,6 +321,7 @@ const audit = [
   { id: 'lg1', at: '2026-11-20T09:00:00', actorKey: 'admin:adm1', actorName: 'Mtra. Patricia Ruiz', role: 'admin', action: 'Publicó un aviso', detail: 'Junta de Consejo Técnico: no hay clases', kind: 'cambio' },
 ]
 
+reseed('aulas')
 // Aulas: los salones de cada grupo y espacios comunes
 const rooms = groups.map((g, i) => ({ id: `au${i + 1}`, name: g.room, kind: 'salon', capacity: grades.find((x) => x.id === g.gradeId).level === 'maternal' ? 12 : 30, floor: i < 8 ? 'Planta baja' : 'Primer piso', notes: '' }))
 rooms.push(
@@ -309,6 +330,7 @@ rooms.push(
   { id: `au${rooms.length + 3}`, name: 'Patio y cancha', kind: 'deportivo', capacity: 120, floor: 'Planta baja', notes: '' },
 )
 
+reseed('qr')
 // Código QR de cada alumno: identificador opaco (no lleva nombre ni datos personales)
 const QR_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
 const usedCodes = new Set()
@@ -320,6 +342,7 @@ for (const st of students) {
   st.qrCode = code
 }
 
+reseed('entradas')
 // Entradas y salidas con QR: ayer completas y hoy solo entradas (4° A y 2° A de primaria)
 const checkins = [], notifications = []
 const keyOf = (st) => st.guardianIds.map((g) => `familia:${g}`)
@@ -332,10 +355,25 @@ for (const [date, withExit] of [['2026-11-23', true], ['2026-11-24', false]]) {
     if (withExit) checkins.push({ id: `qr${checkins.length + 1}`, studentId: st.id, date, type: 'salida', at: `${date}T14:${pad(5 + Math.floor(rnd() * 20))}:00`, scannedBy: 'admin:adm1', scannedByName: 'Mtra. Patricia Ruiz', place: 'Puerta principal' })
   }
 }
+// La entrada con QR de hoy marca la asistencia (igual que en la app): asistió antes de las 08:00, retardo después.
+for (const c of checkins.filter((x) => x.date === iso(today) && x.type === 'entrada')) {
+  const st = students.find((x) => x.id === c.studentId)
+  const g = groups.find((x) => x.id === st.groupId)
+  attendance.push({ id: `as-${g.id}-${st.id}-${c.date}`, groupId: g.id, studentId: st.id, date: c.date, status: c.at.slice(11, 16) > '08:00' ? 'retardo' : 'presente', recordedBy: g.homeroomTeacherId, source: 'qr' })
+}
 const regina = students.find((x) => x.id === 'al1'), mateo = students.find((x) => x.id === 'al2')
 for (const c of checkins.filter((x) => x.date === '2026-11-24' && (x.studentId === 'al1' || x.studentId === 'al2'))) {
   const st = c.studentId === 'al1' ? regina : mateo
   for (const k of keyOf(st)) notifications.push({ id: `nt${notifications.length + 1}`, userKey: k, kind: 'entrada', title: `${st.firstName} entró a la escuela`, body: `Entrada registrada con QR a las ${c.at.slice(11, 16)} en Puerta principal.`, link: `/familia/hijo/${st.id}?vista=dia`, studentId: st.id, at: c.at, readAt: '2026-11-24T08:30:00' })
+}
+
+// Avisos y mensajes sin leer de la familia demo también llegan a la campana (se marcan al confirmar lectura)
+const famGroups = [regina.groupId, mateo.groupId]
+const reaches = (a, st) => a.audience.type === 'escuela' || (a.audience.type === 'grupo' && a.audience.groupId === st.groupId) || (a.audience.type === 'nivel' && grades.find((x) => x.id === groups.find((g) => g.id === st.groupId).gradeId).level === a.audience.level)
+for (const a of [...announcements].sort((x, y) => x.createdAt.localeCompare(y.createdAt))) {
+  if (!famGroups.some((gid) => reaches(a, students.find((x) => x.groupId === gid && (x.id === 'al1' || x.id === 'al2'))))) continue
+  const read = receipts.some((r) => r.announcementId === a.id && r.userKey === 'familia:tu0')
+  notifications.push({ id: `nt${notifications.length + 1}`, userKey: 'familia:tu0', kind: 'aviso', title: a.kind === 'aviso' ? `Aviso: ${a.title}` : `Mensaje de grupo: ${a.title}`, body: `${a.authorName}${a.requiresAck ? ' · Pide confirmar lectura.' : ''}`, link: `/avisos?aviso=${a.id}`, at: a.createdAt, readAt: read ? receipts.find((r) => r.announcementId === a.id && r.userKey === 'familia:tu0').readAt : null })
 }
 
 // Estatus del día que envían las docentes a las familias
@@ -360,7 +398,7 @@ const chatMessages = [
 
 const db = {
   meta: {
-    seedVersion: 6,
+    seedVersion: 7,
     school: { id: 'esc1', name: 'Colegio Demo EDUGRID', shortName: 'Colegio Demo', cct: 'DEMO-CCT-0000', rvoe: 'DEMO-RVOE-0000', address: 'Av. Ejemplo 123, Col. Demostración, Ciudad de México (DEMO)', phone: '55 0000 0000', email: 'contacto@demo.edugrid.mx', demo: true },
     cfdiConfig: { rfcEmisor: 'DEMO123456T78', razonSocial: 'COLEGIO DEMO EDUGRID S.A. DE C.V.', regimenFiscal: '601', codigoPostal: '03100', serie: 'CFDI-DEMO', nextFolio: 1, pacProvider: 'demo', demo: true },
     branding: { logo: null, primary: '#1769d2', accent: '#35c5d9' },

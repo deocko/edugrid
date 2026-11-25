@@ -1,7 +1,7 @@
 // Reglas de visibilidad de datos por rol. Toda pantalla que muestre datos de
 // alumnos debe pasar por estas funciones: así nunca se muestran datos de un
 // menor a quien no le corresponde.
-import type { Announcement, Database, Group, Level, SchoolEvent, Session, Student } from '../data/types'
+import type { Announcement, Database, Group, Guardian, Level, SchoolEvent, Session, Student } from '../data/types'
 
 export const gradeOfGroup = (db: Database, groupId: string) => {
   const group = db.groups.find((g) => g.id === groupId)
@@ -84,7 +84,7 @@ export const userKey = (session: Session) => `${session.role}:${session.personId
 
 export const audienceLabel = (db: Database, a: Announcement['audience']) => {
   if (a.type === 'escuela') return 'Toda la escuela'
-  if (a.type === 'nivel') return `Nivel ${LEVEL_LABEL[a.level].toLowerCase()}`
+  if (a.type === 'nivel') return a.level === 'kinder' ? 'Preescolar (maternal y kinder)' : `Nivel ${LEVEL_LABEL[a.level].toLowerCase()}`
   return groupLabel(db, a.groupId)
 }
 
@@ -110,7 +110,7 @@ export const PRESCHOOL_SCALE: Record<number, string> = {
 export const formatScore = (level: Level | undefined, score: number | undefined) => {
   if (score === undefined) return '—'
   if (isPreschool(level)) return PRESCHOOL_SCALE[score] ?? '—'
-  return score.toFixed(1)
+  return (Math.round(score * 10) / 10).toFixed(1)
 }
 
 /** Promedio numérico del alumno en un periodo (no aplica a preescolar). */
@@ -118,4 +118,26 @@ export const averageFor = (db: Database, studentId: string, periodId: string): n
   const list = db.gradeRecords.filter((r) => r.studentId === studentId && r.periodId === periodId)
   if (list.length === 0) return null
   return Math.round((list.reduce((s, r) => s + r.score, 0) / list.length) * 10) / 10
+}
+
+/** Promedio con un decimal, igual en todas las vistas (familia, alumno, admin y boleta). */
+export const formatAverage = (avg: number | null) => (avg === null ? '—' : avg.toFixed(1))
+
+/** Un hogar: los tutores que comparten a uno o más alumnos (hermanos). */
+export interface Family {
+  key: string
+  guardians: Guardian[]
+  students: Student[]
+}
+
+/** Agrupa alumnos por hogar. Los hermanos tienen los mismos tutores, así que cuentan como una familia. */
+export function familiesOf(db: Database, students: Student[]): Family[] {
+  const map = new Map<string, Family>()
+  for (const s of students) {
+    const key = [...s.guardianIds].sort().join('+')
+    const f = map.get(key) ?? { key, guardians: db.guardians.filter((g) => s.guardianIds.includes(g.id)), students: [] }
+    f.students.push(s)
+    map.set(key, f)
+  }
+  return [...map.values()]
 }

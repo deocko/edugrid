@@ -153,3 +153,12 @@ body {
 .dark [class*='subj-'], .dark[class*='subj-'] { --s: var(--s-dk); --s-ink: var(--s-ink-dk); }
 [class*='subj-'] { --s-bg: color-mix(in srgb, var(--s) 10%, var(--c-surface)); }
 .dark [class*='subj-'] { --s-bg: color-mix(in srgb, var(--s) 20%, var(--c-surface)); }
+
+/* Tarjetas de la app: fondo pastel del color de la sección (o del color propio de la tarjeta).
+   Va en la capa de componentes para que las utilidades (bordes de aviso, etc.) la puedan ajustar. */
+@layer components {
+  .card-tint {
+    background-color: var(--s-bg, var(--c-surface));
+    border-color: color-mix(in srgb, var(--s, var(--c-line)) 22%, var(--c-line));
+  }
+}

@@ -19,6 +19,10 @@ export interface StaffMember {
   id: string
   name: string
   position: string
+  email?: string
+  phone?: string
+  /** Foto de perfil que la persona elige para su cuenta (JPEG reducido, data URL). */
+  profilePhoto?: string | null
 }
 
 export interface Cycle {
@@ -88,6 +92,8 @@ export interface Teacher {
   phone: string
   specialty: string
   active: boolean
+  /** Foto de perfil que la persona elige para su cuenta (JPEG reducido, data URL). */
+  profilePhoto?: string | null
 }
 
 export interface Guardian {
@@ -102,6 +108,8 @@ export interface Guardian {
   taxZip: string
   taxRegime: string
   consentAt: string | null
+  /** Foto de perfil que la persona elige para su cuenta (JPEG reducido, data URL). */
+  profilePhoto?: string | null
 }
 
 export interface Student {
@@ -121,6 +129,10 @@ export interface Student {
   qrCode: string
   /** Foto del alumno (JPEG reducido, data URL). La sube la dirección. */
   photo?: string | null
+  /** Foto de perfil que elige el propio alumno. No reemplaza la foto institucional. */
+  profilePhoto?: string | null
+  /** Correo personal opcional del alumno (secundaria y preparatoria). */
+  email?: string
 }
 
 export type AttendanceStatus = 'presente' | 'retardo' | 'falta' | 'justificada'
@@ -132,6 +144,8 @@ export interface AttendanceRecord {
   date: string
   status: AttendanceStatus
   recordedBy: string
+  /** «qr» cuando la marcó la entrada con QR; la docente puede corregirla en el pase de lista. */
+  source?: 'qr' | 'docente'
 }
 
 export interface GradeRecord {
@@ -387,6 +401,14 @@ export interface Meta {
   branding?: Branding
   /** Catálogo de lugares donde se escanean entradas y salidas. */
   checkinPlaces?: string[]
+  /** Colores de tarjetas y del menú de abajo. Si falta, se usan los de cada sección. */
+  appearance?: Appearance
+}
+
+/** Fondo pastel de tarjetas y menú: el de cada sección, uno fijo de la paleta o blanco. */
+export interface Appearance {
+  cards: 'seccion' | 'blanco' | SubjectColor
+  menu: 'tarjetas' | 'blanco' | SubjectColor
 }
 
 /** Tablas que maneja el repositorio. Cada una es una lista de filas con `id`. */

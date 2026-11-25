@@ -34,7 +34,7 @@ export function ScheduleView({ db, slots, show }: { db: Database; slots: Schedul
       {[1, 2, 3, 4, 5].map((d) => {
         const list = slots.filter((s) => s.day === d).sort((a, b) => a.start.localeCompare(b.start))
         return (
-          <section key={d} className={`min-w-0 rounded-2xl border p-3 ${d === today ? 'border-primary bg-info-bg/40' : 'border-line bg-surface'}`}>
+          <section key={d} className={`min-w-0 rounded-2xl border p-3 ${d === today ? 'border-primary bg-info-bg/40' : 'card-tint'}`}>
             <h3 className="mb-2 flex items-center justify-between text-sm font-bold text-heading">
               {DAYS[d]}
               {d === today && <span className="rounded-full bg-primary px-2 text-xs text-on-primary">Hoy</span>}

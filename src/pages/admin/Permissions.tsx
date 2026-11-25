@@ -23,7 +23,7 @@ export function Permissions() {
       </div>
       <ul className="space-y-3 sm:hidden" aria-label="Matriz de permisos">
         {PERMISSION_MATRIX.map((row) => (
-          <li key={row.area} className="rounded-2xl border border-line bg-surface p-4">
+          <li key={row.area} className="card-tint rounded-2xl border p-4 shadow-sm">
             <p className="font-semibold text-heading">{row.area}</p>
             <p className="text-xs text-muted">{row.description}</p>
             <dl className="mt-3 grid grid-cols-2 gap-2">
