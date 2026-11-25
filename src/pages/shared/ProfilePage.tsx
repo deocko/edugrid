@@ -6,9 +6,9 @@ import { EMAIL_RE, phoneDigits, profileOf } from '../../lib/profile'
 import { useApp } from '../../state/context'
 
 /**
- * «Mi perfil»: cada persona cambia su foto de perfil, su correo y su teléfono.
- * El nombre y los datos oficiales los mantiene la dirección. En los alumnos, la foto
- * institucional (credencial y expediente) sigue siendo la que sube la escuela.
+ * «Mi perfil»: cada persona elige su avatar (la foto o imagen con la que se identifica en
+ * la app) y cambia su correo y su teléfono. El nombre, los datos oficiales y la foto
+ * institucional (la que toma la escuela al empadronar) los mantiene la dirección.
  */
 export function ProfilePage() {
   const { db, session, act } = useApp()
@@ -27,14 +27,14 @@ export function ProfilePage() {
     setBusy(true)
     try {
       const profilePhoto = await compressAvatar(file)
-      await act((repo) => repo.update(p.table, p.id, { profilePhoto }), { action: p.profilePhoto ? 'Cambió su foto de perfil' : 'Agregó foto de perfil', detail: p.name })
+      await act((repo) => repo.update(p.table, p.id, { profilePhoto }), { action: p.profilePhoto ? 'Cambió su avatar' : 'Eligió su avatar', detail: p.name })
     } catch (e) {
       setPhotoError(e instanceof Error ? e.message : 'No se pudo guardar la foto.')
     } finally {
       setBusy(false)
     }
   }
-  const removePhoto = () => act((repo) => repo.update(p.table, p.id, { profilePhoto: null }), { action: 'Quitó su foto de perfil', detail: p.name })
+  const removePhoto = () => act((repo) => repo.update(p.table, p.id, { profilePhoto: null }), { action: 'Quitó su avatar', detail: p.name })
 
   const save = async (e: FormEvent) => {
     e.preventDefault()
@@ -54,36 +54,35 @@ export function ProfilePage() {
 
   return (
     <>
-      <PageHeader title="Mi perfil" subtitle="Tu foto y tus datos de contacto. Los cambios se guardan en esta demo." />
+      <PageHeader title="Mi perfil" subtitle="Tu avatar y tus datos de contacto. Los cambios se guardan en esta demo." />
       <div className="grid gap-4 lg:grid-cols-[minmax(0,20rem)_1fr]">
-        <Card title="Foto de perfil">
+        <Card title="Tu avatar">
           <div className="flex flex-col items-center text-center">
             <Avatar name={p.name} src={p.avatar} size={120} />
             <p className="mt-3 text-lg font-bold text-heading">{p.name}</p>
             <p className="text-sm text-muted">{p.roleLabel}</p>
             <div className="mt-4 flex w-full flex-col gap-2">
               <FilePickButton icon="camara" accept="image/*" disabled={busy} onFile={(f) => void pick(f)}>
-                {busy ? 'Guardando…' : p.profilePhoto ? 'Cambiar foto de perfil' : 'Agregar foto de perfil'}
+                {busy ? 'Guardando…' : p.profilePhoto ? 'Cambiar avatar' : 'Elegir avatar'}
               </FilePickButton>
               {p.profilePhoto && (
                 <Button variant="fantasma" icon="cerrar" onClick={() => void removePhoto()}>
-                  Quitar foto de perfil
+                  Quitar avatar
                 </Button>
               )}
             </div>
             {photoError && <div className="mt-3 w-full text-left"><Notice tone="peligro">{photoError}</Notice></div>}
           </div>
-          {isStudent && (
-            <div className="mt-5 flex items-center gap-3 rounded-2xl bg-surface-2 p-3">
-              <Avatar name={p.name} src={p.institutionalPhoto} size={56} />
-              <div className="min-w-0 text-sm">
-                <p className="font-bold text-heading">Foto institucional</p>
-                <p className="text-muted">
-                  {p.institutionalPhoto ? 'La usa la escuela en tu credencial y tu expediente.' : 'La escuela aún no sube tu foto institucional.'} Solo la dirección la puede cambiar.
-                </p>
-              </div>
+          <p className="mt-3 text-center text-xs text-muted">Pon una foto tuya o una imagen que te guste para sentir la app tuya. La dirección puede verla.</p>
+          <div className="mt-5 flex items-center gap-3 rounded-2xl bg-surface-2 p-3">
+            <Avatar name={p.name} src={p.institutionalPhoto} size={56} />
+            <div className="min-w-0 text-sm">
+              <p className="font-bold text-heading">Foto institucional</p>
+              <p className="text-muted">
+                {p.institutionalPhoto ? 'La tomó la escuela para identificarte' : 'La escuela aún no toma tu foto institucional'}{isStudent ? ' (credencial y expediente)' : ''}. Solo la dirección la puede cambiar.
+              </p>
             </div>
-          )}
+          </div>
         </Card>
 
         <Card title="Datos de contacto">

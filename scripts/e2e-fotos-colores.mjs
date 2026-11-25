@@ -44,8 +44,9 @@ await page.evaluate(() => localStorage.clear())
 
 // 1. La dirección sube la foto de Regina
 await as('admin', `/alumnos/${regina.id}`)
-await page.locator('input[type=file]').setInputFiles(photo)
-await page.getByText('Cambiar foto', { exact: true }).waitFor()
+await page.getByRole('tab', { name: 'Foto institucional' }).click()
+await page.locator('input[type=file]').first().setInputFiles(photo)
+await page.getByText('Tomar foto nueva', { exact: true }).waitFor()
 const saved = (await db()).students.find((s) => s.id === regina.id).photo
 if (!saved?.startsWith('data:image/jpeg')) fail('La foto no se guardó como JPEG')
 if (saved.length > 60000) fail(`La foto pesa demasiado (${saved.length} caracteres)`)

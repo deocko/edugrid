@@ -21,7 +21,9 @@ export interface StaffMember {
   position: string
   email?: string
   phone?: string
-  /** Foto de perfil que la persona elige para su cuenta (JPEG reducido, data URL). */
+  /** Foto institucional que toma la escuela al empadronar (JPEG reducido, data URL). Solo la cambia la dirección. */
+  photo?: string | null
+  /** Avatar: la foto o imagen que la persona elige para su cuenta (JPEG reducido, data URL). */
   profilePhoto?: string | null
 }
 
@@ -92,7 +94,9 @@ export interface Teacher {
   phone: string
   specialty: string
   active: boolean
-  /** Foto de perfil que la persona elige para su cuenta (JPEG reducido, data URL). */
+  /** Foto institucional que toma la escuela al empadronar (JPEG reducido, data URL). Solo la cambia la dirección. */
+  photo?: string | null
+  /** Avatar: la foto o imagen que la persona elige para su cuenta (JPEG reducido, data URL). */
   profilePhoto?: string | null
 }
 
@@ -108,7 +112,9 @@ export interface Guardian {
   taxZip: string
   taxRegime: string
   consentAt: string | null
-  /** Foto de perfil que la persona elige para su cuenta (JPEG reducido, data URL). */
+  /** Foto institucional que toma la escuela al empadronar (JPEG reducido, data URL). Solo la cambia la dirección. */
+  photo?: string | null
+  /** Avatar: la foto o imagen que la persona elige para su cuenta (JPEG reducido, data URL). */
   profilePhoto?: string | null
 }
 
@@ -127,9 +133,9 @@ export interface Student {
   withdrawReason?: string
   /** Código opaco de su credencial QR (no contiene datos personales). */
   qrCode: string
-  /** Foto del alumno (JPEG reducido, data URL). La sube la dirección. */
+  /** Foto institucional del alumno (JPEG reducido, data URL). La toma la dirección al empadronar. */
   photo?: string | null
-  /** Foto de perfil que elige el propio alumno. No reemplaza la foto institucional. */
+  /** Avatar que elige el propio alumno. No reemplaza la foto institucional. */
   profilePhoto?: string | null
   /** Correo personal opcional del alumno (secundaria y preparatoria). */
   email?: string
