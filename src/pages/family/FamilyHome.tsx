@@ -115,7 +115,7 @@ export function FamilyHome() {
             <ul className="space-y-2">
               {unread.slice(0, 4).map((a) => (
                 <li key={a.id}>
-                  <Link to="/avisos" className="group flex items-center gap-3 rounded-2xl border border-line p-3 no-underline transition hover:border-[var(--s)] hover:bg-surface-2">
+                  <Link to="/avisos" className="group flex items-center gap-3 rounded-2xl border border-transparent bg-surface p-3 no-underline shadow-sm transition hover:border-[var(--s)]">
                     <span className={`${a.kind === 'mensaje' ? 'subj-turquesa' : 'subj-naranja'} inline-flex size-10 shrink-0 items-center justify-center rounded-xl bg-[var(--s-bg)] text-[var(--s-ink)]`}>
                       <Icon name={a.kind === 'mensaje' ? 'mensajes' : 'avisos'} size={20} />
                     </span>
@@ -133,7 +133,7 @@ export function FamilyHome() {
         </HomeCard>
         <HomeCard color="subj-azul" icon="calendario" title="Próximas fechas" link={{ to: '/familia/calendario', label: 'Ver calendario' }}>
           {upcoming.length === 0 ? (
-            <p className="rounded-2xl bg-surface-2 px-4 py-3 text-sm text-muted">No hay fechas próximas.</p>
+            <p className="rounded-2xl bg-surface px-4 py-3 text-sm text-muted">No hay fechas próximas.</p>
           ) : (
             <ul className="space-y-2">
               {upcoming.map((e, i) => {
@@ -142,7 +142,7 @@ export function FamilyHome() {
                 const when = days <= 0 ? 'Hoy' : days === 1 ? 'Mañana' : `En ${days} días`
                 return (
                   <li key={e.id}>
-                    <Link to="/familia/calendario" className="group flex items-center gap-3 rounded-2xl border border-line p-3 no-underline transition hover:border-[var(--s)] hover:bg-surface-2">
+                    <Link to="/familia/calendario" className="group flex items-center gap-3 rounded-2xl border border-transparent bg-surface p-3 no-underline shadow-sm transition hover:border-[var(--s)]">
                       <span className={`${DATE_COLORS[i % DATE_COLORS.length]} flex w-14 shrink-0 flex-col items-center rounded-xl bg-[var(--s-bg)] py-1.5 text-[var(--s-ink)]`}>
                         <span className="text-[11px] font-bold uppercase">{d.toLocaleDateString('es-MX', { month: 'short' }).replace('.', '')}</span>
                         <span className="text-xl leading-none font-extrabold tabular-nums">{d.getDate()}</span>
@@ -173,16 +173,19 @@ const cap = (t: string) => t.charAt(0).toUpperCase() + t.slice(1)
 /** Tarjeta del inicio con ícono de color, título, contador opcional y enlace a la sección. */
 function HomeCard({ color, icon, title, count, link, children }: { color: string; icon: IconName; title: string; count?: number; link: { to: string; label: string }; children: ReactNode }) {
   return (
-    <section aria-label={title} className={`${color} rounded-3xl border border-line bg-surface p-4 shadow-sm sm:p-5`}>
+    <section aria-label={title} className={`${color} relative isolate overflow-hidden rounded-3xl border border-[color-mix(in_srgb,var(--s)_22%,var(--c-line))] bg-[var(--s-bg)] p-4 shadow-sm sm:p-5`}>
+      <div aria-hidden="true" className="pointer-events-none absolute -top-6 -right-6 -z-10 rotate-12 text-[var(--s)] opacity-[0.12] dark:opacity-[0.16]">
+        <Icon name={icon} size={150} />
+      </div>
       <div className="mb-3 flex items-center gap-3">
-        <span className="inline-flex size-11 shrink-0 items-center justify-center rounded-2xl bg-[var(--s-bg)] text-[var(--s-ink)]">
+        <span className="inline-flex size-11 shrink-0 items-center justify-center rounded-2xl bg-surface text-[var(--s-ink)] shadow-sm ring-1 ring-[color-mix(in_srgb,var(--s)_25%,transparent)]">
           <Icon name={icon} size={22} />
         </span>
         <h2 className="min-w-0 flex-1 text-base font-bold text-heading sm:text-lg">
           {title}
           {count !== undefined && count > 0 && <span className="ml-2 inline-flex min-w-6 items-center justify-center rounded-full bg-[var(--s-ink)] px-1.5 align-middle text-xs font-bold text-surface">{count}</span>}
         </h2>
-        <Link to={link.to} className="-mr-1 inline-flex min-h-11 shrink-0 items-center gap-1 rounded-xl px-2 text-sm font-semibold text-link no-underline hover:bg-info-bg">
+        <Link to={link.to} className="-mr-1 inline-flex min-h-11 shrink-0 items-center gap-1 rounded-xl px-2 text-sm font-semibold text-link no-underline hover:bg-surface">
           {link.label}
           <Icon name="derecha" size={16} />
         </Link>

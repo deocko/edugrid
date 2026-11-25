@@ -34,6 +34,21 @@ function ThemeSwitch() {
   )
 }
 
+/** Botón de la barra inferior: círculo con ícono, o píldora con ícono y nombre si es la sección activa. */
+const pillClass = (active: boolean) =>
+  `relative flex h-11 items-center justify-center rounded-full no-underline transition-all duration-300 ease-out min-[400px]:h-12 ${
+    active ? 'gap-1.5 bg-primary pr-3.5 pl-3 text-on-primary shadow-md min-[400px]:pr-4' : 'w-11 text-muted hover:bg-surface-2 hover:text-heading min-[400px]:w-12'
+  }`
+
+/** Contador de avisos sin leer sobre el ícono (o junto al nombre cuando la sección está activa). */
+function NavCount({ n, active }: { n: number; active: boolean }) {
+  return active ? (
+    <span className="ml-0.5 min-w-5 rounded-full bg-on-primary px-1 text-center text-[11px] leading-5 font-bold text-navy"><span aria-hidden="true">{n}</span><span className="sr-only">, {n} sin leer</span></span>
+  ) : (
+    <span className="absolute top-0.5 right-0.5 min-w-4 rounded-full bg-cyan px-1 text-center text-[10px] leading-4 font-bold text-navy"><span aria-hidden="true">{n}</span><span className="sr-only">, {n} sin leer</span></span>
+  )
+}
+
 export function AppShell() {
   const { session, db, logout } = useApp()
   const location = useLocation()
@@ -168,45 +183,45 @@ export function AppShell() {
         </footer>
       </div>
 
-      {/* Navegación inferior (móvil y tableta) */}
-      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-surface pb-[env(safe-area-inset-bottom)] lg:hidden no-print" aria-label="Navegación principal">
-        <ul className="mx-auto grid max-w-xl" style={{ gridTemplateColumns: `repeat(${primary.length + (rest.length ? 1 : 0)}, minmax(0, 1fr))` }}>
+      {/* Navegación inferior (móvil y tableta): barra flotante de íconos; la sección activa se muestra como botón con su nombre */}
+      <nav className="pointer-events-none fixed inset-x-0 bottom-0 z-40 px-2 pb-[calc(env(safe-area-inset-bottom)+0.5rem)] min-[360px]:px-3 lg:hidden no-print" aria-label="Navegación principal">
+        <ul className="pointer-events-auto mx-auto flex max-w-md items-center justify-between gap-0.5 rounded-full border border-line bg-surface/95 p-1.5 shadow-[0_8px_30px_rgb(16_29_50/0.18)] backdrop-blur dark:shadow-[0_8px_30px_rgb(0_0_0/0.5)]">
           {primary.map((it) => (
-            <li key={it.to}>
-              <NavLink
-                to={it.to}
-                end={it.end}
-                className={({ isActive }) => `relative flex min-h-14 flex-col items-center justify-center gap-0.5 px-1 py-1.5 text-[11px] font-semibold no-underline ${isActive ? 'text-link' : 'text-muted'}`}
-              >
+            <li key={it.to} className="flex justify-center has-[[aria-current=page]]:min-w-0">
+              <NavLink to={it.to} end={it.end} className={({ isActive }) => pillClass(isActive)}>
                 {({ isActive }) => (
                   <>
-                    {isActive && <span className="absolute top-0 h-1 w-8 rounded-b bg-primary dark:bg-link" aria-hidden="true" />}
                     <Icon name={it.icon} size={22} />
-                    <span className="max-w-full truncate">{it.short ?? it.label}</span>
-                    {it.to === '/avisos' && unread > 0 && session.role !== 'admin' && (
-                      <span className="absolute top-1 right-[calc(50%-20px)] min-w-4 rounded-full bg-cyan px-1 text-[10px] leading-4 font-bold text-navy">{unread}</span>
-                    )}
+                    <span className={isActive ? 'text-[13px] font-bold whitespace-nowrap min-[400px]:text-sm' : 'sr-only'}>{it.short ?? it.label}</span>
+                    {it.to === '/avisos' && unread > 0 && session.role !== 'admin' && <NavCount n={unread} active={isActive} />}
                   </>
                 )}
               </NavLink>
             </li>
           ))}
-          {rest.length > 0 && (
-            <li>
-              <Link
-                to={hub.to}
-                className={`relative flex min-h-14 flex-col items-center justify-center gap-0.5 px-0 py-1.5 text-[11px] font-semibold no-underline ${inHub(session.role, location.pathname) ? 'text-link' : 'text-muted'}`}
-                aria-current={inHub(session.role, location.pathname) ? 'page' : undefined}
-              >
-                {inHub(session.role, location.pathname) && <span className="absolute top-0 h-1 w-8 rounded-b bg-primary dark:bg-link" aria-hidden="true" />}
-                <Icon name={session.role === 'admin' ? 'ajustes' : 'menu'} size={22} />
-                <span className="max-w-full text-[9.5px] tracking-tight whitespace-nowrap min-[360px]:text-[10px] min-[400px]:text-[11px] min-[400px]:tracking-normal">{hub.label}</span>
-                {session.role !== 'admin' && unread > 0 && hub.items.some((i) => i.to === '/avisos') && (
-                  <span className="absolute top-1 right-[calc(50%-20px)] min-w-4 rounded-full bg-cyan px-1 text-[10px] leading-4 font-bold text-navy">{unread}</span>
-                )}
-              </Link>
-            </li>
-          )}
+          {rest.length > 0 && (() => {
+            const active = inHub(session.role, location.pathname)
+            return (
+              <li className="flex justify-center">
+                <Link to={hub.to} aria-current={active ? 'page' : undefined} className={pillClass(active)}>
+                  <Icon name={session.role === 'admin' ? 'ajustes' : 'menu'} size={22} />
+                  {active ? (
+                    session.role === 'admin' ? (
+                      <span className="text-[13px] font-bold whitespace-nowrap min-[400px]:text-sm">
+                        <span className="min-[360px]:hidden">Ajustes</span>
+                        <span className="hidden min-[360px]:inline">{hub.label}</span>
+                      </span>
+                    ) : (
+                      <span className="text-[13px] font-bold whitespace-nowrap min-[400px]:text-sm">{hub.label}</span>
+                    )
+                  ) : (
+                    <span className="sr-only">{hub.label}</span>
+                  )}
+                  {session.role !== 'admin' && unread > 0 && hub.items.some((i) => i.to === '/avisos') && <NavCount n={unread} active={active} />}
+                </Link>
+              </li>
+            )
+          })()}
         </ul>
       </nav>
     </div>
