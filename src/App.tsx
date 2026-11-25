@@ -41,6 +41,7 @@ import { SchoolSettings } from './pages/admin/SchoolSettings'
 import { FamilyCards } from './pages/family/FamilyCards'
 import { AdminCalendar } from './pages/admin/AdminCalendar'
 import { SettingsHub } from './pages/admin/SettingsHub'
+import { ProfilePage } from './pages/shared/ProfilePage'
 
 export function App() {
   const { status, error, session, resetDemo } = useStore()
@@ -70,6 +71,7 @@ export function App() {
         {!session && <Route path="/privacidad" element={<Privacy />} />}
         <Route element={session ? <AppShell /> : <Navigate to="/" replace />}>
           <Route path="/privacidad" element={<Privacy />} />
+          <Route path="/perfil" element={<ProfilePage />} />
           <Route path="/admin" element={<RequireRole roles={['admin']}><AdminHome /></RequireRole>} />
           <Route path="/admin/alumnos" element={<RequireRole roles={['admin']}><Students /></RequireRole>} />
           <Route path="/alumnos/:id" element={<RequireRole roles={['admin', 'docente']}><StudentDetail /></RequireRole>} />

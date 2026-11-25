@@ -73,6 +73,7 @@ export interface SettingsItem {
  * y muestra una tarjeta por sección.
  */
 export const ADMIN_SETTINGS: SettingsItem[] = [
+  { to: '/perfil', label: 'Perfil', icon: 'persona', description: 'Tu foto, correo y teléfono', color: 'indigo' },
   { to: '/admin/familias', label: 'Familias', icon: 'hijo', description: 'Tutores, datos fiscales y hermanos', color: 'rosa' },
   { to: '/admin/docentes', label: 'Docentes', icon: 'docente', description: 'Catálogo, grupos y materias', color: 'azul' },
   { to: '/admin/calificaciones', label: 'Calificaciones', icon: 'calificaciones', description: 'Captura y cierre por trimestre', color: 'morado' },
@@ -91,6 +92,7 @@ export const ADMIN_SETTINGS: SettingsItem[] = [
 /** Lo que no cabe en la barra inferior del celular, en tarjetas: docente, familia y alumno. */
 export const MORE_ITEMS: Record<Exclude<Role, 'admin'>, SettingsItem[]> = {
   docente: [
+    { to: '/perfil', label: 'Perfil', icon: 'persona', description: 'Tu foto, correo y teléfono', color: 'azul' },
     { to: '/docente/asistencia', label: 'Asistencia', icon: 'asistencia', description: 'Pase de lista del día', color: 'verde' },
     { to: '/docente/calificaciones', label: 'Calificaciones', icon: 'calificaciones', description: 'Captura por materia y trimestre', color: 'morado' },
     { to: '/avisos', label: 'Avisos', icon: 'avisos', description: 'Mensajes a tus grupos', color: 'naranja' },
@@ -99,12 +101,14 @@ export const MORE_ITEMS: Record<Exclude<Role, 'admin'>, SettingsItem[]> = {
     { to: '/privacidad', label: 'Privacidad', icon: 'candado', description: 'Aviso de privacidad', color: 'gris' },
   ],
   familia: [
+    { to: '/perfil', label: 'Perfil', icon: 'persona', description: 'Tu foto, correo y teléfono', color: 'azul' },
     { to: '/familia/calendario', label: 'Calendario', icon: 'calendario', description: 'Eventos, tareas y entradas', color: 'naranja' },
     { to: '/familia/pagos', label: 'Pagos', icon: 'pagos', description: 'Colegiaturas y estado de cuenta', color: 'ambar' },
     { to: '/familia/tarjetas', label: 'Mis tarjetas', icon: 'tarjeta', description: 'Tarjetas para pagar en la app', color: 'morado' },
     { to: '/privacidad', label: 'Privacidad', icon: 'candado', description: 'Aviso de privacidad', color: 'turquesa' },
   ],
   alumno: [
+    { to: '/perfil', label: 'Perfil', icon: 'persona', description: 'Tu foto, correo y teléfono', color: 'morado' },
     { to: '/alumno/qr', label: 'Mi credencial', icon: 'qr', description: 'Tu código QR para entrar', color: 'azul' },
     { to: '/avisos', label: 'Avisos', icon: 'avisos', description: 'Lo que manda tu escuela', color: 'naranja' },
     { to: '/privacidad', label: 'Privacidad', icon: 'candado', description: 'Aviso de privacidad', color: 'turquesa' },

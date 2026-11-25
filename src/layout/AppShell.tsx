@@ -8,6 +8,7 @@ import { useApp } from '../state/context'
 import { hubFor, inHub, moduleForPath, NAV } from './nav'
 import { ByEdugrid, SchoolLogo } from '../brand/SchoolBrand'
 import { brandingOf } from '../lib/branding'
+import { profileOf } from '../lib/profile'
 
 const darkQuery = () => window.matchMedia('(prefers-color-scheme: dark)')
 const subscribeDark = (cb: () => void) => {
@@ -48,6 +49,8 @@ export function AppShell() {
   const primary = items.slice(0, 4)
   const rest = items.slice(4)
   const hub = hubFor(session.role)
+  const me = profileOf(db, session)
+  const onProfile = location.pathname === '/perfil'
 
   const badge = (to: string) =>
     to === '/avisos' && unread > 0 && session.role !== 'admin' ? (
@@ -87,11 +90,23 @@ export function AppShell() {
             ))}
           </ul>
         </nav>
-        <div className="border-t border-white/10 p-4 text-xs text-nav-ink">
-          <Link to="/privacidad" className="font-semibold text-nav-ink underline">
-            Aviso de privacidad
+        <div className="border-t border-white/10 p-3">
+          <Link
+            to="/perfil"
+            aria-current={onProfile ? 'page' : undefined}
+            className={`group flex items-center gap-3 rounded-2xl p-2 no-underline transition ${onProfile ? 'bg-primary text-nav-active' : 'text-white hover:bg-white/10'}`}
+          >
+            <Avatar name={me.name} src={me.avatar} size={42} />
+            <span className="min-w-0 flex-1 leading-tight">
+              <span className="block text-sm font-semibold break-words">{me.name}</span>
+              <span className={`block text-xs ${onProfile ? 'text-nav-active' : 'text-nav-ink'}`}>{me.roleLabel}</span>
+              <span className={`mt-0.5 block text-xs font-semibold ${onProfile ? 'text-nav-active' : 'text-nav-ink underline'}`}>Editar mi perfil</span>
+            </span>
+            <Icon name="ajustes" size={18} className={onProfile ? '' : 'text-nav-ink group-hover:text-white'} />
           </Link>
-          <p className="mt-1">Versión demo con datos ficticios.</p>
+          <p className="mt-2 px-2 text-xs text-nav-ink">
+            <Link to="/privacidad" className="font-semibold text-nav-ink underline">Aviso de privacidad</Link> · Demo con datos ficticios.
+          </p>
         </div>
       </aside>
 
@@ -113,13 +128,13 @@ export function AppShell() {
                 {notes > 0 && <span className="absolute top-1.5 right-1.5 min-w-4 rounded-full bg-primary px-1 text-center text-[10px] leading-4 font-bold text-on-primary">{notes}</span>}
               </Link>
               <ThemeSwitch />
-              <div className="hidden items-center gap-2 pl-2 sm:flex">
-                <Avatar name={session.name} size={34} />
-                <div className="max-w-[12rem] leading-tight">
-                  <p className="truncate text-sm font-semibold text-heading">{session.name}</p>
-                  <p className="truncate text-xs text-muted">{ROLE_LABEL[session.role]}</p>
-                </div>
-              </div>
+              <Link to="/perfil" aria-label={`Mi perfil: ${me.name}`} className="hidden min-h-11 items-center gap-2 rounded-xl px-2 no-underline hover:bg-surface-2 sm:inline-flex">
+                <Avatar name={me.name} src={me.avatar} size={34} />
+                <span className="max-w-[12rem] leading-tight">
+                  <span className="block truncate text-sm font-semibold text-heading">{me.name}</span>
+                  <span className="block truncate text-xs text-muted">{ROLE_LABEL[session.role]}</span>
+                </span>
+              </Link>
               <button type="button" onClick={logout} className="inline-flex min-h-11 items-center gap-2 rounded-xl px-3 text-sm font-semibold text-heading hover:bg-surface-2" aria-label="Salir de la cuenta demo">
                 <Icon name="salir" />
                 <span className="hidden md:inline">Salir</span>

@@ -50,6 +50,7 @@ const ART: [prefix: string, art: HeaderArt][] = [
   ['/pagos', { icon: 'pagos', accent: 'factura', color: 'ambar' }],
   ['/facturacion', { icon: 'factura', accent: 'pagos', color: 'rojo' }],
   ['/privacidad', { icon: 'candado', accent: 'escudo', color: 'gris' }],
+  ['/perfil', { icon: 'persona', accent: 'camara', color: 'indigo' }],
   ['/mas', { icon: 'menu', accent: 'ajustes', color: 'azul' }],
 ]
 

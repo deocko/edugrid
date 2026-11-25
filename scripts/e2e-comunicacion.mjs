@@ -34,7 +34,8 @@ await browser0.close()
 execFileSync('ffmpeg', ['-y', '-loglevel', 'error', '-loop', '1', '-i', `${OUT}/qr-regina.png`, '-vf', 'scale=640:480:force_original_aspect_ratio=decrease,pad=640:480:(ow-iw)/2:(oh-ih)/2:white,format=yuv420p', '-t', '3', '-r', '10', `${OUT}/qr-regina.y4m`])
 
 const browser = await chromium.launch({ args: ['--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream', `--use-file-for-fake-video-capture=${OUT}/qr-regina.y4m`] })
-const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 }, permissions: ['camera'] })
+// Hora de la escuela (el día demo es fijo, pero la hora sale del reloj): así la prueba no depende de la zona del equipo.
+const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 }, permissions: ['camera'], timezoneId: 'America/Mexico_City' })
 const page = await ctx.newPage()
 page.on('pageerror', (e) => { console.error('Error de página:', e.message); process.exitCode = 1 })
 // Carga completa (cambia ?v) para que la app lea la sesión que se acaba de poner en el navegador
