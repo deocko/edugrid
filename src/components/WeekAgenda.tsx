@@ -43,7 +43,7 @@ export function WeekAgenda({ items }: { items: AgendaItem[] }) {
   }
 
   return (
-    <section aria-label="Agenda de la semana" className="mb-5 rounded-3xl border border-line bg-surface p-4 shadow-sm sm:p-5">
+    <section aria-label="Agenda de la semana" className="card-tint mb-5 rounded-3xl border p-4 shadow-sm sm:p-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <span className="text-4xl leading-none font-extrabold tabular-nums text-heading sm:text-5xl">{Number(selected.slice(8, 10))}</span>

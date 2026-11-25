@@ -9,6 +9,7 @@ import { hubFor, inHub, moduleForPath, NAV } from './nav'
 import { ByEdugrid, SchoolLogo } from '../brand/SchoolBrand'
 import { brandingOf } from '../lib/branding'
 import { profileOf } from '../lib/profile'
+import { artFor } from './headerArt'
 
 const darkQuery = () => window.matchMedia('(prefers-color-scheme: dark)')
 const subscribeDark = (cb: () => void) => {
@@ -40,10 +41,40 @@ const pillClass = (active: boolean) =>
     active ? 'gap-1.5 bg-primary pr-3.5 pl-3 text-on-primary shadow-md min-[400px]:pr-4' : 'w-11 text-muted hover:bg-surface-2 hover:text-heading min-[400px]:w-12'
   }`
 
+/** «Configuración» no cabe en celulares angostos: ahí se ve «Ajustes» (el lector de pantalla sigue diciendo «Configuración»). */
+function BarWord({ label }: { label: string }) {
+  if (label !== 'Configuración') return <>{label}</>
+  return (
+    <>
+      <span aria-hidden="true" className="min-[400px]:hidden">Ajustes</span>
+      <span className="sr-only min-[400px]:not-sr-only">{label}</span>
+    </>
+  )
+}
+
+/**
+ * Nombre del botón activo. Todos los nombres de la barra se apilan en la misma celda (los demás,
+ * invisibles), así el botón activo mide siempre lo que mide el nombre más largo.
+ */
+function ActiveLabel({ label, all }: { label: string; all: string[] }) {
+  return (
+    <span className="grid text-[13px] font-bold whitespace-nowrap min-[400px]:text-sm">
+      {all.map((l) => (
+        <span key={l} aria-hidden="true" className="invisible col-start-1 row-start-1">
+          <BarWord label={l} />
+        </span>
+      ))}
+      <span className="col-start-1 row-start-1 text-center">
+        <BarWord label={label} />
+      </span>
+    </span>
+  )
+}
+
 /** Contador de avisos sin leer sobre el ícono (o junto al nombre cuando la sección está activa). */
 function NavCount({ n, active }: { n: number; active: boolean }) {
   return active ? (
-    <span className="ml-0.5 min-w-5 rounded-full bg-on-primary px-1 text-center text-[11px] leading-5 font-bold text-navy"><span aria-hidden="true">{n}</span><span className="sr-only">, {n} sin leer</span></span>
+    <span className="absolute -top-1 -right-1 min-w-5 rounded-full bg-cyan px-1 text-center text-[11px] leading-5 font-bold text-navy ring-2 ring-surface"><span aria-hidden="true">{n}</span><span className="sr-only">, {n} sin leer</span></span>
   ) : (
     <span className="absolute top-0.5 right-0.5 min-w-4 rounded-full bg-cyan px-1 text-center text-[10px] leading-4 font-bold text-navy"><span aria-hidden="true">{n}</span><span className="sr-only">, {n} sin leer</span></span>
   )
@@ -64,6 +95,7 @@ export function AppShell() {
   const primary = items.slice(0, 4)
   const rest = items.slice(4)
   const hub = hubFor(session.role)
+  const barLabels = [...primary.map((it) => it.short ?? it.label), ...(rest.length ? [hub.label] : [])]
   const me = profileOf(db, session)
   const onProfile = location.pathname === '/perfil'
 
@@ -158,7 +190,7 @@ export function AppShell() {
           </div>
         </header>
 
-        <main id="contenido" className="mx-auto w-full max-w-6xl flex-1 px-4 pt-5 pb-28 lg:pb-10" key={location.pathname}>
+        <main id="contenido" className={`subj-${artFor(location.pathname).color} mx-auto w-full max-w-6xl flex-1 px-4 pt-5 pb-28 lg:pb-10`} key={location.pathname}>
           {moduleName && (
             <p className="mb-1 text-sm font-bold text-link" data-modulo>
               {moduleName}
@@ -192,7 +224,7 @@ export function AppShell() {
                 {({ isActive }) => (
                   <>
                     <Icon name={it.icon} size={22} />
-                    <span className={isActive ? 'text-[13px] font-bold whitespace-nowrap min-[400px]:text-sm' : 'sr-only'}>{it.short ?? it.label}</span>
+                    {isActive ? <ActiveLabel label={it.short ?? it.label} all={barLabels} /> : <span className="sr-only">{it.short ?? it.label}</span>}
                     {it.to === '/avisos' && unread > 0 && session.role !== 'admin' && <NavCount n={unread} active={isActive} />}
                   </>
                 )}
@@ -205,18 +237,7 @@ export function AppShell() {
               <li className="flex justify-center">
                 <Link to={hub.to} aria-current={active ? 'page' : undefined} className={pillClass(active)}>
                   <Icon name={session.role === 'admin' ? 'ajustes' : 'menu'} size={22} />
-                  {active ? (
-                    session.role === 'admin' ? (
-                      <span className="text-[13px] font-bold whitespace-nowrap min-[400px]:text-sm">
-                        <span className="min-[360px]:hidden">Ajustes</span>
-                        <span className="hidden min-[360px]:inline">{hub.label}</span>
-                      </span>
-                    ) : (
-                      <span className="text-[13px] font-bold whitespace-nowrap min-[400px]:text-sm">{hub.label}</span>
-                    )
-                  ) : (
-                    <span className="sr-only">{hub.label}</span>
-                  )}
+                  {active ? <ActiveLabel label={hub.label} all={barLabels} /> : <span className="sr-only">{hub.label}</span>}
                   {session.role !== 'admin' && unread > 0 && hub.items.some((i) => i.to === '/avisos') && <NavCount n={unread} active={active} />}
                 </Link>
               </li>

@@ -24,6 +24,31 @@ export function Button({ variant = 'primario', icon, children, className = '', .
   )
 }
 
+/**
+ * Botón para elegir un archivo. Es una etiqueta que envuelve al campo de archivo: el toque llega
+ * directo al campo (sin `click()` desde código), que es lo que piden los navegadores de celular y
+ * las vistas incrustadas para abrir la galería o la cámara.
+ */
+export function FilePickButton({ variant = 'secundario', icon, children, accept, disabled, onFile, className = '' }: { variant?: Variant; icon?: IconName; children: ReactNode; accept: string; disabled?: boolean; onFile: (file: File) => void; className?: string }) {
+  return (
+    <label className={`${BASE} ${VARIANT[variant]} cursor-pointer focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-primary ${disabled ? 'pointer-events-none opacity-60' : ''} ${className}`}>
+      {icon && <Icon name={icon} size={18} />}
+      {children}
+      <input
+        type="file"
+        accept={accept}
+        disabled={disabled}
+        className="sr-only"
+        onChange={(e) => {
+          const f = e.target.files?.[0]
+          e.target.value = ''
+          if (f) onFile(f)
+        }}
+      />
+    </label>
+  )
+}
+
 export function LinkButton({ to, variant = 'primario', icon, children, className = '' }: { to: string; variant?: Variant; icon?: IconName; children: ReactNode; className?: string }) {
   return (
     <Link to={to} className={`${BASE} ${VARIANT[variant]} no-underline ${className}`}>
@@ -35,7 +60,7 @@ export function LinkButton({ to, variant = 'primario', icon, children, className
 
 export function Card({ children, className = '', title, action, as: As = 'section' }: { children: ReactNode; className?: string; title?: ReactNode; action?: ReactNode; as?: 'section' | 'div' | 'article' }) {
   return (
-    <As className={`min-w-0 rounded-2xl border border-line bg-surface p-4 sm:p-6 ${className}`}>
+    <As className={`card-tint min-w-0 rounded-2xl border p-4 shadow-sm sm:p-6 ${className}`}>
       {(title || action) && (
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
           {title && <h2 className="text-base font-bold text-heading">{title}</h2>}
@@ -190,7 +215,7 @@ export function Stat({
       )}
     </>
   )
-  const box = 'group flex h-full min-w-0 flex-col rounded-2xl border border-line bg-surface p-4 text-left sm:p-5'
+  const box = 'card-tint group flex h-full min-w-0 flex-col rounded-2xl border p-4 text-left shadow-sm sm:p-5'
   const hover = 'no-underline transition hover:-translate-y-0.5 hover:border-primary hover:shadow-md focus-visible:border-primary'
   if (to) return <Link to={to} className={`${box} ${hover}`}>{body}</Link>
   if (details)

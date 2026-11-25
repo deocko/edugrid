@@ -1,6 +1,6 @@
-import { useRef, useState, type FormEvent } from 'react'
+import { useState, type FormEvent } from 'react'
 import { Logo } from '../../brand/Logo'
-import { Badge, Button, Card, Field, Input, Notice, PageHeader } from '../../components/ui'
+import { Badge, Button, Card, Field, FilePickButton, Input, Notice, PageHeader } from '../../components/ui'
 import type { Branding } from '../../data/types'
 import { DEFAULT_BRANDING, SCHOOL_PRESETS, brandTokens, brandingOf, isHex, logoToPng, placesOf, type SchoolPreset } from '../../lib/branding'
 import { useApp } from '../../state/context'
@@ -76,7 +76,6 @@ function IdentityForm() {
   const [draft, setDraft] = useState<Branding>(saved)
   const [error, setError] = useState('')
   const [ok, setOk] = useState('')
-  const file = useRef<HTMLInputElement>(null)
   // Si otra acción (p. ej. una escuela de ejemplo) cambió lo guardado, el formulario se pone al día.
   const [seen, setSeen] = useState(JSON.stringify([db.meta.school.name, saved]))
   const key = JSON.stringify([db.meta.school.name, saved])
@@ -97,8 +96,6 @@ function IdentityForm() {
       setDraft({ ...draft, logo: await logoToPng(f) })
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No se pudo leer el logo.')
-    } finally {
-      if (file.current) file.current.value = ''
     }
   }
   const save = async (e: FormEvent) => {
@@ -126,8 +123,7 @@ function IdentityForm() {
               <span className="flex h-16 min-w-24 items-center justify-center rounded-xl border border-line bg-white px-3">
                 {draft.logo ? <img src={draft.logo} alt="Logo actual de la escuela" className="max-h-12 max-w-[12rem] object-contain" /> : <span className="text-xs text-[#4b5b72]">Sin logo</span>}
               </span>
-              <input ref={file} type="file" accept="image/png,image/jpeg,image/svg+xml,image/webp" className="sr-only" tabIndex={-1} aria-hidden="true" onChange={(e) => void pick(e.target.files?.[0])} />
-              <Button variant="secundario" icon="subir" onClick={() => file.current?.click()}>{draft.logo ? 'Cambiar logo' : 'Subir logo'}</Button>
+              <FilePickButton icon="subir" accept="image/png,image/jpeg,image/svg+xml,image/webp" onFile={(f) => void pick(f)}>{draft.logo ? 'Cambiar logo' : 'Subir logo'}</FilePickButton>
               {draft.logo && <Button variant="fantasma" icon="cerrar" onClick={() => setDraft({ ...draft, logo: null })}>Quitar</Button>}
             </div>
             <p className="mt-1 text-xs text-muted">PNG con fondo transparente se ve mejor. Máximo 2 MB. Sin logo se muestra el de EDUGRID.</p>

@@ -1,6 +1,6 @@
-import { useRef, useState, type FormEvent } from 'react'
+import { useState, type FormEvent } from 'react'
 import { Icon } from '../../components/Icon'
-import { Avatar, Badge, Button, Card, Field, Input, Notice, PageHeader } from '../../components/ui'
+import { Avatar, Badge, Button, Card, Field, FilePickButton, Input, Notice, PageHeader } from '../../components/ui'
 import { compressAvatar } from '../../lib/photo'
 import { EMAIL_RE, phoneDigits, profileOf } from '../../lib/profile'
 import { useApp } from '../../state/context'
@@ -13,7 +13,6 @@ import { useApp } from '../../state/context'
 export function ProfilePage() {
   const { db, session, act } = useApp()
   const p = profileOf(db, session)
-  const input = useRef<HTMLInputElement>(null)
   const [email, setEmail] = useState(p.email)
   const [phone, setPhone] = useState(p.phone)
   const [busy, setBusy] = useState(false)
@@ -33,7 +32,6 @@ export function ProfilePage() {
       setPhotoError(e instanceof Error ? e.message : 'No se pudo guardar la foto.')
     } finally {
       setBusy(false)
-      if (input.current) input.current.value = ''
     }
   }
   const removePhoto = () => act((repo) => repo.update(p.table, p.id, { profilePhoto: null }), { action: 'Quitó su foto de perfil', detail: p.name })
@@ -63,11 +61,10 @@ export function ProfilePage() {
             <Avatar name={p.name} src={p.avatar} size={120} />
             <p className="mt-3 text-lg font-bold text-heading">{p.name}</p>
             <p className="text-sm text-muted">{p.roleLabel}</p>
-            <input ref={input} type="file" accept="image/*" className="sr-only" tabIndex={-1} aria-hidden="true" onChange={(e) => void pick(e.target.files?.[0])} />
             <div className="mt-4 flex w-full flex-col gap-2">
-              <Button variant="secundario" icon="camara" disabled={busy} onClick={() => input.current?.click()}>
+              <FilePickButton icon="camara" accept="image/*" disabled={busy} onFile={(f) => void pick(f)}>
                 {busy ? 'Guardando…' : p.profilePhoto ? 'Cambiar foto de perfil' : 'Agregar foto de perfil'}
-              </Button>
+              </FilePickButton>
               {p.profilePhoto && (
                 <Button variant="fantasma" icon="cerrar" onClick={() => void removePhoto()}>
                   Quitar foto de perfil
