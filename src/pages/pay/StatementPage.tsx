@@ -33,7 +33,7 @@ export function StatementPage() {
         title="Estado de cuenta"
         subtitle={
           <span className="inline-flex flex-wrap items-center gap-2">
-            {studentName(student)} · {groupLabel(db, student.groupId)} · Ciclo 2026-2027 <DemoBadge />
+            {studentName(student)} · {groupLabel(db, student.groupId)} · Ciclo 2026-2027 <DemoBadge soloDemo />
           </span>
         }
         actions={

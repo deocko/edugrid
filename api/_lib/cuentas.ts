@@ -501,6 +501,19 @@ export async function aceptarInvitacion(db: Ejecutor, cuerpo: { token?: unknown;
       text: `insert into "perfiles" (school_id, id, usuario_id, tipo, ${col}) values ($1, $2, $3, $4, $5) on conflict do nothing`,
       params: [escuela, perfilId, usuarioId, tipo, ref],
     },
+    // Las demás invitaciones vigentes para el mismo correo (por ejemplo, familia y alumnos
+    // de una misma madre) se aceptan juntas: es la misma persona, no tiene que abrir cada liga.
+    {
+      text: `insert into "perfiles" (school_id, id, usuario_id, tipo, personal_id, docente_id, alumno_id, tutor_id)
+select i.school_id, 'pf-' || substr(md5(random()::text || i.id), 1, 12), $3, i.tipo, i.personal_id, i.docente_id, i.alumno_id, i.tutor_id
+from "invitaciones" i where i.school_id = $1 and i.correo = $2 and i.usada_at is null and i.expira_at > $4 and i.id <> $5
+on conflict do nothing`,
+      params: [escuela, publica.correo, usuarioId, ahora, String(fila.id)],
+    },
+    {
+      text: `update "invitaciones" set usada_at = $3 where school_id = $1 and correo = $2 and usada_at is null and expira_at > $3 and id <> $4`,
+      params: [escuela, publica.correo, ahora, String(fila.id)],
+    },
     {
       text: `with u as (update "invitaciones" set usada_at = $3 where school_id = $1 and id = $2 and usada_at is null returning 1)
 select edugrid_exigir(count(*), 'Esta invitación ya se usó.') from u`,

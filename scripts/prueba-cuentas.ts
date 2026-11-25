@@ -191,6 +191,30 @@ r = await cuenta('iniciar', { correo: 'dir@faro.demo', contrasena: 'Igual-En-Amb
 assert.equal((r.body.sesion as SesionPublica).escuela.id, a.escuela.id)
 ok('un correo con cuenta en dos escuelas elige a cuál entrar')
 
+// 8b. Un tutor con dos hijos: una sola invitación aceptada le da su perfil de familia y el de cada hijo
+const adm = (r.body.sesion as SesionPublica).token
+await datos(adm, { op: 'lote', operaciones: [
+  { op: 'insert', tabla: 'guardians', filas: [{ id: 'tu-m', firstName: 'Marta', lastName: 'Ríos', relation: 'Madre', email: 'marta@faro.demo', phone: '', rfc: '', taxName: '', taxZip: '', taxRegime: '', consentAt: null }] },
+  { op: 'insert', tabla: 'students', filas: [
+    { id: 'al-h1', firstName: 'Hugo', lastName: 'Ríos', birthDate: '2016-01-01', curp: 'PENDIENTE', groupId: '', guardianIds: ['tu-m'], enrollmentId: 'MAT-1', status: 'activo', createdAt: '', qrCode: 'q1' },
+    { id: 'al-h2', firstName: 'Iris', lastName: 'Ríos', birthDate: '2018-01-01', curp: 'PENDIENTE', groupId: '', guardianIds: ['tu-m'], enrollmentId: 'MAT-2', status: 'activo', createdAt: '', qrCode: 'q2' },
+  ] },
+] })
+r = await cuenta('invitar', { personas: [
+  { tipo: 'familia', referencia: 'tu-m', correo: 'marta@faro.demo', nombre: 'Marta Ríos' },
+  { tipo: 'alumno', referencia: 'al-h1', correo: 'marta@faro.demo', nombre: 'Hugo Ríos' },
+  { tipo: 'alumno', referencia: 'al-h2', correo: 'marta@faro.demo', nombre: 'Iris Ríos' },
+] }, adm)
+const res = r.body.resultados as ResultadoInvitacion[]
+assert.equal(res.length, 3)
+r = await cuenta('aceptar', { token: decodeURIComponent(res[0]!.liga!.split('/invitacion/')[1]!), contrasena: 'Familia-2026' })
+const marta = r.body as unknown as SesionPublica
+assert.equal(marta.perfil?.tipo, 'familia')
+assert.deepEqual(marta.perfiles.map((p) => `${p.tipo}:${p.nombre}`), ['familia:Marta Ríos', 'alumno:Hugo Ríos', 'alumno:Iris Ríos'])
+assert.equal((await cuenta('aceptar', { token: decodeURIComponent(res[1]!.liga!.split('/invitacion/')[1]!), contrasena: 'Familia-2026' })).status, 410)
+assert.equal((await ejecutor.consulta(`select count(*)::int as n from "usuarios" where correo = 'marta@faro.demo'`))[0]?.n, 1)
+ok('una mamá con dos hijos acepta una sola invitación y entra con UNA cuenta (familia + cada hijo)')
+
 // 8. Prueba de 30 días
 // (la sesión dura 14 días: se vuelve a entrar después de adelantar el reloj)
 const entrarA = async () => ((await cuenta('iniciar', { correo: 'dir@faro.demo', contrasena: 'Igual-En-Ambas-1', escuela: a.escuela.id })).body.sesion as SesionPublica)

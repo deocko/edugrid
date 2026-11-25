@@ -3,6 +3,7 @@ import { Link, useLocation } from 'react-router'
 import { artFor } from '../layout/headerArt'
 import { HeaderArt } from './HeaderArt'
 import { Icon, type IconName } from './Icon'
+import { useStore } from '../state/context'
 
 type Variant = 'primario' | 'secundario' | 'fantasma' | 'peligro'
 
@@ -103,7 +104,13 @@ export function Badge({ tone = 'neutro', children }: { tone?: Tone; children: Re
   return <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold whitespace-nowrap ${TONE[tone]}`}>{children}</span>
 }
 
-export function DemoBadge({ label = 'DEMO' }: { label?: string }) {
+/**
+ * Marca DEMO. Con `soloDemo` se muestra únicamente en el Colegio Demo (en una escuela
+ * real no hay datos de ejemplo). Sin él se muestra siempre (por ejemplo, el CFDI sigue en demo).
+ */
+export function DemoBadge({ label = 'DEMO', soloDemo = false }: { label?: string; soloDemo?: boolean }) {
+  const { esDemo } = useStore()
+  if (soloDemo && !esDemo) return null
   return (
     <span className="inline-flex items-center rounded-md border border-warning/50 bg-warning-bg px-2 py-0.5 text-xs font-bold tracking-wide text-warning" title="Datos de ejemplo, sin validez real">
       {label}

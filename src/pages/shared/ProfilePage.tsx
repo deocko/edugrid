@@ -1,3 +1,5 @@
+import { useNavigate } from 'react-router'
+import { ElegirPerfil } from '../cuenta/ElegirPerfil'
 import { useState, type FormEvent } from 'react'
 import { Icon } from '../../components/Icon'
 import { Avatar, Badge, Button, Card, Field, FilePickButton, Input, Notice, PageHeader } from '../../components/ui'
@@ -11,7 +13,8 @@ import { useApp } from '../../state/context'
  * institucional (credencial y expediente) sigue siendo la que sube la escuela.
  */
 export function ProfilePage() {
-  const { db, session, act } = useApp()
+  const { db, session, act, cuenta, esDemo, cambiarPerfil } = useApp()
+  const navigate = useNavigate()
   const p = profileOf(db, session)
   const [email, setEmail] = useState(p.email)
   const [phone, setPhone] = useState(p.phone)
@@ -54,7 +57,7 @@ export function ProfilePage() {
 
   return (
     <>
-      <PageHeader title="Mi perfil" subtitle="Tu foto y tus datos de contacto. Los cambios se guardan en esta demo." />
+      <PageHeader title="Mi perfil" subtitle={esDemo ? 'Tu foto y tus datos de contacto. Los cambios se guardan en esta demo.' : 'Tu foto y tus datos de contacto.'} />
       <div className="grid gap-4 lg:grid-cols-[minmax(0,20rem)_1fr]">
         <Card title="Foto de perfil">
           <div className="flex flex-col items-center text-center">
@@ -121,6 +124,19 @@ export function ProfilePage() {
           </form>
         </Card>
       </div>
+      {cuenta && cuenta.perfiles.length > 1 && (
+        <Card title="Mis perfiles en esta escuela" className="mt-4">
+          <p className="mb-3 text-sm text-muted">Tu cuenta ({cuenta.usuario.correo}) tiene varios perfiles. Cambia de perfil sin cerrar sesión.</p>
+          <ElegirPerfil
+            perfiles={cuenta.perfiles}
+            actual={cuenta.perfil?.id}
+            onElegir={async (id) => {
+              await cambiarPerfil(id)
+              navigate('/', { replace: true })
+            }}
+          />
+        </Card>
+      )}
     </>
   )
 }

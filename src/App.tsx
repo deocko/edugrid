@@ -31,6 +31,11 @@ import { FamilyCalendar } from './pages/family/FamilyCalendar'
 import { FamilyHome } from './pages/family/FamilyHome'
 import { FamilyPayments } from './pages/family/FamilyPayments'
 import { Login } from './pages/Login'
+import { DemoLogin } from './pages/DemoLogin'
+import { RegistroEscuela } from './pages/cuenta/RegistroEscuela'
+import { Invitacion } from './pages/cuenta/Invitacion'
+import { Restablecer } from './pages/cuenta/Restablecer'
+import { PruebaTerminada } from './pages/cuenta/PruebaTerminada'
 import { PayPage } from './pages/pay/PayPage'
 import { StatementPage } from './pages/pay/StatementPage'
 import { Privacy } from './pages/Privacy'
@@ -45,18 +50,31 @@ import { CheckinPlaces } from './pages/admin/CheckinPlaces'
 import { ProfilePage } from './pages/shared/ProfilePage'
 
 export function App() {
-  const { status, error, session, resetDemo } = useStore()
+  const { status, error, session, resetDemo, esDemo, cuenta, logout } = useStore()
 
-  if (status === 'cargando') return <LoadingState label="Cargando EDUGRID…" />
-  if (status === 'error')
+  // La prueba de 30 días terminó: no se entra a los datos de la escuela.
+  if (cuenta?.escuela.pruebaVencida)
+    return (
+      <HashRouter>
+        <PruebaTerminada />
+      </HashRouter>
+    )
+  if (session && (status === 'cargando' || status === 'sin-datos')) return <LoadingState label="Cargando EDUGRID…" />
+  if (session && status === 'error')
     return (
       <div className="mx-auto max-w-lg p-6">
         <ErrorState
-          title="No pudimos abrir los datos de la demo"
+          title={esDemo ? 'No pudimos abrir los datos de la demo' : 'No pudimos abrir los datos de tu escuela'}
           action={
-            <Button variant="secundario" onClick={() => void resetDemo().then(() => location.reload())}>
-              Restablecer datos demo
-            </Button>
+            esDemo ? (
+              <Button variant="secundario" onClick={() => void resetDemo().then(() => location.reload())}>
+                Restablecer datos demo
+              </Button>
+            ) : (
+              <Button variant="secundario" onClick={logout}>
+                Cerrar sesión
+              </Button>
+            )
           }
         >
           {error}
@@ -69,6 +87,11 @@ export function App() {
       <BrandStyle />
       <Routes>
         <Route path="/" element={session ? <Navigate to={HOME_BY_ROLE[session.role]} replace /> : <Login />} />
+        {/* Pantallas públicas: abrir una invitación o la liga de recuperar contraseña funciona con o sin sesión. */}
+        <Route path="/invitacion/:token" element={<Invitacion />} />
+        <Route path="/restablecer/:token" element={<Restablecer />} />
+        {!session && <Route path="/demo" element={<DemoLogin />} />}
+        {!session && <Route path="/registro-escuela" element={<RegistroEscuela />} />}
         {!session && <Route path="/privacidad" element={<Privacy />} />}
         <Route element={session ? <AppShell /> : <Navigate to="/" replace />}>
           <Route path="/privacidad" element={<Privacy />} />

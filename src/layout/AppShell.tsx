@@ -82,7 +82,7 @@ function NavCount({ n, active }: { n: number; active: boolean }) {
 }
 
 export function AppShell() {
-  const { session, db, logout } = useApp()
+  const { session, db, logout, esDemo } = useApp()
   const location = useLocation()
   // Al cambiar de página (o al regresar con «atrás») se empieza siempre desde arriba;
   // los cambios de pestaña dentro de la misma página (?vista=…) conservan la posición.
@@ -156,22 +156,27 @@ export function AppShell() {
             <Icon name="ajustes" size={18} className={onProfile ? '' : 'text-nav-ink group-hover:text-white'} />
           </Link>
           <p className="mt-2 px-2 text-xs text-nav-ink">
-            <Link to="/privacidad" className="font-semibold text-nav-ink underline">Aviso de privacidad</Link> · Demo con datos ficticios.
+            <Link to="/privacidad" className="font-semibold text-nav-ink underline">Aviso de privacidad</Link>{esDemo ? ' · Demo con datos ficticios.' : ''}
           </p>
         </div>
       </aside>
 
       <div className="flex min-w-0 flex-col">
         <header className="sticky top-0 z-30 border-b border-line bg-surface/95 backdrop-blur no-print">
+          {esDemo && (
+            <p className="bg-warning-bg px-4 py-1 text-center text-xs font-bold tracking-wide text-warning" data-franja-demo>
+              DEMO · {db.meta.school.name} · Datos ficticios, no son de personas reales
+            </p>
+          )}
           <div className="mx-auto flex max-w-6xl items-center gap-2 px-4 py-2">
             <span className="lg:hidden">
               <SchoolLogo height={28} />
             </span>
             <span className="hidden lg:inline">
-              <DemoBadge label="MODO DEMO" />
+              <DemoBadge label="MODO DEMO" soloDemo />
             </span>
             <span className="lg:hidden">
-              <DemoBadge />
+              <DemoBadge soloDemo />
             </span>
             <div className="ml-auto flex items-center gap-1">
               <Link to="/notificaciones" className="relative inline-flex min-h-11 min-w-11 items-center justify-center rounded-xl text-heading no-underline hover:bg-surface-2" aria-label={notes > 0 ? `Notificaciones: ${notes} sin leer` : 'Notificaciones'}>
@@ -186,7 +191,7 @@ export function AppShell() {
                   <span className="block truncate text-xs text-muted">{ROLE_LABEL[session.role]}</span>
                 </span>
               </Link>
-              <button type="button" onClick={logout} className="inline-flex min-h-11 items-center gap-2 rounded-xl px-3 text-sm font-semibold text-heading hover:bg-surface-2" aria-label="Salir de la cuenta demo">
+              <button type="button" onClick={logout} className="inline-flex min-h-11 items-center gap-2 rounded-xl px-3 text-sm font-semibold text-heading hover:bg-surface-2" aria-label={esDemo ? 'Salir de la cuenta demo' : 'Cerrar sesión'}>
                 <Icon name="salir" />
                 <span className="hidden md:inline">Salir</span>
               </button>
@@ -202,7 +207,7 @@ export function AppShell() {
           )}
           <Outlet />
           <p className="mt-8 text-center text-xs text-muted lg:hidden">
-            Datos de ejemplo (DEMO).{' '}
+            {esDemo ? 'Datos de ejemplo (DEMO). ' : ''}
             <Link to="/privacidad" className="font-semibold text-link underline">
               Aviso de privacidad
             </Link>
@@ -213,7 +218,7 @@ export function AppShell() {
           </div>
         </main>
         <footer className="mx-auto hidden w-full max-w-6xl px-4 pb-6 text-xs text-muted lg:block">
-          <span className="block">{brandingOf(db.meta).logo ? db.meta.school.name : 'EDUGRID · Administra tu Escuela'} · Datos de ejemplo (DEMO), no corresponden a personas reales.</span>
+          <span className="block">{brandingOf(db.meta).logo || !esDemo ? db.meta.school.name : 'EDUGRID · Administra tu Escuela'}{esDemo ? ' · Datos de ejemplo (DEMO), no corresponden a personas reales.' : ''}</span>
           {/* Logo de EDUGRID fijo: no cambia con la marca de la escuela */}
           <span className="mt-2 flex" data-edugrid-footer>
             <Logo height={20} tone="auto" />
