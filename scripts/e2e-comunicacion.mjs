@@ -50,9 +50,10 @@ await page.evaluate(() => localStorage.clear())
 await go('/')
 await as('admin')
 await go('/admin/entradas')
-await page.getByRole('button', { name: 'Abrir cámara' }).click()
+// Con el permiso de cámara ya dado, el escáner se abre solo al entrar (no hay que volver a tocar «Abrir cámara»)
+await page.getByRole('button', { name: 'Apagar cámara' }).waitFor({ timeout: 10000 })
 await page.getByText('Salida: Regina Méndez Ortega').waitFor({ timeout: 15000 })
-step('Cámara: el QR de Regina se leyó y registró su SALIDA (ya tenía entrada a las 07:42)')
+step('Cámara: se abrió sola (permiso ya dado) y el QR de Regina registró su SALIDA (ya tenía entrada a las 07:42)')
 await page.getByRole('button', { name: 'Apagar cámara' }).click()
 
 // 2. Código escrito a mano: Mateo sale; volver a escanear al instante no duplica

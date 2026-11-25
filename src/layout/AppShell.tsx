@@ -6,6 +6,7 @@ import { ROLE_LABEL } from '../lib/permissions'
 import { userKey, visibleAnnouncements } from '../lib/scope'
 import { useApp } from '../state/context'
 import { hubFor, inHub, moduleForPath, NAV } from './nav'
+import { Logo } from '../brand/Logo'
 import { ByEdugrid, SchoolLogo } from '../brand/SchoolBrand'
 import { brandingOf } from '../lib/branding'
 import { profileOf } from '../lib/profile'
@@ -200,20 +201,22 @@ export function AppShell() {
             </p>
           )}
           <Outlet />
-          <div className="mt-8 flex justify-center lg:hidden">
-            <ByEdugrid />
-          </div>
-          <p className="mt-2 text-center text-xs text-muted lg:hidden">
+          <p className="mt-8 text-center text-xs text-muted lg:hidden">
             Datos de ejemplo (DEMO).{' '}
             <Link to="/privacidad" className="font-semibold text-link underline">
               Aviso de privacidad
             </Link>
           </p>
+          {/* Logo de EDUGRID fijo: no cambia con la marca de la escuela */}
+          <div className="mt-3 flex justify-center lg:hidden" data-edugrid-footer>
+            <Logo height={22} tone="auto" />
+          </div>
         </main>
         <footer className="mx-auto hidden w-full max-w-6xl px-4 pb-6 text-xs text-muted lg:block">
-          <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
-            <ByEdugrid />
-            <span>{brandingOf(db.meta).logo ? db.meta.school.name : 'EDUGRID · Administra tu Escuela'} · Datos de ejemplo (DEMO), no corresponden a personas reales.</span>
+          <span className="block">{brandingOf(db.meta).logo ? db.meta.school.name : 'EDUGRID · Administra tu Escuela'} · Datos de ejemplo (DEMO), no corresponden a personas reales.</span>
+          {/* Logo de EDUGRID fijo: no cambia con la marca de la escuela */}
+          <span className="mt-2 flex" data-edugrid-footer>
+            <Logo height={20} tone="auto" />
           </span>
         </footer>
       </div>

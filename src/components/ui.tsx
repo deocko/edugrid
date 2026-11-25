@@ -29,7 +29,7 @@ export function Button({ variant = 'primario', icon, children, className = '', .
  * directo al campo (sin `click()` desde código), que es lo que piden los navegadores de celular y
  * las vistas incrustadas para abrir la galería o la cámara.
  */
-export function FilePickButton({ variant = 'secundario', icon, children, accept, disabled, onFile, className = '' }: { variant?: Variant; icon?: IconName; children: ReactNode; accept: string; disabled?: boolean; onFile: (file: File) => void; className?: string }) {
+export function FilePickButton({ variant = 'secundario', icon, children, accept, capture, disabled, onFile, className = '' }: { variant?: Variant; icon?: IconName; children: ReactNode; accept: string; capture?: 'user' | 'environment'; disabled?: boolean; onFile: (file: File) => void; className?: string }) {
   return (
     <label className={`${BASE} ${VARIANT[variant]} cursor-pointer focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-primary ${disabled ? 'pointer-events-none opacity-60' : ''} ${className}`}>
       {icon && <Icon name={icon} size={18} />}
@@ -37,6 +37,7 @@ export function FilePickButton({ variant = 'secundario', icon, children, accept,
       <input
         type="file"
         accept={accept}
+        capture={capture}
         disabled={disabled}
         className="sr-only"
         onChange={(e) => {

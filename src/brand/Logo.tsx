@@ -1,8 +1,8 @@
-// Logotipo EDUGRID — Manual de Identidad v1.0.
-// Forma y colores del arte original del manual (no recolorear ni deformar).
-// Versiones: a color sobre fondos claros e «invertida» (letras EDU y hexágono en blanco)
-// sobre fondos oscuros, como indica el manual.
-import { ISO_CYAN_D, ISO_NAVY_D, ISO_VIEWBOX, LOGO_CYAN, LOGO_CYAN_D, LOGO_NAVY, LOGO_NAVY_D, LOGO_VIEWBOX } from './logoPaths'
+// Logotipo EDUGRID (versión actualizada, nov 2026).
+// Forma y colores del arte original (no recolorear ni deformar).
+// Versiones: a color sobre fondos claros e «invertida» (letras EDU y hexágono en blanco; el gris
+// del cubo y el turquesa de GRID se conservan) sobre fondos oscuros.
+import { ISO_GRAY_D, ISO_NAVY_D, ISO_VIEWBOX, LOGO_CYAN, LOGO_CYAN_D, LOGO_GRAY, LOGO_GRAY_D, LOGO_NAVY, LOGO_NAVY_D, LOGO_VIEWBOX } from './logoPaths'
 
 /** auto: a color en modo claro e invertida en modo oscuro. */
 export type LogoTone = 'auto' | 'color' | 'invertida'
@@ -24,7 +24,7 @@ export function Isotipo({ size = 40, title, tone = 'auto' }: { size?: number; ti
       aria-label={title}
     >
       <path fill={LOGO_NAVY} className={inkClass(tone)} fillRule="evenodd" d={ISO_NAVY_D} />
-      <path fill={LOGO_CYAN} fillRule="evenodd" d={ISO_CYAN_D} />
+      <path fill={LOGO_GRAY} fillRule="evenodd" d={ISO_GRAY_D} />
     </svg>
   )
 }
@@ -33,6 +33,7 @@ export function Logo({ height = 36, tone = 'auto' }: { height?: number; tone?: L
   return (
     <svg width={(height * LOGO_VIEWBOX.w) / LOGO_VIEWBOX.h} height={height} viewBox={`0 0 ${LOGO_VIEWBOX.w} ${LOGO_VIEWBOX.h}`} role="img" aria-label="EDUGRID">
       <path fill={LOGO_NAVY} className={inkClass(tone)} fillRule="evenodd" d={LOGO_NAVY_D} />
+      <path fill={LOGO_GRAY} fillRule="evenodd" d={LOGO_GRAY_D} />
       <path fill={LOGO_CYAN} fillRule="evenodd" d={LOGO_CYAN_D} />
     </svg>
   )

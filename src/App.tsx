@@ -41,6 +41,7 @@ import { SchoolSettings } from './pages/admin/SchoolSettings'
 import { FamilyCards } from './pages/family/FamilyCards'
 import { AdminCalendar } from './pages/admin/AdminCalendar'
 import { SettingsHub } from './pages/admin/SettingsHub'
+import { CheckinPlaces } from './pages/admin/CheckinPlaces'
 import { ProfilePage } from './pages/shared/ProfilePage'
 
 export function App() {
@@ -86,6 +87,7 @@ export function App() {
           <Route path="/admin/calificaciones" element={<RequireRole roles={['admin']}><GradesPage /></RequireRole>} />
           <Route path="/admin/calendario" element={<RequireRole roles={['admin']}><AdminCalendar /></RequireRole>} />
           <Route path="/admin/configuracion" element={<RequireRole roles={['admin']}><SchoolSettings /></RequireRole>} />
+          <Route path="/admin/lugares-qr" element={<RequireRole roles={['admin']}><CheckinPlaces /></RequireRole>} />
           <Route path="/admin/permisos" element={<RequireRole roles={['admin']}><Permissions /></RequireRole>} />
           <Route path="/admin/bitacora" element={<RequireRole roles={['admin']}><AuditLog /></RequireRole>} />
 

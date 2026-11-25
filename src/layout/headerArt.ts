@@ -18,6 +18,7 @@ const ART: [prefix: string, art: HeaderArt][] = [
   ['/admin/aulas', { icon: 'aula', accent: 'alumnos', color: 'verde' }],
   ['/admin/clases', { icon: 'horario', accent: 'libro', color: 'turquesa' }],
   ['/admin/escuela', { icon: 'estructura', accent: 'docente', color: 'indigo' }],
+  ['/admin/lugares-qr', { icon: 'qr', accent: 'aula', color: 'verde' }],
   ['/admin/configuracion', { icon: 'ajustes', accent: 'escudo', color: 'morado' }],
   ['/admin/ajustes', { icon: 'ajustes', accent: 'estructura', color: 'morado' }],
   ['/admin/permisos', { icon: 'escudo', accent: 'candado', color: 'gris' }],

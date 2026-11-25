@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
 import { Icon } from '../../components/Icon'
-import { Avatar, Badge, Button, Card, Field, Input, Notice, PageHeader, Select, Tabs } from '../../components/ui'
+import { Avatar, Badge, Button, Card, Field, FilePickButton, Input, Notice, PageHeader, Select, Tabs } from '../../components/ui'
 import { checkinsOfDay, evaluateScan, presenceOf } from '../../lib/presence'
 import { groupLabel, studentName, visibleGroups, visibleStudents } from '../../lib/scope'
 import { plural } from '../../lib/format'
@@ -9,7 +9,17 @@ import { placesOf } from '../../lib/branding'
 
 
 type Feedback = { tone: 'entrada' | 'salida' | 'error'; title: string; detail: string; name?: string; photo?: string | null }
-type CamState = 'apagada' | 'iniciando' | 'activa' | 'no-disponible'
+type CamState = 'apagada' | 'iniciando' | 'activa' | 'no-disponible' | 'negada'
+
+/** Se recuerda que ya se dio permiso de cámara: la próxima vez el escáner se abre solo. */
+const CAM_KEY = 'edugrid.camara'
+const camRemembered = () => {
+  try {
+    return localStorage.getItem(CAM_KEY) === 'ok'
+  } catch {
+    return false
+  }
+}
 
 /** Escanear credenciales QR: entrada y, al volver a escanear, salida. */
 export function ScanPage() {
@@ -70,19 +80,81 @@ export function ScanPage() {
     setCam((c) => (c === 'no-disponible' ? c : 'apagada'))
   }, [])
 
-  const startCamera = async () => {
+  const startCamera = useCallback(async () => {
     setCam('iniciando')
     try {
       if (!navigator.mediaDevices?.getUserMedia) throw new Error('sin cámara')
       const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false })
       streamRef.current = stream
+      try {
+        localStorage.setItem(CAM_KEY, 'ok')
+      } catch {
+        /* sin almacenamiento: se volverá a pedir con el botón */
+      }
       const v = videoRef.current
       if (!v) return
       v.srcObject = stream
       await v.play()
       setCam('activa')
+    } catch (e) {
+      const denied = e instanceof DOMException && e.name === 'NotAllowedError'
+      if (denied) {
+        try {
+          localStorage.removeItem(CAM_KEY)
+        } catch {
+          /* nada que limpiar */
+        }
+      }
+      setCam(denied ? 'negada' : 'no-disponible')
+    }
+  }, [])
+
+  // Si ya se dio permiso antes, el escáner se abre solo al entrar (el navegador no vuelve a preguntar).
+  useEffect(() => {
+    let cancelled = false
+    const auto = async () => {
+      let granted = false
+      try {
+        const st = await navigator.permissions?.query({ name: 'camera' as PermissionName })
+        granted = st?.state === 'granted'
+        if (st?.state === 'denied') return
+      } catch {
+        /* el navegador no informa el permiso: se usa lo que recordamos */
+      }
+      if (!cancelled && (granted || camRemembered())) void startCamera()
+    }
+    void auto()
+    return () => {
+      cancelled = true
+    }
+  }, [startCamera])
+
+  // Leer el QR desde una foto (si la cámara en vivo no está disponible).
+  const scanPhoto = async (file: File) => {
+    const url = URL.createObjectURL(file)
+    try {
+      const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+        const i = new Image()
+        i.onload = () => resolve(i)
+        i.onerror = () => reject(new Error('foto'))
+        i.src = url
+      })
+      const w = Math.min(1024, img.naturalWidth)
+      const h = Math.round((img.naturalHeight * w) / img.naturalWidth)
+      const canvas = document.createElement('canvas')
+      canvas.width = w
+      canvas.height = h
+      const ctx = canvas.getContext('2d')
+      if (!ctx) throw new Error('foto')
+      ctx.drawImage(img, 0, 0, w, h)
+      const { default: jsQR } = await import('jsqr')
+      const found = jsQR(ctx.getImageData(0, 0, w, h).data, w, h)
+      if (found?.data) await register(found.data)
+      else setFeedback({ tone: 'error', title: 'No se encontró un QR', detail: 'Toma la foto más de cerca y con buena luz, o escribe el código.' })
     } catch {
-      setCam('no-disponible')
+      setFeedback({ tone: 'error', title: 'No se pudo leer la foto', detail: 'Intenta con otra foto o escribe el código.' })
+    } finally {
+      URL.revokeObjectURL(url)
     }
   }
 
@@ -138,7 +210,7 @@ export function ScanPage() {
             {cam !== 'activa' && (
               <div className="flex size-full flex-col items-center justify-center gap-3 p-4 text-center text-white">
                 <Icon name="qr" size={48} />
-                <p className="text-sm">{cam === 'iniciando' ? 'Abriendo la cámara…' : cam === 'no-disponible' ? 'La cámara no está disponible aquí.' : 'Apunta la cámara a la credencial.'}</p>
+                <p className="text-sm">{cam === 'iniciando' ? 'Abriendo la cámara…' : cam === 'no-disponible' ? 'La cámara no está disponible aquí.' : cam === 'negada' ? 'No hay permiso para usar la cámara.' : 'Toca «Abrir cámara» y apunta a la credencial.'}</p>
               </div>
             )}
             {cam === 'activa' && <span className="pointer-events-none absolute inset-[18%] rounded-2xl border-4 border-cyan" aria-hidden="true" />}
@@ -149,8 +221,11 @@ export function ScanPage() {
             ) : (
               <Button icon="qr" onClick={() => void startCamera()} disabled={cam === 'iniciando'}>Abrir cámara</Button>
             )}
+            <FilePickButton icon="camara" accept="image/*" capture="environment" onFile={(f) => void scanPhoto(f)}>Leer QR de una foto</FilePickButton>
           </div>
-          {cam === 'no-disponible' && <div className="mt-3"><Notice tone="aviso">No se pudo usar la cámara (permiso negado o vista previa sin cámara). Escribe el código que aparece debajo del QR.</Notice></div>}
+          {cam === 'apagada' && <p className="mt-2 text-xs text-muted">El navegador pide permiso la primera vez. Después, el escáner se abre solo al entrar.</p>}
+          {cam === 'negada' && <div className="mt-3"><Notice tone="aviso">Se negó el permiso de la cámara. Actívalo en el candado de la barra de direcciones del navegador (Permisos → Cámara) y toca «Abrir cámara». Mientras, puedes leer el QR de una foto o escribir el código.</Notice></div>}
+          {cam === 'no-disponible' && <div className="mt-3"><Notice tone="aviso">Esta vista no deja usar la cámara en vivo (pasa en la vista previa dentro de otras apps). Abre EDUGRID en el navegador del celular, lee el QR de una foto o escribe el código que aparece debajo del QR.</Notice></div>}
 
           <form onSubmit={submit} className="mt-4 grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end" noValidate>
             <Field label="O escribe el código de la credencial">{(id) => <Input id={id} value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} placeholder="Ej. ABCD-2345" autoComplete="off" autoCapitalize="characters" />}</Field>

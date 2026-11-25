@@ -90,7 +90,8 @@ const ratio = 1.05 / (lum(p) + 0.05)
 if (ratio < 4.5) fail(`El amarillo no se ajustó: contraste ${ratio.toFixed(2)}`)
 step(`Logo propio guardado; el amarillo claro se ajustó a ${p} (contraste ${ratio.toFixed(1)}:1 con texto blanco)`)
 
-// 7. Catálogo de lugares de entrada
+// 7. Catálogo de lugares de entrada (tarjeta «Entradas QR» de Configuración)
+await as('admin', '/admin/lugares-qr')
 await page.getByLabel('Nuevo lugar').fill('Puerta de estacionamiento')
 await page.getByRole('button', { name: 'Agregar', exact: true }).click()
 await page.getByRole('button', { name: 'Quitar Salón' }).click()
