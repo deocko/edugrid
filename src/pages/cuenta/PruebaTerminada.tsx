@@ -17,7 +17,7 @@ export function PruebaTerminada() {
   return (
     <AuthLayout title="Tu prueba terminó" subtitle={`Los 30 días de prueba gratis de ${cuenta.escuela.nombre} terminaron${cuenta.escuela.trialEndsAt ? ` el ${formatDate(cuenta.escuela.trialEndsAt)}` : ''}.`}>
       <div className="grid gap-4 rounded-2xl border border-line bg-surface p-5 shadow-sm">
-        <p className="text-heading">Tus datos siguen guardados y nadie los puede ver. Para seguir usando EDUGRID, contrata tu plan y lo activamos.</p>
+        <p className="text-heading">Tus datos siguen guardados. Para seguir usando EDUGRID, contrata tu plan y lo activamos de inmediato.</p>
         <a href={contacto} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-on-primary no-underline hover:bg-primary-hover">
           Contactar para contratar
         </a>

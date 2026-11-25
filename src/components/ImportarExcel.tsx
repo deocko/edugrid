@@ -57,7 +57,7 @@ export function ReporteImportacion({ tipo, reporte }: { tipo: TipoImportacion; r
   return (
     <div className="grid gap-3" role="status" data-reporte-importacion>
       <Notice tone="exito" icon="check">
-        Entraron {plural(reporte.importadas, n.singular, n.plural)}.{reporte.rechazadas.length ? ` Se rechazaron ${plural(reporte.rechazadas.length, 'fila', 'filas')}.` : ''}
+        {reporte.importadas === 1 ? 'Entró' : 'Entraron'} {plural(reporte.importadas, n.singular, n.plural)}.{reporte.rechazadas.length === 1 ? ' Se rechazó 1 fila.' : reporte.rechazadas.length ? ` Se rechazaron ${reporte.rechazadas.length} filas.` : ''}
       </Notice>
       {reporte.rechazadas.length > 0 && (
         <div className="rounded-xl border border-danger/40 bg-danger-bg p-3 text-sm text-danger">

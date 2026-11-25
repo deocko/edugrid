@@ -26,7 +26,9 @@ function Avance({ paso }: { paso: number }) {
         <li key={p} className="min-w-0" aria-current={i === paso ? 'step' : undefined}>
           <span className={`block h-1.5 rounded-full ${i <= paso ? 'bg-primary' : 'bg-line'}`} />
           <span className={`mt-1 block truncate text-xs ${i === paso ? 'font-bold text-heading' : 'text-muted'}`}>
-            {i + 1}. {p}
+            {i + 1}
+            {/* En el celular solo el paso actual lleva nombre, para que no se corte. */}
+            <span className={i === paso ? '' : 'sr-only sm:not-sr-only'}>. {p}</span>
           </span>
         </li>
       ))}
