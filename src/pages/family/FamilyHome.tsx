@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { Link } from 'react-router'
-import { Icon } from '../../components/Icon'
+import { Icon, type IconName } from '../../components/Icon'
 import { Avatar, Badge, Button, Card, EmptyState, LinkButton, PageHeader } from '../../components/ui'
 import { ATT_LABEL, attendanceOfDay, attendanceSummary } from '../../lib/attendance'
 import { formatDate, formatMoney, nowISO, todayISO } from '../../lib/format'
@@ -106,32 +106,89 @@ export function FamilyHome() {
         </ul>
       )}
       <div className="mt-4 grid gap-4 lg:grid-cols-2">
-        <Card title="Avisos sin leer" action={<Link to="/avisos" className="-mr-2 inline-flex min-h-11 items-center gap-1 rounded-lg px-2 text-sm font-semibold text-link no-underline hover:bg-info-bg">Ir a avisos</Link>}>
+        <HomeCard color="subj-naranja" icon="avisos" title="Avisos sin leer" count={unread.length} link={{ to: '/avisos', label: 'Ir a avisos' }}>
           {unread.length === 0 ? (
-            <p className="text-sm text-muted">Estás al día. No tienes avisos pendientes.</p>
+            <p className="flex items-center gap-2 rounded-2xl bg-success-bg px-4 py-3 text-sm font-semibold text-success">
+              <Icon name="check" size={18} /> Estás al día. No tienes avisos pendientes.
+            </p>
           ) : (
-            <ul className="divide-y divide-line">
+            <ul className="space-y-2">
               {unread.slice(0, 4).map((a) => (
-                <li key={a.id} className="flex items-center justify-between gap-2 py-2">
-                  <span className="font-semibold text-heading">{a.title}</span>
-                  {a.requiresAck && <Badge tone="aviso">Confirma lectura</Badge>}
+                <li key={a.id}>
+                  <Link to="/avisos" className="group flex items-center gap-3 rounded-2xl border border-line p-3 no-underline transition hover:border-[var(--s)] hover:bg-surface-2">
+                    <span className={`${a.kind === 'mensaje' ? 'subj-turquesa' : 'subj-naranja'} inline-flex size-10 shrink-0 items-center justify-center rounded-xl bg-[var(--s-bg)] text-[var(--s-ink)]`}>
+                      <Icon name={a.kind === 'mensaje' ? 'mensajes' : 'avisos'} size={20} />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block font-semibold leading-snug text-heading">{a.title}</span>
+                      <span className="mt-0.5 block text-xs text-muted">{a.authorName} · {formatDate(a.createdAt.slice(0, 10))}</span>
+                      {a.requiresAck && <span className="mt-1.5 inline-block"><Badge tone="aviso">Confirma lectura</Badge></span>}
+                    </span>
+                    <Icon name="derecha" size={18} className="text-muted group-hover:text-link" />
+                  </Link>
                 </li>
               ))}
             </ul>
           )}
-        </Card>
-        <Card title="Próximas fechas" action={<Link to="/familia/calendario" className="-mr-2 inline-flex min-h-11 items-center gap-1 rounded-lg px-2 text-sm font-semibold text-link no-underline hover:bg-info-bg">Ver calendario</Link>}>
-          <ul className="divide-y divide-line">
-            {upcoming.map((e) => (
-              <li key={e.id} className="py-2">
-                <p className="font-semibold text-heading">{e.title}</p>
-                <p className="text-xs text-muted">{formatDate(e.date)}{e.endDate ? ` al ${formatDate(e.endDate)}` : ''}</p>
-              </li>
-            ))}
-          </ul>
-        </Card>
+        </HomeCard>
+        <HomeCard color="subj-azul" icon="calendario" title="Próximas fechas" link={{ to: '/familia/calendario', label: 'Ver calendario' }}>
+          {upcoming.length === 0 ? (
+            <p className="rounded-2xl bg-surface-2 px-4 py-3 text-sm text-muted">No hay fechas próximas.</p>
+          ) : (
+            <ul className="space-y-2">
+              {upcoming.map((e, i) => {
+                const d = new Date(`${e.date}T12:00:00`)
+                const days = Math.round((d.getTime() - new Date(`${todayISO()}T12:00:00`).getTime()) / 86400000)
+                const when = days <= 0 ? 'Hoy' : days === 1 ? 'Mañana' : `En ${days} días`
+                return (
+                  <li key={e.id}>
+                    <Link to="/familia/calendario" className="group flex items-center gap-3 rounded-2xl border border-line p-3 no-underline transition hover:border-[var(--s)] hover:bg-surface-2">
+                      <span className={`${DATE_COLORS[i % DATE_COLORS.length]} flex w-14 shrink-0 flex-col items-center rounded-xl bg-[var(--s-bg)] py-1.5 text-[var(--s-ink)]`}>
+                        <span className="text-[11px] font-bold uppercase">{d.toLocaleDateString('es-MX', { month: 'short' }).replace('.', '')}</span>
+                        <span className="text-xl leading-none font-extrabold tabular-nums">{d.getDate()}</span>
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="block font-semibold leading-snug text-heading">{e.title}</span>
+                        <span className="mt-0.5 block text-xs text-muted">
+                          {cap(d.toLocaleDateString('es-MX', { weekday: 'long' }))}
+                          {e.endDate ? ` al ${formatDate(e.endDate)}` : ''} · {when}
+                        </span>
+                      </span>
+                      <Icon name="derecha" size={18} className="text-muted group-hover:text-link" />
+                    </Link>
+                  </li>
+                )
+              })}
+            </ul>
+          )}
+        </HomeCard>
       </div>
     </>
+  )
+}
+
+const DATE_COLORS = ['subj-azul', 'subj-morado', 'subj-verde', 'subj-rosa']
+const cap = (t: string) => t.charAt(0).toUpperCase() + t.slice(1)
+
+/** Tarjeta del inicio con ícono de color, título, contador opcional y enlace a la sección. */
+function HomeCard({ color, icon, title, count, link, children }: { color: string; icon: IconName; title: string; count?: number; link: { to: string; label: string }; children: ReactNode }) {
+  return (
+    <section aria-label={title} className={`${color} rounded-3xl border border-line bg-surface p-4 shadow-sm sm:p-5`}>
+      <div className="mb-3 flex items-center gap-3">
+        <span className="inline-flex size-11 shrink-0 items-center justify-center rounded-2xl bg-[var(--s-bg)] text-[var(--s-ink)]">
+          <Icon name={icon} size={22} />
+        </span>
+        <h2 className="min-w-0 flex-1 text-base font-bold text-heading sm:text-lg">
+          {title}
+          {count !== undefined && count > 0 && <span className="ml-2 inline-flex min-w-6 items-center justify-center rounded-full bg-[var(--s-ink)] px-1.5 align-middle text-xs font-bold text-surface">{count}</span>}
+        </h2>
+        <Link to={link.to} className="-mr-1 inline-flex min-h-11 shrink-0 items-center gap-1 rounded-xl px-2 text-sm font-semibold text-link no-underline hover:bg-info-bg">
+          {link.label}
+          <Icon name="derecha" size={16} />
+        </Link>
+      </div>
+      {children}
+    </section>
   )
 }
 
