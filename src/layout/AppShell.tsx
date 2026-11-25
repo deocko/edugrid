@@ -9,6 +9,7 @@ import { hubFor, inHub, moduleForPath, NAV } from './nav'
 import { Logo } from '../brand/Logo'
 import { ByEdugrid, SchoolLogo } from '../brand/SchoolBrand'
 import { brandingOf } from '../lib/branding'
+import { tapFeedback } from '../lib/haptics'
 import { profileOf } from '../lib/profile'
 import { appearanceOf, cardColorFor, menuColorFor } from '../lib/appearance'
 
@@ -226,7 +227,7 @@ export function AppShell() {
         <ul className={`${menuColor ? `subj-${menuColor} bg-[var(--s-bg)] border-[color-mix(in_srgb,var(--s)_28%,var(--c-line))]` : 'border-line bg-surface/95'} pointer-events-auto mx-auto flex max-w-md items-center justify-between gap-0.5 rounded-full border p-1.5 shadow-[0_8px_30px_rgb(16_29_50/0.18)] backdrop-blur dark:shadow-[0_8px_30px_rgb(0_0_0/0.5)]`}>
           {primary.map((it) => (
             <li key={it.to} className="flex justify-center has-[[aria-current=page]]:min-w-0">
-              <NavLink to={it.to} end={it.end} className={({ isActive }) => pillClass(isActive)}>
+              <NavLink to={it.to} end={it.end} onClick={(e) => { if (e.currentTarget.getAttribute('aria-current') !== 'page') tapFeedback() }} className={({ isActive }) => pillClass(isActive)}>
                 {({ isActive }) => (
                   <>
                     <Icon name={it.icon} size={22} />
@@ -241,7 +242,7 @@ export function AppShell() {
             const active = inHub(session.role, location.pathname)
             return (
               <li className="flex justify-center">
-                <Link to={hub.to} aria-current={active ? 'page' : undefined} className={pillClass(active)}>
+                <Link to={hub.to} aria-current={active ? 'page' : undefined} onClick={() => { if (!active) tapFeedback() }} className={pillClass(active)}>
                   <Icon name={session.role === 'admin' ? 'ajustes' : 'menu'} size={22} />
                   {active ? <ActiveLabel label={hub.label} all={barLabels} /> : <span className="sr-only">{hub.label}</span>}
                   {session.role !== 'admin' && unread > 0 && hub.items.some((i) => i.to === '/avisos') && <NavCount n={unread} active={active} />}
