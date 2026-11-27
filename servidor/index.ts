@@ -9,10 +9,11 @@
  * Uso: npm run build:servidor && npm run servidor   (abre http://localhost:3000)
  */
 import { createServer } from 'node:http'
-import { existsSync, readFileSync, statSync } from 'node:fs'
+import { appendFileSync, existsSync, readFileSync, statSync } from 'node:fs'
 import { extname, join, normalize } from 'node:path'
 import { ejecutorNeon, type Ejecutor } from '../api/_lib/db'
 import { manejarCuenta, manejarDatos, manejarSalud, type Entorno } from '../api/_lib/http'
+import { CorreoDemo, type AdaptadorCorreo } from '../api/_lib/correo'
 import type { Database } from '../src/data/types'
 
 let ejecutor: Ejecutor
@@ -25,11 +26,31 @@ if (process.env.DATABASE_URL) {
   console.log('Sin DATABASE_URL: se usa una base Postgres en memoria (los datos se pierden al cerrar).')
 }
 
+/**
+ * Solo para pruebas en la computadora (nunca en Vercel): con EDUGRID_BUZON=archivo.jsonl y sin
+ * RESEND_API_KEY, cada correo se escribe en ese archivo (como si llegara a un buzón) y la app
+ * sigue en modo demo. Así las pruebas e2e pueden abrir la liga de recuperación, que nunca se
+ * muestra en pantalla.
+ */
+const buzonEnArchivo = (ruta: string): AdaptadorCorreo => {
+  const demo = new CorreoDemo()
+  return {
+    nombre: `Buzón local (${ruta})`,
+    demo: true,
+    enviar: async (mensajes) => {
+      for (const m of mensajes) appendFileSync(ruta, `${JSON.stringify({ para: m.para, asunto: m.asunto, texto: m.texto })}\n`)
+      return demo.enviar(mensajes)
+    },
+  }
+}
+
 let semilla: Database | null = null
+const buzon = (process.env.EDUGRID_BUZON ?? '').trim()
 const entorno: Entorno = {
   ejecutor: () => ejecutor,
   semilla: () => (semilla ??= JSON.parse(readFileSync('src/data/seed.json', 'utf8')) as Database),
   variables: process.env,
+  ...(buzon && !process.env.RESEND_API_KEY ? { correo: buzonEnArchivo(buzon) } : {}),
 }
 
 const TIPOS: Record<string, string> = {

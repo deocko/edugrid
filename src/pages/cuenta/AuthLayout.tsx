@@ -44,14 +44,3 @@ export function PasswordInput({ id, value, onChange, autoComplete, show, onToggl
   )
 }
 
-/** Liga que en modo demo se muestra en pantalla en lugar de enviarse por correo. */
-export function LigaDemo({ liga, titulo }: { liga: string; titulo: string }) {
-  const local = liga.includes('#') ? `#${liga.split('#')[1]}` : liga
-  return (
-    <div className="rounded-xl border border-warning/40 bg-warning-bg p-3 text-sm text-warning" data-liga-demo>
-      <p className="font-bold">{titulo}</p>
-      <p className="mt-1">Modo demo: el correo no se envía. Usa esta liga para seguir:</p>
-      <a href={local} className="mt-1 block font-semibold break-all text-link underline">{liga}</a>
-    </div>
-  )
-}

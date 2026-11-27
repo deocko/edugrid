@@ -3,7 +3,7 @@ import { FaltaConfiguracion, type Ejecutor } from './db.js'
 import { MIGRACIONES } from './esquema.js'
 import { aislamiento, aplicar, contar, leerTodo, NoEncontrado, prepararBase, type Cambio, type Operacion } from './servicio.js'
 import { esTabla } from './tablas.js'
-import { correoDe } from './correo.js'
+import { correoDe, type AdaptadorCorreo } from './correo.js'
 import {
   aceptarInvitacion,
   cambiarPerfil,
@@ -14,7 +14,9 @@ import {
   leerPersonas,
   leerRegistro,
   leerSesion,
+  listarInvitaciones,
   recuperar,
+  reenviarInvitacion,
   registrarEscuela,
   restablecer,
   simularPrueba,
@@ -31,6 +33,8 @@ export interface Entorno {
   variables: Record<string, string | undefined>
   /** Reloj del servidor (las pruebas lo pueden adelantar). */
   ahora?: () => Date
+  /** Solo pruebas: un buzón en memoria en lugar de Resend o del correo demo. */
+  correo?: AdaptadorCorreo
 }
 
 class Invalida extends Error {}
@@ -213,6 +217,8 @@ async function leerCuerpo(req: Request): Promise<Record<string, unknown>> {
  *   POST recuperar       Manda la liga para crear una contraseña nueva.
  *   POST restablecer     Con esa liga, pone la contraseña nueva y entra.
  *   POST invitar         (administrador) Invita por correo a docentes, familias y alumnos.
+ *   GET  invitaciones    (administrador) Invitaciones de la escuela con su estado.
+ *   POST reenviar        (administrador) Reenvía una invitación con liga nueva.
  *   GET  invitacion      Datos de una invitación (?token=…).
  *   POST aceptar         Acepta la invitación con su contraseña y entra.
  *   POST prueba          (solo desarrollo y vista previa) Vence o reinicia la prueba de 30 días.
@@ -226,11 +232,12 @@ export async function manejarCuenta(req: Request, entorno: Entorno): Promise<Res
   try {
     const op = opcionesDe(v, entorno)
     const db = entorno.ejecutor()
-    const correo = correoDe(v)
+    const correo = entorno.correo ?? correoDe(v)
     const ligas: Ligas = { app: urlApp(req, v), correo, mostrar: correo.demo && v.VERCEL_ENV !== 'production' }
     const metodo = req.method
     const post = metodo === 'POST'
     if (metodo === 'GET' && accion === 'sesion') return responder(h, 200, await sesionDe(req, db, op))
+    if (metodo === 'GET' && accion === 'invitaciones') return responder(h, 200, { demo: correo.demo, invitaciones: await listarInvitaciones(db, await sesionDe(req, db, op), op) })
     if (metodo === 'GET' && accion === 'invitacion') return responder(h, 200, await verInvitacion(db, url.searchParams.get('token'), op))
     if (!post) return responder(h, metodo === 'GET' ? 404 : 405, { error: 'Acción desconocida.' })
     const cuerpo = await leerCuerpo(req)
@@ -247,8 +254,9 @@ export async function manejarCuenta(req: Request, entorno: Entorno): Promise<Res
       case 'perfil':
         return responder(h, 200, await cambiarPerfil(db, await sesionDe(req, db, op), cuerpo.perfilId, op))
       case 'recuperar': {
-        const r = await recuperar(db, cuerpo.correo, ligas, op)
-        return responder(h, 200, { ok: true, mensaje: 'Si ese correo tiene cuenta, te enviamos una liga para crear una contraseña nueva. Revisa tu bandeja de entrada.', ...(ligas.mostrar ? { ligas: r.ligas } : {}) })
+        // Misma respuesta exista o no el correo, y nunca con la liga (solo viaja por correo).
+        await recuperar(db, cuerpo.correo, ligas, op)
+        return responder(h, 200, { ok: true, demo: correo.demo, mensaje: 'Si el correo existe, recibirás una liga para restablecer tu contraseña.' })
       }
       case 'restablecer':
         return responder(h, 200, await restablecer(db, cuerpo, op))
@@ -256,6 +264,11 @@ export async function manejarCuenta(req: Request, entorno: Entorno): Promise<Res
         const sesion = await sesionDe(req, db, op)
         if (sesion.escuela.pruebaVencida) return responder(h, 402, { error: 'La prueba gratis de tu escuela terminó.', prueba: 'vencida' })
         return responder(h, 200, { correo: correo.nombre, demo: correo.demo, resultados: await invitar(db, sesion, leerPersonas(cuerpo), ligas, op) })
+      }
+      case 'reenviar': {
+        const sesion = await sesionDe(req, db, op)
+        if (sesion.escuela.pruebaVencida) return responder(h, 402, { error: 'La prueba gratis de tu escuela terminó.', prueba: 'vencida' })
+        return responder(h, 200, { correo: correo.nombre, demo: correo.demo, resultado: await reenviarInvitacion(db, sesion, cuerpo.id, ligas, op) })
       }
       case 'aceptar':
         return responder(h, 200, await aceptarInvitacion(db, cuerpo, op))

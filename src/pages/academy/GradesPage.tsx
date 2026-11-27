@@ -6,6 +6,7 @@ import { PRESCHOOL_SCALE, groupLabel, isPreschool, levelOfGroup, studentName, su
 import { useApp } from '../../state/context'
 import { useManagedGroups, useManagedSubjects } from './useTeacherGroups'
 import { SubjectDot } from '../../components/Subject'
+import { BotonExportar } from '../../components/BotonExportar'
 
 export function GradesPage() {
   const { db, session, act } = useApp()
@@ -79,7 +80,13 @@ export function GradesPage() {
     setMsg(null)
   }
 
-  if (groups.length === 0) return <EmptyState icon="alumnos" title="No tienes grupos asignados" />
+  const admin = session.role === 'admin'
+  if (groups.length === 0)
+    return admin ? (
+      <EmptyState icon="alumnos" title="La escuela aún no tiene grupos">Crea los grupos en Ciclos y grupos para capturar calificaciones.</EmptyState>
+    ) : (
+      <EmptyState icon="alumnos" title="No tienes grupos asignados">Cuando la dirección te asigne un grupo o una materia, aparecerá aquí.</EmptyState>
+    )
 
   return (
     <>
@@ -111,13 +118,32 @@ export function GradesPage() {
       </Card>
 
       {subjects.length === 0 ? (
-        <EmptyState icon="calificaciones" title="No impartes materias en este grupo" />
+        admin ? (
+          <EmptyState icon="calificaciones" title="Este grupo aún no tiene materias con docente">Asigna las materias y sus docentes en Ciclos y grupos → Materias y docentes del grupo para poder capturar calificaciones.</EmptyState>
+        ) : (
+          <EmptyState icon="calificaciones" title="No impartes materias en este grupo">Elige otro grupo o pide a la dirección que te asigne la materia.</EmptyState>
+        )
       ) : students.length === 0 ? (
-        <EmptyState icon="alumnos" title="Este grupo aún no tiene alumnos" />
+        <EmptyState icon="alumnos" title="Este grupo aún no tiene alumnos">{admin ? 'Inscribe alumnos o impórtalos desde Excel en Alumnos.' : 'Cuando la dirección inscriba alumnos en este grupo, aparecerán aquí.'}</EmptyState>
       ) : (
         <Card
           title={<span className="inline-flex flex-wrap items-center gap-2"><SubjectDot db={db} id={subjectId} size={12} />{subjectName(db, subjectId)} · {groupLabel(db, groupId)}</span>}
-          action={closure ? <Badge tone="exito">Cerrado el {formatDateTime(closure.closedAt)}</Badge> : <Badge tone="aviso">Periodo abierto</Badge>}
+          action={
+            <span className="inline-flex flex-wrap items-center gap-2">
+              {closure ? <Badge tone="exito">Cerrado el {formatDateTime(closure.closedAt)}</Badge> : <Badge tone="aviso">Periodo abierto</Badge>}
+              <BotonExportar
+                datos={() => ({
+                  archivo: `calificaciones-${groupLabel(db, groupId)}-${subjectName(db, subjectId)}-${periods.find((p) => p.id === periodId)?.name ?? ''}`,
+                  hoja: 'Calificaciones',
+                  columnas: ['Alumno', preschool ? 'Nivel de logro' : 'Calificación'],
+                  filas: students.map((st) => {
+                    const v = current(st.id)
+                    return [studentName(st), v === '' ? 'Sin capturar' : preschool ? (PRESCHOOL_SCALE[Number(v)] ?? v) : Number(v)]
+                  }),
+                })}
+              />
+            </span>
+          }
         >
           {records.length === 0 && !closure && (
             <div className="mb-3"><Notice tone="info" icon="calificaciones">Aún no hay calificaciones capturadas en este trimestre.</Notice></div>

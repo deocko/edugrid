@@ -46,7 +46,12 @@ export function AttendancePage() {
     setSaved(`Asistencia guardada para ${plural(students.length, 'alumno', 'alumnos')}.`)
   }
 
-  if (groups.length === 0) return <EmptyState icon="alumnos" title="No tienes grupos asignados" />
+  if (groups.length === 0)
+    return session.role === 'admin' ? (
+      <EmptyState icon="alumnos" title="La escuela aún no tiene grupos">Crea los grupos en Ciclos y grupos para pasar lista.</EmptyState>
+    ) : (
+      <EmptyState icon="alumnos" title="No tienes grupos asignados">Cuando la dirección te asigne un grupo, aparecerá aquí.</EmptyState>
+    )
 
   return (
     <>
@@ -66,7 +71,7 @@ export function AttendancePage() {
       {!allowed ? (
         <Notice tone="peligro">Este grupo no está asignado a tu cuenta.</Notice>
       ) : students.length === 0 ? (
-        <EmptyState icon="alumnos" title="Este grupo aún no tiene alumnos" />
+        <EmptyState icon="alumnos" title="Este grupo aún no tiene alumnos">{session.role === 'admin' ? 'Inscribe alumnos o impórtalos desde Excel en Alumnos.' : 'Cuando la dirección inscriba alumnos en este grupo, aparecerán aquí.'}</EmptyState>
       ) : (
         <Card
           title={plural(students.length, 'alumno', 'alumnos')}

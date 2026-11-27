@@ -45,10 +45,24 @@ export interface PersonaInvitada {
 }
 
 export interface ResultadoInvitacion extends PersonaInvitada {
-  estado: 'enviada' | 'no-enviada' | 'ya-tiene-perfil' | 'error'
+  /** «reutilizada»: ese correo ya tenía invitación pendiente; el perfil se agregó a la misma (no se creó otra). */
+  estado: 'enviada' | 'no-enviada' | 'reutilizada' | 'ya-tiene-perfil' | 'error'
   motivo?: string
   /** Solo en modo demo (sin RESEND_API_KEY y fuera de producción): la liga para probar. */
   liga?: string
+}
+
+/** Invitación como la ve el administrador en la lista de cada módulo. */
+export interface InvitacionAdmin {
+  id: string
+  correo: string
+  nombre: string
+  /** Perfiles que da esta invitación (uno o varios: familia + alumnos con el mismo correo). */
+  perfiles: { tipo: TipoPerfil; referencia: string }[]
+  estado: 'pendiente' | 'aceptada' | 'expirada'
+  creadaAt: string
+  expiraAt: string
+  aceptadaAt: string | null
 }
 
 export interface InvitacionPublica {

@@ -2,7 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { Button, Card, EmptyState, Field, Modal, Notice, PageHeader, Select } from '../../components/ui'
 import type { ScheduleSlot } from '../../data/types'
 import { DAYS, uid } from '../../lib/format'
-import { groupLabel, subjectName, teacherName } from '../../lib/scope'
+import { groupLabel, homeroomName, roomName, subjectName, teacherName } from '../../lib/scope'
 import { useApp } from '../../state/context'
 import { GroupAssignments } from './SchoolStructure'
 import { SubjectTag } from '../../components/Subject'
@@ -31,12 +31,12 @@ export function Classes() {
         <div className="max-w-sm">
           <Field label="Grupo">{(id) => <Select id={id} value={groupId} onChange={(e) => setGroupId(e.target.value)}>{db.groups.map((g) => <option key={g.id} value={g.id}>{groupLabel(db, g)}</option>)}</Select>}</Field>
         </div>
-        {group && <p className="mt-2 text-sm text-muted">Titular: {teacherName(db, group.homeroomTeacherId)} · Aula: {group.room}</p>}
+        {group && <p className="mt-2 text-sm text-muted">Titular: {homeroomName(db, group)} · Aula: {roomName(group)}</p>}
       </Card>
       <div className="grid gap-4 lg:grid-cols-[2fr_3fr]">
         <Card title="Materias y docentes" action={<Button variant="secundario" icon="docente" onClick={() => setTeachersOpen(true)}>Cambiar docentes</Button>}>
           {assignments.length === 0 ? (
-            <EmptyState icon="libro" title="Este grupo no tiene materias" />
+            <EmptyState icon="libro" title="Este grupo no tiene materias">Asígnalas con «Cambiar docentes» o desde la ficha de cada docente.</EmptyState>
           ) : (
             <ul className="divide-y divide-line">
               {assignments.map((a) => (
@@ -50,7 +50,7 @@ export function Classes() {
         </Card>
         <Card title="Horario semanal">
           {slots.length === 0 ? (
-            <EmptyState icon="horario" title="Sin clases en el horario" />
+            <EmptyState icon="horario" title="Sin clases en el horario">Aún no hay clases registradas para este grupo.</EmptyState>
           ) : (
             <div className="space-y-4">
               {[1, 2, 3, 4, 5].map((d) => {

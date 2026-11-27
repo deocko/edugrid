@@ -5,7 +5,7 @@ import type { Database, Group, Guardian, Level, SchoolGrade, Student, Teacher } 
 import { nowISO, uid } from './format'
 import { EMAIL_RE } from './profile'
 import { newQrCode } from './qr'
-import { isPreschool } from './scope'
+import { isPreschool, LEVEL_LABEL, schoolLevels } from './scope'
 
 /**
  * Importar desde Excel: alumnos, docentes y familias. Las columnas se definen UNA
@@ -155,6 +155,10 @@ export interface FilaRevisada {
   errores: string[]
   /** Aviso que no impide importar (por ejemplo, «sin correo: invítalo después»). */
   aviso?: string
+  /** Alumnos: grupo que la importación va a crear porque no existe (por ejemplo «2° de primaria B»). */
+  grupoNuevo?: string
+  /** Familias: id de la familia que ya tiene este correo (se reutiliza en lugar de duplicarla). */
+  familiaExistente?: string
 }
 
 const fechaISO = (t: string): string | null => {
@@ -182,11 +186,16 @@ const correoDe = (t: string) => t.trim().toLowerCase()
  */
 export function revisar(db: Database, tipo: TipoImportacion, lectura: Lectura): FilaRevisada[] {
   const cols = COLUMNAS[tipo]
+  // Familias: un correo que ya es de una familia (por ejemplo, la creó la importación de alumnos)
+  // no es un error: se reutiliza esa familia y su misma invitación.
   const existentes = new Set(
-    (tipo === 'alumnos' ? db.students.map((s) => s.email ?? '') : tipo === 'docentes' ? db.teachers.map((t) => t.email) : db.guardians.map((g) => g.email))
+    (tipo === 'alumnos' ? db.students.map((s) => s.email ?? '') : tipo === 'docentes' ? db.teachers.map((t) => t.email) : [])
       .map(correoDe)
       .filter(Boolean),
   )
+  const familiaPorCorreo = new Map(db.guardians.filter((g) => g.email).map((g) => [correoDe(g.email), g]))
+  const niveles = schoolLevels(db)
+  const ciclo = db.cycles.find((c) => c.active) ?? db.cycles[0]
   const enArchivo = new Map<string, number>()
   return lectura.filas.map(({ numero, datos }) => {
     const nombre = `${datos.nombre ?? ''} ${datos.apellidos ?? ''}`.trim()
@@ -205,19 +214,32 @@ export function revisar(db: Database, tipo: TipoImportacion, lectura: Lectura): 
       if (datos.fechaNacimiento && !fechaISO(datos.fechaNacimiento)) e.push('La fecha de nacimiento no es válida (usa AAAA-MM-DD o DD/MM/AAAA).')
       const nivel = datos.nivel ? nivelDe(datos.nivel) : null
       if (datos.nivel && !nivel) e.push(`El nivel «${datos.nivel}» no existe (Maternal, Kinder, Primaria, Secundaria o Preparatoria).`)
+      else if (nivel && !niveles.includes(nivel)) e.push(`La escuela no tiene el nivel ${LEVEL_LABEL[nivel]} (atiende: ${niveles.map((l) => LEVEL_LABEL[l]).join(', ') || 'ninguno'}).`)
       const grado = Number(datos.grado)
       if (nivel && datos.grado && (!Number.isInteger(grado) || grado < 1 || grado > GRADOS_POR_NIVEL[nivel].length))
         e.push(`El grado «${datos.grado}» no existe en ${nivel} (de 1 a ${GRADOS_POR_NIVEL[nivel].length}).`)
       if (datos.grupo && !/^[A-Za-z0-9]{1,3}$/.test(datos.grupo)) e.push('El grupo debe ser una letra o número corto, por ejemplo A.')
+      else if (nivel && datos.grupo && Number.isInteger(grado) && grado >= 1 && grado <= GRADOS_POR_NIVEL[nivel].length) {
+        const letra = datos.grupo.toUpperCase()
+        const gradoDb = db.grades.find((g) => g.level === nivel && g.order === grado)
+        const existe = !!gradoDb && db.groups.some((g) => g.gradeId === gradoDb.id && g.name.toUpperCase() === letra && (!ciclo || g.cycleId === ciclo.id))
+        if (!existe) fila.grupoNuevo = `${gradoDb?.name ?? GRADOS_POR_NIVEL[nivel][grado - 1]} ${letra}`
+      }
       if (datos.curp && !CURP_RE.test(datos.curp.toUpperCase())) e.push('La CURP no tiene el formato correcto (18 caracteres).')
       const conTutor = !!(datos.tutorNombre || datos.tutorApellidos || datos.tutorCorreo)
       if (conTutor && (!datos.tutorNombre || !datos.tutorApellidos)) e.push('Escribe nombre y apellidos del tutor.')
       if (datos.tutorParentesco && !parentescoDe(datos.tutorParentesco)) e.push('El parentesco debe ser Madre, Padre, Tutor o Tutora.')
       const tc = correoDe(datos.tutorCorreo ?? '')
       if (tc && !EMAIL_RE.test(tc)) e.push(`El correo del tutor «${datos.tutorCorreo}» no tiene un formato válido.`)
-      if (!correo && !tc) fila.aviso = 'Sin correo: invítalo después.'
+      const avisos = [fila.grupoNuevo ? `Se creará el grupo ${fila.grupoNuevo}.` : '', !correo && !tc ? 'Sin correo: invítalo después.' : ''].filter(Boolean)
+      if (avisos.length) fila.aviso = avisos.join(' ')
     } else {
       if (tipo === 'familias' && datos.parentesco && !parentescoDe(datos.parentesco)) e.push('El parentesco debe ser Madre, Padre, Tutor o Tutora.')
+      if (tipo === 'familias' && correo && familiaPorCorreo.has(correo) && !e.length) {
+        const g = familiaPorCorreo.get(correo)!
+        fila.familiaExistente = g.id
+        fila.aviso = `Ya existe la familia de ${g.firstName} ${g.lastName} con este correo: se reutiliza (no se duplica) y conserva su misma invitación.`
+      }
       if (!correo) fila.aviso = 'Sin correo: invítalo después.'
     }
     return fila
@@ -228,6 +250,8 @@ export interface PlanImportacion {
   /** Escribe todo en el repositorio (un solo lote en la base en línea). */
   aplicar: (repo: EdugridRepository) => Promise<void>
   importadas: number
+  /** Familias que ya existían con ese correo y se reutilizaron (no se duplicaron). */
+  reutilizadas?: number
   /** Personas a invitar por correo (vacío en la demo). */
   invitaciones: PersonaInvitada[]
   /** Filas que se importaron sin correo (sin cuenta). */
@@ -235,8 +259,8 @@ export interface PlanImportacion {
 }
 
 /**
- * Convierte las filas válidas en registros. Grados y grupos que falten se crean en
- * el ciclo activo. Hermanos con el mismo correo de tutor comparten una sola familia
+ * Convierte las filas válidas en registros. Los grupos que falten se crean en el
+ * ciclo activo, pero la vista previa lo avisa antes (FilaRevisada.grupoNuevo). Hermanos con el mismo correo de tutor comparten una sola familia
  * (y por eso una sola cuenta).
  */
 export function planear(db: Database, tipo: TipoImportacion, filas: FilaRevisada[], o: { demo: boolean }): PlanImportacion {
@@ -254,9 +278,12 @@ export function planear(db: Database, tipo: TipoImportacion, filas: FilaRevisada
     rfc: 'XAXX010101000', taxName: 'PUBLICO EN GENERAL', taxZip: db.meta.cfdiConfig.codigoPostal, taxRegime: '616', consentAt: ahora,
   })
   if (tipo === 'familias') {
-    const nuevos = validas.map((f) => tutorNuevo(f.datos.nombre!, f.datos.apellidos!, parentescoDe(f.datos.parentesco!) ?? 'Tutor', correoDe(f.datos.correo ?? ''), f.datos.telefono ?? ''))
+    const nuevos = validas.filter((f) => !f.familiaExistente).map((f) => tutorNuevo(f.datos.nombre!, f.datos.apellidos!, parentescoDe(f.datos.parentesco!) ?? 'Tutor', correoDe(f.datos.correo ?? ''), f.datos.telefono ?? ''))
     for (const g of nuevos) if (g.email) invitaciones.push({ tipo: 'familia', referencia: g.id, correo: g.email, nombre: `${g.firstName} ${g.lastName}` })
-    return { aplicar: (r) => (nuevos.length ? r.insert('guardians', nuevos) : Promise.resolve()), importadas: nuevos.length, invitaciones: o.demo ? [] : invitaciones, sinCorreo }
+    // La familia que ya existía conserva su invitación (la API la reutiliza; no crea otra).
+    const reutilizadas = validas.filter((f) => f.familiaExistente).map((f) => db.guardians.find((g) => g.id === f.familiaExistente)!)
+    for (const g of reutilizadas) invitaciones.push({ tipo: 'familia', referencia: g.id, correo: correoDe(g.email), nombre: `${g.firstName} ${g.lastName}` })
+    return { aplicar: (r) => (nuevos.length ? r.insert('guardians', nuevos) : Promise.resolve()), importadas: nuevos.length, reutilizadas: reutilizadas.length, invitaciones: o.demo ? [] : invitaciones, sinCorreo }
   }
 
   // Alumnos

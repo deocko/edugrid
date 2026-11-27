@@ -5,7 +5,7 @@ import type { TipoImportacion } from '../../lib/importar'
 import { Badge, Card, DemoBadge, LinkButton, PageHeader, Stat } from '../../components/ui'
 import { formatDate, formatMoney, todayISO, plural } from '../../lib/format'
 import { chargeView } from '../../lib/finance'
-import { LEVEL_LABEL, LEVELS, audienceLabel, levelOfGroup, studentName } from '../../lib/scope'
+import { LEVEL_LABEL, audienceLabel, levelOfGroup, schoolLevels, studentName } from '../../lib/scope'
 import { useApp } from '../../state/context'
 
 export function AdminHome() {
@@ -28,7 +28,11 @@ export function AdminHome() {
   const debtors = new Set(overdue.map((c) => c.studentId)).size
   const pendingConsent = db.guardians.filter((g) => !g.consentAt && active.some((s) => s.guardianIds.includes(g.id)))
 
-  const byLevel = LEVELS.map((l) => ({ level: l, count: active.filter((s) => levelOfGroup(db, s.groupId) === l).length }))
+  // Solo los niveles que atiende la escuela (una escuela solo de primaria ve solo Primaria).
+  const levels = schoolLevels(db)
+  const ciclo = db.cycles.find((c) => c.active)
+  const groupsCount = db.groups.filter((g) => (!ciclo || g.cycleId === ciclo.id) && levels.includes(levelOfGroup(db, g.id)!)).length
+  const byLevel = levels.map((l) => ({ level: l, count: active.filter((s) => levelOfGroup(db, s.groupId) === l).length }))
   const max = Math.max(1, ...byLevel.map((b) => b.count))
   const latest = [...db.announcements].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 4)
   const newest = [...active].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 3)
@@ -64,7 +68,7 @@ export function AdminHome() {
         </Card>
       )}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <Stat label="Alumnos activos" value={active.length} hint={`${plural(db.groups.length, 'grupo', 'grupos')} en 5 niveles`} icon="alumnos" tone="info" to="/admin/alumnos" action="Ver alumnos" />
+        <Stat label="Alumnos activos" value={active.length} hint={`${plural(groupsCount, 'grupo', 'grupos')} en ${levels.length === 1 ? LEVEL_LABEL[levels[0]!] : plural(levels.length, 'nivel', 'niveles')}`} icon="alumnos" tone="info" to="/admin/alumnos" action="Ver alumnos" />
         <Stat label="Asistencia (5 días)" value={`${presentRate}%`} hint="Presentes y retardos" icon="asistencia" tone="exito" progress={presentRate / 100} to="/docente/asistencia" action="Ver listas" />
         <Stat label="Cobrado este mes" value={formatMoney(collected)} hint={`de ${formatMoney(expected)} esperado`} icon="pagos" tone="info" progress={expected ? collected / expected : 0} to="/pagos?vista=cargos" action="Ver cargos" />
         <Stat label="Adeudo vencido" value={formatMoney(overdueTotal)} hint={`${plural(debtors, 'alumno', 'alumnos')} con atraso`} icon="alerta" tone="peligro" to="/pagos" action="Cobrar" />
@@ -72,6 +76,7 @@ export function AdminHome() {
 
       <div className="mt-4 grid gap-4 lg:grid-cols-3">
         <Card title="Alumnos por nivel" className="lg:col-span-2">
+          {active.length === 0 && <p className="mb-3 text-sm text-muted">Aún no hay alumnos inscritos. Inscríbelos o impórtalos desde Excel en Alumnos.</p>}
           <ul className="space-y-3">
             {byLevel.map((b) => (
               <li key={b.level} className="grid grid-cols-[6.5rem_1fr_2rem] items-center gap-3 text-sm">
@@ -109,6 +114,7 @@ export function AdminHome() {
 
       <div className="mt-4 grid gap-4 lg:grid-cols-2">
         <Card title="Últimos avisos" action={<Link to="/avisos" className="-mr-2 inline-flex min-h-11 items-center gap-1 rounded-lg px-2 text-sm font-semibold text-link no-underline hover:bg-info-bg">Ver todos</Link>}>
+          {latest.length === 0 && <p className="py-2 text-sm text-muted">Aún no hay avisos publicados. Publícalos desde Avisos.</p>}
           <ul className="divide-y divide-line">
             {latest.map((a) => (
               <li key={a.id} className="py-2.5">
@@ -121,6 +127,7 @@ export function AdminHome() {
           </ul>
         </Card>
         <Card title="Inscripciones recientes" action={<Link to="/admin/alumnos" className="-mr-2 inline-flex min-h-11 items-center gap-1 rounded-lg px-2 text-sm font-semibold text-link no-underline hover:bg-info-bg">Ver alumnos</Link>}>
+          {newest.length === 0 && <p className="py-2 text-sm text-muted">Aún no hay inscripciones en este ciclo.</p>}
           <ul className="divide-y divide-line">
             {newest.map((s) => (
               <li key={s.id} className="flex items-center justify-between gap-2 py-2.5">

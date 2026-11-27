@@ -94,7 +94,7 @@ export function RegistroEscuela() {
         const plan = planear(db, tipo, revisadas, { demo: false })
         await plan.aplicar(repo)
         await repo.confirmar()
-        reporte = { importadas: plan.importadas, rechazadas: revisadas.filter((f) => !f.ejemplo && f.errores.length), sinCorreo: plan.sinCorreo, invitaciones: [] }
+        reporte = { importadas: plan.importadas, gruposNuevos: [...new Set(revisadas.filter((f) => !f.ejemplo && !f.errores.length && f.grupoNuevo).map((f) => f.grupoNuevo!))], rechazadas: revisadas.filter((f) => !f.ejemplo && f.errores.length), sinCorreo: plan.sinCorreo, invitaciones: [] }
         try {
           reporte.invitaciones = await enviarInvitaciones(sesion.token, plan.invitaciones)
         } catch (e) {

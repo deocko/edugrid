@@ -7,7 +7,7 @@ import { Badge, Button, Card, DemoBadge, Field, Input, LinkButton, Modal, Notice
 import type { Student } from '../../data/types'
 import { ageFrom, formatDate, formatMoney, nowISO } from '../../lib/format'
 import { studentBalance } from '../../lib/finance'
-import { LEVEL_LABEL, LEVELS, canSeeStudent, groupLabel, levelOfGroup, studentName, teacherName } from '../../lib/scope'
+import { LEVEL_LABEL, canSeeStudent, groupLabel, homeroomName, levelOfGroup, roomName, schoolLevels, studentName } from '../../lib/scope'
 import { DayLog } from '../../components/DayLog'
 import { StudentPhoto } from '../../components/StudentPhoto'
 import { QrCode } from '../../components/QrCode'
@@ -78,9 +78,9 @@ export function StudentDetail() {
               </>
             )}
             <dt className="text-muted">Titular</dt>
-            <dd className="text-heading">{group ? teacherName(db, group.homeroomTeacherId) : '—'}</dd>
+            <dd className="text-heading" data-titular>{homeroomName(db, group)}</dd>
             <dt className="text-muted">Salón</dt>
-            <dd className="text-heading">{group?.room}</dd>
+            <dd className="text-heading" data-salon>{roomName(group)}</dd>
           </dl>
         </Card>
         <Card title="Familia" className="lg:col-span-2">
@@ -153,7 +153,7 @@ function EditStudent({ student, onDone }: { student: Student; onDone: () => void
         <Field label="Grupo" hint="Al cambiar de grupo, el historial de asistencia y calificaciones se conserva.">
           {(id) => (
             <Select id={id} value={form.groupId} onChange={(e) => setForm({ ...form, groupId: e.target.value })}>
-              {LEVELS.map((l) => (
+              {schoolLevels(db).map((l) => (
                 <optgroup key={l} label={LEVEL_LABEL[l]}>
                   {db.groups.filter((g) => levelOfGroup(db, g.id) === l).map((g) => <option key={g.id} value={g.id}>{groupLabel(db, g)}</option>)}
                 </optgroup>

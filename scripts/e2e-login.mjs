@@ -2,12 +2,21 @@
 // wizard de 4 pasos, contraseña incorrecta, cerrar sesión, recuperar contraseña, plantilla e
 // importación de Excel con errores por fila, invitación de un docente, un tutor con dos hijos y
 // una sola cuenta, aislamiento entre escuelas, prueba de 30 días vencida y el botón «Ver demo».
-// Uso: npm run build:servidor && EDUGRID_SIMULAR_PRUEBA=si npm run servidor  y luego  node scripts/e2e-login.mjs
+// Uso: npm run build:servidor && EDUGRID_SIMULAR_PRUEBA=si EDUGRID_BUZON=qa-output/buzon.jsonl npm run servidor
+//      y luego  EDUGRID_BUZON=qa-output/buzon.jsonl node scripts/e2e-login.mjs
 import { createRequire } from 'node:module'
 const require = createRequire(import.meta.url)
 const { chromium } = require('playwright')
 const XLSX = require('xlsx')
 const BASE = process.env.QA_URL ?? 'http://localhost:3000/'
+const { readFileSync, existsSync } = require('node:fs')
+/** Último correo que «llegó» a ese destinatario (buzón local del servidor, EDUGRID_BUZON). */
+const ultimoCorreo = (para, ruta) => {
+  const archivo = process.env.EDUGRID_BUZON ?? 'qa-output/buzon.jsonl'
+  if (!existsSync(archivo)) return null
+  const m = readFileSync(archivo, 'utf8').trim().split('\n').map((l) => JSON.parse(l)).reverse().find((x) => x.para === para && x.texto.includes(`/#/${ruta}/`))
+  return m ? m.texto.split(`/#/${ruta}/`)[0].split(/\s/).pop() + `/#/${ruta}/` + m.texto.split(`/#/${ruta}/`)[1].split(/\s/)[0] : null
+}
 
 const step = (m) => console.log(`✓ ${m}`)
 const fail = (m) => { throw new Error(m) }
@@ -87,13 +96,24 @@ await p.getByRole('button', { name: 'Entrar' }).click()
 await p.waitForURL(/#\/admin$/)
 step('Contraseña incorrecta no entra; cerrar sesión vuelve al login; la correcta entra')
 
-// 4. Recuperar contraseña: la liga aparece en pantalla (modo demo) y sirve una sola vez
+// 4. Recuperar contraseña: la pantalla NO muestra la liga ni revela si el correo existe; la liga llega por correo
 await p.getByRole('button', { name: 'Cerrar sesión' }).click()
 await p.getByRole('button', { name: 'Olvidé mi contraseña' }).click()
+await p.getByLabel('Correo electrónico').fill(`nadie.${sufijo}@demo.edugrid.mx`)
+await p.getByRole('button', { name: 'Enviar liga' }).click()
+await p.getByText('Si el correo existe, recibirás una liga para restablecer tu contraseña.').waitFor()
+const textoNadie = await p.locator('form').innerText()
 await p.getByLabel('Correo electrónico').fill(ADMIN.correo)
 await p.getByRole('button', { name: 'Enviar liga' }).click()
-const ligaRec = await p.locator('[data-liga-demo] a').first().textContent()
-if (!ligaRec?.includes('/restablecer/')) fail('No apareció la liga para crear una contraseña nueva')
+await p.getByRole('button', { name: 'Enviando…' }).waitFor({ state: 'detached' }).catch(() => {})
+await p.getByRole('button', { name: 'Enviar liga' }).waitFor()
+await p.getByText('Si el correo existe, recibirás una liga para restablecer tu contraseña.').waitFor()
+if ((await p.locator('form').innerText()) !== textoNadie) fail('La pantalla de recuperación cambia según si el correo existe')
+if (/restablecer\//.test(await p.content())) fail('La liga de recuperación apareció en pantalla')
+await p.getByText('Modo demo: este servidor todavía no tiene configurado el envío de correos').waitFor()
+await p.screenshot({ path: 'qa-output/m11-recuperar.png' })
+const ligaRec = ultimoCorreo(ADMIN.correo, 'restablecer')
+if (!ligaRec?.includes('/restablecer/')) fail('No llegó al buzón local el correo con la liga (¿EDUGRID_BUZON?)')
 await abrirLiga(p, ligaRec)
 ADMIN.contrasena = 'Nueva-Faro-2026!'
 await p.getByLabel('Contraseña nueva').fill(ADMIN.contrasena)
@@ -101,7 +121,7 @@ await p.getByLabel('Confirma la contraseña').fill(ADMIN.contrasena)
 await p.getByRole('button', { name: 'Guardar y entrar' }).click()
 await p.waitForURL(/#\/admin$/)
 if ((await api('cuenta/iniciar', { correo: ADMIN.correo, contrasena: 'Escuela-Faro-2026' })).status !== 401) fail('La contraseña vieja sigue sirviendo')
-step('Recuperar contraseña genera su liga y la contraseña nueva reemplaza a la anterior')
+step('Recuperar contraseña: sin liga en pantalla, mismo mensaje exista o no el correo; la liga del correo reemplaza la contraseña')
 
 // 5. Plantilla de Alumnos → 5 filas (una con correo inválido) → vista previa → importar 4
 await p.goto(`${BASE}#/admin/alumnos`)

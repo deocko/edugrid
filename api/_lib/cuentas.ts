@@ -8,6 +8,7 @@ import {
   CONTRASENA_MINIMA,
   NOMBRE_PERFIL,
   type DatosRegistro,
+  type InvitacionAdmin,
   type InvitacionPublica,
   type PerfilPublico,
   type PersonaInvitada,
@@ -351,9 +352,49 @@ export function leerPersonas(cuerpo: unknown): PersonaInvitada[] {
   })
 }
 
+/** Perfil que da una invitación: el principal (columnas) o uno de «extra». */
+type PerfilInv = { tipo: TipoPerfil; ref: string }
+const clavePerfil = (p: PerfilInv) => `${p.tipo}|${p.ref}`
+const extraDe = (v: unknown): PerfilInv[] => {
+  const lista = typeof v === 'string' ? (JSON.parse(v) as unknown) : v
+  return Array.isArray(lista) ? lista.filter((x): x is PerfilInv => !!x && esTipo((x as PerfilInv).tipo) && typeof (x as PerfilInv).ref === 'string') : []
+}
+const perfilesDeFila = (f: Record<string, unknown>): PerfilInv[] => [
+  { tipo: f.tipo as TipoPerfil, ref: String(f[REFERENCIA[f.tipo as TipoPerfil].columna] ?? '') },
+  ...extraDe(f.extra),
+]
+
+/** Correo de invitación con todos los perfiles que da (por ejemplo familia y alumno). */
+function mensajeInvitacion(escuelaNombre: string, correo: string, nombre: string, perfiles: PerfilInv[], liga: string) {
+  const tipos = [...new Set(perfiles.map((p) => p.tipo))]
+  const nombres = tipos.map((t) => NOMBRE_PERFIL[t].toLowerCase())
+  const lista = nombres.length > 1 ? `${nombres.slice(0, -1).join(', ')} y ${nombres.at(-1)}` : nombres[0]
+  const alumnos = perfiles.filter((p) => p.tipo === 'alumno').length
+  const extra = [
+    ...(tipos.includes('familia') ? ['Con tu cuenta de familia verás a todos tus hijos inscritos en la escuela.'] : []),
+    ...(alumnos
+      ? [alumnos > 1 || tipos.includes('familia')
+          ? 'La misma cuenta incluye el perfil de alumno de tus hijos: desde ahí ves su horario, tareas y calificaciones.'
+          : 'Es la cuenta de alumno de la persona inscrita. Si el alumno es menor de edad, la madre, padre o tutor puede abrirla y ver su horario, tareas y calificaciones.']
+      : []),
+  ]
+  return mensajeConLiga({
+    para: correo,
+    asunto: `${escuelaNombre} te invita a EDUGRID`,
+    saludo: `Hola${nombre && nombre !== correo ? `, ${nombre}` : ''}:`,
+    parrafos: [`${escuelaNombre} te dio de alta en EDUGRID con ${tipos.length > 1 ? 'los perfiles' : 'el perfil'} de ${lista}.`, ...extra, 'Abre la liga para crear tu contraseña y entrar. Si ya tienes cuenta en esta escuela con este correo, solo se agregan los perfiles nuevos.'],
+    boton: 'Crear mi contraseña',
+    liga,
+    pie: 'La liga vence en 7 días y solo se puede usar una vez. Si no esperabas este correo, puedes ignorarlo.',
+  })
+}
+
 /**
- * Crea las invitaciones de una escuela y manda los correos. Si la persona no tiene
- * cuenta, se crea en estado «invitado»; si ya tiene ese perfil, no se invita otra vez.
+ * Crea las invitaciones de una escuela y manda los correos.
+ * UNA invitación por correo en cada escuela: si el correo ya tiene una invitación
+ * pendiente (como familia, alumno o docente), el perfil nuevo se agrega a esa misma
+ * invitación y no se crea otra. Si la pendiente ya venció, se renueva con una liga nueva.
+ * Si la persona no tiene cuenta, se crea en estado «invitado»; si ya tiene ese perfil, no se invita.
  * Solo el administrador puede invitar, y solo a fichas que existen en SU escuela.
  */
 export async function invitar(db: Ejecutor, sesion: SesionPublica, personas: PersonaInvitada[], ligas: Ligas, op: Opciones): Promise<ResultadoInvitacion[]> {
@@ -363,6 +404,7 @@ export async function invitar(db: Ejecutor, sesion: SesionPublica, personas: Per
   for (const p of personas) porTabla.set(REFERENCIA[p.tipo].tabla, [...(porTabla.get(REFERENCIA[p.tipo].tabla) ?? []), p.referencia])
   const tablas = [...porTabla.keys()]
   const correos = [...new Set(personas.map((p) => p.correo))]
+  const ahora = op.ahora()
   const r = await enEscuela(db, escuela, [
     ...tablas.map((t) => ({ text: `select id from ${tablaSql(t as 'staff')} where school_id = $1 and id = any($2::text[])`, params: [escuela, porTabla.get(t)] })),
     {
@@ -370,18 +412,34 @@ export async function invitar(db: Ejecutor, sesion: SesionPublica, personas: Per
 join "usuarios" u on u.school_id = p.school_id and u.id = p.usuario_id where p.school_id = $1 and u.correo = any($2::text[])`,
       params: [escuela, correos],
     },
+    {
+      text: `select * from "invitaciones" where school_id = $1 and correo = any($2::text[]) and usada_at is null order by created_at`,
+      params: [escuela, correos],
+    },
   ])
   const existen = new Set<string>()
   tablas.forEach((t, i) => (r[i] ?? []).forEach((f) => existen.add(`${t}:${String(f.id)}`)))
   const yaTiene = new Set((r[tablas.length] ?? []).map((f) => `${String(f.correo)}|${String(f.tipo)}|${String(f.ref)}`))
 
-  const ahora = op.ahora()
+  // La invitación pendiente de cada correo (la más antigua, si hubiera varias de antes de esta versión).
+  interface Inv { id: string; correo: string; nombre: string; nueva: boolean; principal: PerfilInv; extra: PerfilInv[]; cubre: Set<string>; vencida: boolean; cambio: boolean; token?: string; resultado?: number }
+  const porCorreo = new Map<string, Inv>()
+  for (const f of r[tablas.length + 1] ?? []) {
+    const correo = String(f.correo)
+    const perfiles = perfilesDeFila(f)
+    const ya = porCorreo.get(correo)
+    if (ya) {
+      perfiles.forEach((p) => ya.cubre.add(clavePerfil(p)))
+      continue
+    }
+    porCorreo.set(correo, {
+      id: String(f.id), correo, nombre: String(f.nombre), nueva: false, principal: perfiles[0]!, extra: perfiles.slice(1),
+      cubre: new Set(perfiles.map(clavePerfil)), vencida: fecha(f.expira_at).getTime() <= ahora.getTime(), cambio: false,
+    })
+  }
+
   const resultados: ResultadoInvitacion[] = []
-  const consultas: Consulta[] = []
-  const envios: { i: number; token: string }[] = []
-  const vistos = new Set<string>()
   for (const p of personas) {
-    const clave = `${p.correo}|${p.tipo}|${p.referencia}`
     if (!correoValido(p.correo)) {
       resultados.push({ ...p, estado: 'error', motivo: 'El correo no tiene un formato válido.' })
       continue
@@ -390,56 +448,121 @@ join "usuarios" u on u.school_id = p.school_id and u.id = p.usuario_id where p.s
       resultados.push({ ...p, estado: 'error', motivo: 'La ficha no existe en esta escuela.' })
       continue
     }
-    if (yaTiene.has(clave)) {
+    if (yaTiene.has(`${p.correo}|${p.tipo}|${p.referencia}`)) {
       resultados.push({ ...p, estado: 'ya-tiene-perfil', motivo: 'Ese correo ya entra con este perfil.' })
       continue
     }
-    if (vistos.has(clave)) continue
-    vistos.add(clave)
-    const token = nuevoToken(escuela)
-    consultas.push(
-      {
-        text: `insert into "usuarios" (school_id, id, correo, nombre, estado) values ($1, $2, $3, $4, 'invitado') on conflict (school_id, correo) do nothing`,
-        params: [escuela, nuevoId('usr'), p.correo, p.nombre || p.correo],
-      },
-      {
-        text: `insert into "invitaciones" (school_id, id, correo, nombre, tipo, ${REFERENCIA[p.tipo].columna}, token, expira_at) values ($1, $2, $3, $4, $5, $6, $7, $8)`,
-        params: [escuela, nuevoId('inv'), p.correo, p.nombre || p.correo, p.tipo, p.referencia, huella(token), new Date(ahora.getTime() + DURACION_INVITACION_MS)],
-      },
-    )
-    envios.push({ i: resultados.length, token })
-    resultados.push({ ...p, estado: 'no-enviada' })
+    const perfil: PerfilInv = { tipo: p.tipo, ref: p.referencia }
+    const inv = porCorreo.get(p.correo)
+    if (!inv) {
+      porCorreo.set(p.correo, { id: nuevoId('inv'), correo: p.correo, nombre: p.nombre || p.correo, nueva: true, principal: perfil, extra: [], cubre: new Set([clavePerfil(perfil)]), vencida: false, cambio: true, resultado: resultados.length })
+      resultados.push({ ...p, estado: 'no-enviada' })
+      continue
+    }
+    if (!inv.cubre.has(clavePerfil(perfil))) {
+      inv.cubre.add(clavePerfil(perfil))
+      inv.extra.push(perfil)
+      inv.cambio = true
+    }
+    // Una invitación vencida se renueva (liga nueva y 7 días más) y se vuelve a mandar.
+    if (inv.vencida && inv.resultado === undefined) {
+      inv.cambio = true
+      inv.resultado = resultados.length
+      resultados.push({ ...p, estado: 'no-enviada' })
+      continue
+    }
+    resultados.push({
+      ...p,
+      estado: 'reutilizada',
+      motivo: inv.nueva || inv.resultado !== undefined
+        ? `Va en la misma invitación de ${p.correo}: un solo correo para todos sus perfiles.`
+        : `${p.correo} ya tenía una invitación pendiente: se agregó este perfil a la misma liga, no se creó otra.`,
+    })
+  }
+
+  const expira = new Date(ahora.getTime() + DURACION_INVITACION_MS)
+  const consultas: Consulta[] = []
+  const envios: Inv[] = []
+  for (const inv of porCorreo.values()) {
+    if (!inv.cambio) continue
+    const extra = JSON.stringify(inv.extra)
+    if (inv.nueva) {
+      inv.token = nuevoToken(escuela)
+      consultas.push(
+        {
+          text: `insert into "usuarios" (school_id, id, correo, nombre, estado) values ($1, $2, $3, $4, 'invitado') on conflict (school_id, correo) do nothing`,
+          params: [escuela, nuevoId('usr'), inv.correo, inv.nombre],
+        },
+        {
+          text: `insert into "invitaciones" (school_id, id, correo, nombre, tipo, ${REFERENCIA[inv.principal.tipo].columna}, token, expira_at, extra) values ($1, $2, $3, $4, $5, $6, $7, $8, $9::jsonb)`,
+          params: [escuela, inv.id, inv.correo, inv.nombre, inv.principal.tipo, inv.principal.ref, huella(inv.token), expira, extra],
+        },
+      )
+    } else if (inv.vencida) {
+      inv.token = nuevoToken(escuela)
+      consultas.push({ text: `update "invitaciones" set extra = $3::jsonb, token = $4, expira_at = $5 where school_id = $1 and id = $2 and usada_at is null`, params: [escuela, inv.id, extra, huella(inv.token), expira] })
+    } else consultas.push({ text: `update "invitaciones" set extra = $3::jsonb where school_id = $1 and id = $2 and usada_at is null`, params: [escuela, inv.id, extra] })
+    if (inv.token) envios.push(inv)
   }
   if (consultas.length) await enEscuela(db, escuela, consultas)
 
-  const mensajes = envios.map(({ i, token }) => {
-    const p = resultados[i]!
-    const perfil = NOMBRE_PERFIL[p.tipo].toLowerCase()
-    const extra =
-      p.tipo === 'alumno'
-        ? ['Es la cuenta de alumno de la persona inscrita. Si el alumno es menor de edad, la madre, padre o tutor puede abrirla y ver su horario, tareas y calificaciones.']
-        : p.tipo === 'familia'
-          ? ['Con tu cuenta de familia verás a todos tus hijos inscritos en la escuela.']
-          : []
-    return mensajeConLiga({
-      para: p.correo,
-      asunto: `${sesion.escuela.nombre} te invita a EDUGRID`,
-      saludo: `Hola${p.nombre ? `, ${p.nombre}` : ''}:`,
-      parrafos: [`${sesion.escuela.nombre} te dio de alta en EDUGRID con el perfil de ${perfil}.`, ...extra, 'Abre la liga para crear tu contraseña y entrar. Si ya tienes cuenta en esta escuela con este correo, solo se agrega el nuevo perfil.'],
-      boton: 'Crear mi contraseña',
-      liga: ligaInvitacion(ligas, token),
-      pie: 'La liga vence en 7 días. Si no esperabas este correo, puedes ignorarlo.',
-    })
-  })
+  const mensajes = envios.map((inv) => mensajeInvitacion(sesion.escuela.nombre, inv.correo, inv.nombre, [inv.principal, ...inv.extra], ligaInvitacion(ligas, inv.token!)))
   const enviados = mensajes.length ? await ligas.correo.enviar(mensajes) : []
-  envios.forEach(({ i, token }, k) => {
+  envios.forEach((inv, k) => {
+    if (inv.resultado === undefined) return
     const e = enviados[k]
-    const r0 = resultados[i]!
+    const r0 = resultados[inv.resultado]!
     r0.estado = e?.enviado ? 'enviada' : 'no-enviada'
     if (!e?.enviado) r0.motivo = e?.motivo ?? 'No se envió el correo.'
-    if (ligas.mostrar) r0.liga = ligaInvitacion(ligas, token)
+    if (ligas.mostrar) r0.liga = ligaInvitacion(ligas, inv.token!)
   })
   return resultados
+}
+
+/** Invitaciones de la escuela con su estado, para las listas de Alumnos, Docentes y Familias. */
+export async function listarInvitaciones(db: Ejecutor, sesion: SesionPublica, op: Opciones): Promise<InvitacionAdmin[]> {
+  if (sesion.perfil?.tipo !== 'administrador') throw new ErrorCuenta(403, 'Solo el administrador puede ver las invitaciones.')
+  const escuela = sesion.escuela.id
+  const [filas] = await enEscuela(db, escuela, [
+    { text: `select * from "invitaciones" where school_id = $1 order by created_at desc limit 2000`, params: [escuela] },
+  ])
+  const ahora = op.ahora().getTime()
+  return (filas ?? []).map((f) => ({
+    id: String(f.id),
+    correo: String(f.correo),
+    nombre: String(f.nombre),
+    perfiles: perfilesDeFila(f).map((p) => ({ tipo: p.tipo, referencia: p.ref })),
+    estado: f.usada_at ? 'aceptada' : fecha(f.expira_at).getTime() <= ahora ? 'expirada' : 'pendiente',
+    creadaAt: fecha(f.created_at).toISOString(),
+    expiraAt: fecha(f.expira_at).toISOString(),
+    aceptadaAt: f.usada_at ? fecha(f.usada_at).toISOString() : null,
+  }))
+}
+
+/** Reenvía una invitación pendiente o vencida: liga nueva (la anterior deja de servir) y 7 días más. */
+export async function reenviarInvitacion(db: Ejecutor, sesion: SesionPublica, id: unknown, ligas: Ligas, op: Opciones): Promise<ResultadoInvitacion> {
+  if (sesion.perfil?.tipo !== 'administrador') throw new ErrorCuenta(403, 'Solo el administrador puede enviar invitaciones.')
+  if (typeof id !== 'string' || !id) throw new ErrorCuenta(400, 'Falta la invitación.')
+  const escuela = sesion.escuela.id
+  const [filas] = await enEscuela(db, escuela, [{ text: `select * from "invitaciones" where school_id = $1 and id = $2`, params: [escuela, id] }])
+  const f = filas?.[0]
+  if (!f) throw new ErrorCuenta(404, 'Esa invitación no existe en tu escuela.')
+  if (f.usada_at) throw new ErrorCuenta(409, 'Esa invitación ya se aceptó.')
+  const token = nuevoToken(escuela)
+  await enEscuela(db, escuela, [
+    { text: `update "invitaciones" set token = $3, expira_at = $4 where school_id = $1 and id = $2 and usada_at is null`, params: [escuela, id, huella(token), new Date(op.ahora().getTime() + DURACION_INVITACION_MS)] },
+  ])
+  const perfiles = perfilesDeFila(f)
+  const [e] = await ligas.correo.enviar([mensajeInvitacion(sesion.escuela.nombre, String(f.correo), String(f.nombre), perfiles, ligaInvitacion(ligas, token))])
+  return {
+    tipo: perfiles[0]!.tipo,
+    referencia: perfiles[0]!.ref,
+    correo: String(f.correo),
+    nombre: String(f.nombre),
+    estado: e?.enviado ? 'enviada' : 'no-enviada',
+    ...(e?.enviado ? {} : { motivo: e?.motivo ?? 'No se envió el correo.' }),
+    ...(ligas.mostrar ? { liga: ligaInvitacion(ligas, token) } : {}),
+  }
 }
 
 async function buscarInvitacion(db: Ejecutor, token: unknown, op: Opciones) {
@@ -501,6 +624,19 @@ export async function aceptarInvitacion(db: Ejecutor, cuerpo: { token?: unknown;
       text: `insert into "perfiles" (school_id, id, usuario_id, tipo, ${col}) values ($1, $2, $3, $4, $5) on conflict do nothing`,
       params: [escuela, perfilId, usuarioId, tipo, ref],
     },
+    // Los perfiles adicionales de la invitación (por ejemplo, los hijos como alumnos en la invitación de la mamá).
+    {
+      text: `insert into "perfiles" (school_id, id, usuario_id, tipo, personal_id, docente_id, alumno_id, tutor_id)
+select i.school_id, 'pf-' || substr(md5(random()::text || i.id || e.value::text), 1, 12), $3, e.value->>'tipo',
+  case when e.value->>'tipo' = 'administrador' then e.value->>'ref' end,
+  case when e.value->>'tipo' = 'docente' then e.value->>'ref' end,
+  case when e.value->>'tipo' = 'alumno' then e.value->>'ref' end,
+  case when e.value->>'tipo' = 'familia' then e.value->>'ref' end
+from "invitaciones" i cross join lateral jsonb_array_elements(i.extra) e
+where i.school_id = $1 and i.correo = $2 and i.usada_at is null and i.expira_at > $4
+on conflict do nothing`,
+      params: [escuela, publica.correo, usuarioId, ahora],
+    },
     // Las demás invitaciones vigentes para el mismo correo (por ejemplo, familia y alumnos
     // de una misma madre) se aceptan juntas: es la misma persona, no tiene que abrir cada liga.
     {
@@ -536,7 +672,7 @@ values ($1, $2, $3, (select p.id from "perfiles" p where p.school_id = $1 and p.
  * Manda la liga para crear una contraseña nueva a cada escuela donde ese correo
  * tiene cuenta. Responde igual exista o no la cuenta (no revela quién está registrado).
  */
-export async function recuperar(db: Ejecutor, correoBruto: unknown, ligas: Ligas, op: Opciones): Promise<{ ligas: string[] }> {
+export async function recuperar(db: Ejecutor, correoBruto: unknown, ligas: Ligas, op: Opciones): Promise<void> {
   const correo = normalizarCorreo(correoBruto)
   if (!correoValido(correo)) throw new ErrorCuenta(400, 'Escribe un correo con formato válido.')
   await asegurarEsquema(db)
@@ -547,19 +683,20 @@ export async function recuperar(db: Ejecutor, correoBruto: unknown, ligas: Ligas
     },
   ])
   const ahora = op.ahora()
-  const salida: string[] = []
   const mensajes = []
   for (const c of cuentas ?? []) {
     const escuela = String(c.school_id)
     const token = nuevoToken(escuela)
     await enEscuela(db, escuela, [
+      // Solo sirve la liga más reciente: las anteriores sin usar se anulan.
+      { text: `update "recuperaciones" set usada_at = $3 where school_id = $1 and usuario_id = $2 and usada_at is null`, params: [escuela, String(c.id), ahora] },
       {
         text: `insert into "recuperaciones" (school_id, id, usuario_id, token, expira_at) values ($1, $2, $3, $4, $5)`,
         params: [escuela, nuevoId('rec'), String(c.id), huella(token), new Date(ahora.getTime() + DURACION_RECUPERACION_MS)],
       },
     ])
+    // La liga va SOLO en el correo: nunca se devuelve a la pantalla (ni en modo demo).
     const liga = ligaRecuperacion(ligas, token)
-    if (ligas.mostrar) salida.push(liga)
     mensajes.push(
       mensajeConLiga({
         para: correo,
@@ -568,12 +705,11 @@ export async function recuperar(db: Ejecutor, correoBruto: unknown, ligas: Ligas
         parrafos: [`Pediste crear una contraseña nueva para entrar a ${String(c.escuela)} en EDUGRID.`],
         boton: 'Crear contraseña nueva',
         liga,
-        pie: 'La liga vence en 1 hora. Si no fuiste tú, ignora este correo: tu contraseña no cambia.',
+        pie: 'La liga vence en 1 hora y solo se puede usar una vez. Si no fuiste tú, ignora este correo: tu contraseña no cambia.',
       }),
     )
   }
   if (mensajes.length) await ligas.correo.enviar(mensajes)
-  return { ligas: salida }
 }
 
 /** Con la liga de recuperación: pone la contraseña nueva, cierra las demás sesiones y entra. */

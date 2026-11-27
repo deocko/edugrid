@@ -24,6 +24,15 @@ export const teacherName = (db: Database, id: string) => {
   return t ? `${t.firstName} ${t.lastName}` : 'Docente'
 }
 
+/** Nombre del titular del grupo, o «Sin asignar» (nunca «Docente» ni vacío). */
+export const homeroomName = (db: Database, group: Group | undefined) => {
+  const t = group?.homeroomTeacherId ? db.teachers.find((x) => x.id === group.homeroomTeacherId) : undefined
+  return t ? `${t.firstName} ${t.lastName}` : 'Sin asignar'
+}
+
+/** Salón del grupo, o «Sin asignar» (nunca vacío). */
+export const roomName = (group: Group | undefined) => group?.room?.trim() || 'Sin asignar'
+
 export const subjectName = (db: Database, id: string) => db.subjects.find((x) => x.id === id)?.name ?? 'Materia'
 
 /** Grupos donde el docente es titular o imparte alguna materia. */
@@ -97,6 +106,15 @@ export const LEVEL_LABEL: Record<Level, string> = {
 }
 
 export const LEVELS: Level[] = ['maternal', 'kinder', 'primaria', 'secundaria', 'preparatoria']
+
+/**
+ * Niveles que atiende (contrató) la escuela: los que tienen grados. Una escuela solo de
+ * primaria ve únicamente Primaria en tablero, filtros y Ciclos y grupos.
+ */
+export const schoolLevels = (db: Database): Level[] => {
+  const con = new Set(db.grades.map((g) => g.level))
+  return LEVELS.filter((l) => con.has(l))
+}
 
 export const isPreschool = (level: Level | undefined) => level === 'maternal' || level === 'kinder'
 

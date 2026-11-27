@@ -1,10 +1,11 @@
 import { useMemo, useState, type FormEvent } from 'react'
+import { BotonExportar } from '../../components/BotonExportar'
 import { Link, useSearchParams } from 'react-router'
 import { Badge, Button, Card, EmptyState, Field, Input, Notice, PageHeader, Select, Stat, Table, Tabs, TD, TH } from '../../components/ui'
 import type { Charge, ConceptKind, Level, Payment, PaymentConcept, PaymentMethod, Reminder } from '../../data/types'
 import { demoDate, formatDate, formatMoney, nowISO, todayISO, uid, plural } from '../../lib/format'
 import { METHOD_LABEL, chargeView, studentCharges } from '../../lib/finance'
-import { LEVEL_LABEL, LEVELS, groupLabel, levelOfGroup, studentName } from '../../lib/scope'
+import { LEVEL_LABEL, LEVELS, groupLabel, levelOfGroup, schoolLevels, studentName } from '../../lib/scope'
 import { useApp } from '../../state/context'
 import { StatList } from '../../components/StatList'
 
@@ -68,7 +69,22 @@ function Debts() {
         <Stat label="Cobrado este mes" value={formatMoney(monthPaid)} hint={`${plural(db.payments.filter((p) => p.paidAt.startsWith(month)).length, 'pago', 'pagos')}`} icon="pagos" tone="exito" action="Ver pagos" details={<StatList rows={db.payments.filter((p) => p.paidAt.startsWith(month)).sort((a, b) => b.paidAt.localeCompare(a.paidAt)).map((p) => ({ key: p.id, label: studentName(db.students.find((s) => s.id === p.studentId)), value: `${formatMoney(p.amount)} · ${formatDate(p.paidAt)}`, to: `/pagos/estado/${p.studentId}` }))} empty="Aún no hay pagos este mes." />} />
         <Stat label="Recordatorios enviados" value={db.reminders.length} icon="campana" tone="info" details={<StatList rows={[...db.reminders].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 50).map((r) => ({ key: r.id, label: studentName(db.students.find((s) => s.id === r.studentId)), value: `${formatMoney(r.amount)} · ${formatDate(r.createdAt)}`, to: `/pagos/estado/${r.studentId}` }))} empty="Aún no se han enviado recordatorios." />} />
       </div>
-      <Card title="Alumnos con saldo vencido" action={rows.length > 0 && <Button variant="secundario" icon="campana" onClick={() => void remind(rows)}>Recordar a todos</Button>}>
+      <Card
+        title="Alumnos con saldo vencido"
+        action={
+          <span className="inline-flex flex-wrap items-center gap-2">
+              <BotonExportar
+                datos={() => ({
+                  archivo: 'pagos-adeudos-vencidos',
+                  hoja: 'Adeudos vencidos',
+                  columnas: ['Alumno', 'Grupo', 'Vencido', 'Recordatorio'],
+                  filas: rows.map((r) => [studentName(r.student), groupLabel(db, r.student.groupId), r.overdue, remindedToday(r.student.id) ? 'Recordado hoy' : 'Sin recordar hoy']),
+                })}
+              />
+              {rows.length > 0 && <Button variant="secundario" icon="campana" onClick={() => void remind(rows)}>Recordar a todos</Button>}
+            </span>
+        }
+      >
         {rows.length === 0 ? (
           <EmptyState icon="check" title="No hay adeudos vencidos">Todas las familias están al corriente.</EmptyState>
         ) : (
@@ -106,7 +122,7 @@ function StudentSelect({ value, onChange, id }: { value: string; onChange: (v: s
   return (
     <Select id={id} value={value} onChange={(e) => onChange(e.target.value)}>
       <option value="">Elige un alumno</option>
-      {LEVELS.map((l) => (
+      {schoolLevels(db).map((l) => (
         <optgroup key={l} label={LEVEL_LABEL[l]}>
           {db.students.filter((s) => s.status === 'activo' && levelOfGroup(db, s.groupId) === l).sort((a, b) => a.lastName.localeCompare(b.lastName)).map((s) => (
             <option key={s.id} value={s.id}>{s.lastName}, {s.firstName} · {groupLabel(db, s.groupId)}</option>
@@ -289,6 +305,7 @@ function Charges({ initialStudent }: { initialStudent: string }) {
           <Button className="mt-3 w-full" variant="secundario" icon="mas" onClick={() => void bulk()}>Generar para todos</Button>
         </Card>
         <Card title="Cargos recientes">
+          {recent.length === 0 && <p className="py-2 text-sm text-muted">Aún no hay cargos. Genera uno con «Nuevo cargo» o la colegiatura del mes.</p>}
           <ul className="divide-y divide-line">
             {recent.map((c) => (
               <li key={c.id} className="flex items-center justify-between gap-2 py-2 text-sm">
@@ -332,7 +349,7 @@ function Concepts() {
           <thead>
             <tr>
               <th className={TH}>Concepto</th>
-              {LEVELS.map((l) => <th key={l} className={`${TH} hidden text-right xl:table-cell`}>{LEVEL_LABEL[l]}</th>)}
+              {schoolLevels(db).map((l) => <th key={l} className={`${TH} hidden text-right xl:table-cell`}>{LEVEL_LABEL[l]}</th>)}
               <th className={`${TH} text-right xl:hidden`}>Desde</th>
             </tr>
           </thead>
@@ -343,7 +360,7 @@ function Concepts() {
                   <p className="font-semibold text-heading">{c.name}</p>
                   <p className="text-xs text-muted">{KIND_LABEL[c.kind]} · Clave SAT {c.satProductCode}</p>
                 </td>
-                {LEVELS.map((l) => <td key={l} className={`${TD} hidden text-right whitespace-nowrap xl:table-cell`}>{formatMoney(c.amounts[l])}</td>)}
+                {schoolLevels(db).map((l) => <td key={l} className={`${TD} hidden text-right whitespace-nowrap xl:table-cell`}>{formatMoney(c.amounts[l])}</td>)}
                 <td className={`${TD} text-right whitespace-nowrap xl:hidden`}>{formatMoney(Math.min(...Object.values(c.amounts)))}</td>
               </tr>
             ))}
