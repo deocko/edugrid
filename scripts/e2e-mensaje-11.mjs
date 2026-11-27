@@ -20,7 +20,8 @@ const sufijo = Date.now().toString(36)
 const CORREO_LARGO = `maria.prueba.${sufijo}@ejemplo-test-con-dominio-largo.local`
 const ADMIN = { correo: `dir.prim.${sufijo}@demo.edugrid.mx`, contrasena: 'Primaria-2026-ok' }
 
-const browser = await chromium.launch()
+// QA_PROXY=<url> si la red sale por un proxy (por ejemplo, para probar el preview de Vercel).
+const browser = await chromium.launch(process.env.QA_PROXY ? { proxy: { server: process.env.QA_PROXY } } : {})
 const errors = []
 const nuevaPagina = async (viewport = { width: 1280, height: 900 }, colorScheme = 'light') => {
   const ctx = await browser.newContext({ viewport, acceptDownloads: true, colorScheme, deviceScaleFactor: 2 })
