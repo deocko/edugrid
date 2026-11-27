@@ -7,6 +7,8 @@ import { groupLabel, studentName } from '../../lib/scope'
 import { useApp } from '../../state/context'
 import { ImportarExcel, ListaInvitaciones } from '../../components/ImportarExcel'
 import { useInvitar } from '../../lib/invitar'
+import { BotonExportar } from '../../components/BotonExportar'
+import { InvitacionesModulo } from '../../components/Invitaciones'
 import type { ResultadoInvitacion } from '../../data/cuentaTipos'
 
 const RELATIONS: Guardian['relation'][] = ['Madre', 'Padre', 'Tutora', 'Tutor']
@@ -30,16 +32,31 @@ export function Families() {
 
   return (
     <>
-      <PageHeader title="Familias" subtitle="Mamás, papás y tutores. Una misma persona puede tener varios hijos en la escuela." actions={<><Button icon="mas" onClick={() => setEditing('nuevo')}>Dar de alta familia</Button><ImportarExcel tipo="familias" /></>} />
+      <PageHeader title="Familias" subtitle="Mamás, papás y tutores. Una misma persona puede tener varios hijos en la escuela." actions={<><Button icon="mas" onClick={() => setEditing('nuevo')}>Dar de alta familia</Button><ImportarExcel tipo="familias" />
+        <BotonExportar
+          datos={() => ({
+            archivo: 'familias',
+            hoja: 'Familias',
+            columnas: ['Nombre', 'Parentesco', 'Teléfono', 'Correo', 'Hijas e hijos', 'Consentimiento'],
+            filas: list.map(({ g, kids }) => [
+              `${g.firstName} ${g.lastName}`,
+              g.relation,
+              g.phone,
+              g.email,
+              kids.length ? kids.map((k) => `${k.firstName} · ${groupLabel(db, k.groupId)}`).join(', ') : 'Sin hijos vinculados',
+              g.consentAt ? 'Firmado' : 'Falta consentimiento',
+            ]),
+          })}
+        /></>} />
       {done && <div className="mb-4"><Notice tone="exito" icon="check">{done}</Notice></div>}
       {invitadas.length > 0 && <Card className="mb-4"><ListaInvitaciones resultados={invitadas} /></Card>}
       <Card>
         <div className="mb-3 max-w-sm">
           <Field label="Buscar por nombre, teléfono o hijo">{(id) => <Input id={id} type="search" value={q} onChange={(e) => setQ(e.target.value)} />}</Field>
         </div>
-        <p className="mb-2 text-sm text-muted">{plural(list.length, 'familia', 'familias')}</p>
+        <p className="mb-2 text-sm text-muted">{plural(list.length, 'familia', 'familias')}{list.length > 80 ? ' · se muestran las primeras 80; Exportar incluye todas' : ''}</p>
         {list.length === 0 ? (
-          <EmptyState icon="hijo" title="No encontramos familias con esa búsqueda" />
+          <EmptyState icon="hijo" title={q.trim() ? 'No encontramos familias con esa búsqueda' : 'Aún no hay familias registradas'}>{q.trim() ? 'Prueba con otro nombre, teléfono o hijo.' : 'Da de alta a la madre, padre o tutor, o impórtalos desde Excel.'}</EmptyState>
         ) : (
           <ul className="divide-y divide-line">
             {list.slice(0, 80).map(({ g, kids }) => (
@@ -59,6 +76,7 @@ export function Families() {
           </ul>
         )}
       </Card>
+      <InvitacionesModulo tipo="familia" />
       <Modal open={editing !== null} onClose={() => setEditing(null)} title={editing === 'nuevo' ? 'Dar de alta familia' : 'Editar familia e hijos'}>
         {editing !== null && <FamilyForm guardian={editing === 'nuevo' ? null : editing} onDone={(text, r) => { setEditing(null); setDone(text); setInvitadas(r ?? []) }} />}
       </Modal>

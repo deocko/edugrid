@@ -1,5 +1,5 @@
 import { apiUrl } from './apiAdapter'
-import type { DatosRegistro, InvitacionPublica, PersonaInvitada, ResultadoInvitacion, SesionPublica } from './cuentaTipos'
+import type { DatosRegistro, InvitacionAdmin, InvitacionPublica, PersonaInvitada, ResultadoInvitacion, SesionPublica } from './cuentaTipos'
 
 /**
  * Cliente de /api/cuenta: inicio de sesión real, alta de escuela e invitaciones.
@@ -40,11 +40,13 @@ export const cuentaApi = {
   cerrar: (token: string) => pedir<{ ok: true }>('cerrar', { cuerpo: {}, token }),
   sesion: (token: string) => pedir<SesionPublica>('sesion', { token }),
   perfil: (token: string, perfilId: string) => pedir<SesionPublica>('perfil', { cuerpo: { perfilId }, token }),
-  recuperar: (correo: string) => pedir<{ mensaje: string; ligas?: string[] }>('recuperar', { cuerpo: { correo } }),
+  recuperar: (correo: string) => pedir<{ mensaje: string; demo: boolean }>('recuperar', { cuerpo: { correo } }),
   restablecer: (token: string, contrasena: string) => pedir<SesionPublica>('restablecer', { cuerpo: { token, contrasena } }),
   invitacion: (token: string) => pedir<InvitacionPublica>('invitacion', { query: `?token=${encodeURIComponent(token)}` }),
   aceptar: (token: string, contrasena: string) => pedir<SesionPublica>('aceptar', { cuerpo: { token, contrasena } }),
   invitar: (token: string, personas: PersonaInvitada[]) => pedir<{ demo: boolean; resultados: ResultadoInvitacion[] }>('invitar', { cuerpo: { personas }, token }),
+  invitaciones: (token: string) => pedir<{ demo: boolean; invitaciones: InvitacionAdmin[] }>('invitaciones', { token }),
+  reenviar: (token: string, id: string) => pedir<{ demo: boolean; resultado: ResultadoInvitacion }>('reenviar', { cuerpo: { id }, token }),
   prueba: (token: string, accion: 'vencer' | 'reiniciar') => pedir<SesionPublica>('prueba', { cuerpo: { accion }, token }),
 }
 

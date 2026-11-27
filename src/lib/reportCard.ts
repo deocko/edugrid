@@ -4,7 +4,7 @@ import { formatDate, todayISO } from './format'
 import { CYAN, NAVY, TEXT, drawBrandHeader, drawDemoWatermark } from './pdfBrand'
 import { subjectHex } from './subjects'
 import { brandTokens, brandingOf } from './branding'
-import { averageFor, formatAverage, formatScore, groupLabel, isPreschool, levelOfGroup, studentName, subjectName, teacherName } from './scope'
+import { averageFor, formatAverage, formatScore, groupLabel, homeroomName, isPreschool, levelOfGroup, studentName, subjectName } from './scope'
 import { attendanceSummary } from './attendance'
 
 export async function buildReportCardPdf(db: Database, studentId: string): Promise<Blob> {
@@ -44,7 +44,7 @@ export async function buildReportCardPdf(db: Database, studentId: string): Promi
   doc.setFontSize(9)
   doc.setTextColor(...TEXT)
   doc.text(`${groupLabel(db, student.groupId)} · Matrícula ${student.enrollmentId} · CURP ${student.curp}`, 14, 62)
-  doc.text(`Titular: ${group ? teacherName(db, group.homeroomTeacherId) : '—'}`, 14, 67)
+  doc.text(`Titular: ${homeroomName(db, group)}`, 14, 67)
 
   // Tabla
   let y = 76

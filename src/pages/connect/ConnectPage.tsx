@@ -2,7 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { Badge, Button, Card, EmptyState, Field, Input, Modal, Notice, PageHeader, Select, Tabs, Switch, Textarea } from '../../components/ui'
 import type { Announcement, AppNotification, Audience, Database, Level } from '../../data/types'
 import { formatDateTime, nowISO, uid, plural } from '../../lib/format'
-import { LEVEL_LABEL, LEVELS, audienceLabel, groupLabel, familiesOf, levelOfGroup, teacherGroupIds, type Family, userKey, visibleAnnouncements } from '../../lib/scope'
+import { LEVEL_LABEL, audienceLabel, groupLabel, familiesOf, levelOfGroup, schoolLevels, teacherGroupIds, type Family, userKey, visibleAnnouncements } from '../../lib/scope'
 import { useApp } from '../../state/context'
 
 type View = 'aviso' | 'mensaje'
@@ -153,7 +153,7 @@ function Composer({ onDone }: { onDone: (k: View) => void }) {
   const myGroups = isAdmin ? db.groups : db.groups.filter((g) => teacherGroupIds(db, session.personId).has(g.id))
   const [kind, setKind] = useState<View>(isAdmin ? 'aviso' : 'mensaje')
   const [scope, setScope] = useState<'escuela' | 'nivel' | 'grupo'>(isAdmin ? 'escuela' : 'grupo')
-  const [level, setLevel] = useState<Level>('primaria')
+  const [level, setLevel] = useState<Level>(schoolLevels(db)[0] ?? 'primaria')
   const [groupId, setGroupId] = useState(myGroups[0]?.id ?? '')
   const [title, setTitle] = useState('')
   const [body, setBody] = useState('')
@@ -216,7 +216,7 @@ function Composer({ onDone }: { onDone: (k: View) => void }) {
         <Field label="Nivel">
           {(id) => (
             <Select id={id} value={level} onChange={(e) => setLevel(e.target.value as Level)}>
-              {LEVELS.map((l) => <option key={l} value={l}>{LEVEL_LABEL[l]}</option>)}
+              {schoolLevels(db).map((l) => <option key={l} value={l}>{LEVEL_LABEL[l]}</option>)}
             </Select>
           )}
         </Field>

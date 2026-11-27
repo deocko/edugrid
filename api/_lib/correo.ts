@@ -2,12 +2,15 @@
  * Envío de correos de EDUGRID con adaptadores, igual que el CFDI (src/cfdi/pac.ts):
  * las pantallas y la API solo conocen `AdaptadorCorreo`.
  *
- * - CorreoDemo (por omisión): NO envía nada. Registra el correo en el log del
- *   servidor y la API devuelve la liga para mostrarla en pantalla, así se puede
- *   probar todo el flujo sin llaves.
+ * - CorreoDemo (por omisión): NO envía nada. Registra en el log del servidor a
+ *   quién iba y el asunto (nunca la liga: es una credencial). Las invitaciones
+ *   muestran su liga en pantalla fuera de producción; la recuperación de
+ *   contraseña nunca la muestra.
  * - CorreoResend: se activa solo si existe la variable de entorno RESEND_API_KEY.
  *   El remitente sale de EDUGRID_CORREO_REMITENTE (un correo del dominio propio,
- *   verificado en Resend). Las llaves nunca van en el código.
+ *   verificado en Resend). Si falta, se usa el remitente de prueba de Resend
+ *   (onboarding@resend.dev), que solo entrega al correo dueño de la cuenta de
+ *   Resend. Las llaves nunca van en el código.
  */
 
 export interface Mensaje {
@@ -35,10 +38,13 @@ export class CorreoDemo implements AdaptadorCorreo {
   readonly nombre = 'Correo demo (no envía)'
   readonly demo = true
   async enviar(mensajes: Mensaje[]): Promise<ResultadoEnvio[]> {
-    for (const m of mensajes) console.log(`[edugrid-correo demo] Para: ${m.para} · ${m.asunto}\n${m.texto}`)
+    for (const m of mensajes) console.warn(`[edugrid-correo] Modo demo (falta RESEND_API_KEY): no se envió el correo a ${m.para} · ${m.asunto}`)
     return mensajes.map((m) => ({ para: m.para, enviado: false, motivo: 'Modo demo: el correo no se envía, la liga se muestra en pantalla.' }))
   }
 }
+
+/** Remitente de prueba de Resend (no requiere dominio verificado). */
+export const REMITENTE_PRUEBA = 'EDUGRID <onboarding@resend.dev>'
 
 export class CorreoResend implements AdaptadorCorreo {
   readonly nombre = 'Resend'
@@ -48,11 +54,11 @@ export class CorreoResend implements AdaptadorCorreo {
 
   constructor(llave: string, remitente: string) {
     this.llave = llave
-    this.remitente = remitente
+    this.remitente = remitente || REMITENTE_PRUEBA
+    if (!remitente) console.warn('[edugrid-correo] Falta EDUGRID_CORREO_REMITENTE: se usa el remitente de prueba de Resend, que solo entrega al correo dueño de la cuenta.')
   }
 
   async enviar(mensajes: Mensaje[]): Promise<ResultadoEnvio[]> {
-    if (!this.remitente) return mensajes.map((m) => ({ para: m.para, enviado: false, motivo: 'Falta configurar EDUGRID_CORREO_REMITENTE.' }))
     const salida: ResultadoEnvio[] = []
     // Resend acepta hasta 100 correos por petición en /emails/batch.
     for (let i = 0; i < mensajes.length; i += 100) {

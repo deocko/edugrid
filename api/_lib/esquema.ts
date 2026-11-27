@@ -156,6 +156,16 @@ end $$`,
   using (school_id in (select u.school_id from "usuarios" u where u.correo = current_setting('edugrid.correo', true)))`,
     ],
   },
+  {
+    version: 4,
+    nombre: 'Una invitación por correo: perfiles adicionales dentro de la misma invitación',
+    sql: [
+      // Si un correo ya tiene invitación pendiente (por ejemplo, la mamá como familia),
+      // los demás perfiles para ese correo (sus hijos como alumnos) se agregan aquí: [{tipo, ref}].
+      `alter table "invitaciones" add column if not exists extra jsonb not null default '[]'::jsonb`,
+      `create index if not exists invitaciones_correo on "invitaciones" (school_id, correo)`,
+    ],
+  },
 ]
 
 const CREAR_CONTROL = `create table if not exists "edugrid_migraciones" (

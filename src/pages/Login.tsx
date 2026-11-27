@@ -6,7 +6,7 @@ import { ROL_DE_PERFIL, type SesionPublica } from '../data/cuentaTipos'
 import { HOME_BY_ROLE } from '../lib/permissions'
 import { EMAIL_RE } from '../lib/profile'
 import { useStore } from '../state/context'
-import { AuthLayout, LigaDemo, PasswordInput } from './cuenta/AuthLayout'
+import { AuthLayout, PasswordInput } from './cuenta/AuthLayout'
 import { ElegirPerfil } from './cuenta/ElegirPerfil'
 
 type Paso = { tipo: 'entrar' } | { tipo: 'escuela'; opciones: { id: string; nombre: string }[] } | { tipo: 'perfil'; sesion: SesionPublica } | { tipo: 'recuperar' }
@@ -21,7 +21,7 @@ export function Login() {
   const [paso, setPaso] = useState<Paso>({ tipo: 'entrar' })
   const [error, setError] = useState('')
   const [ocupado, setOcupado] = useState(false)
-  const [recuperado, setRecuperado] = useState<{ mensaje: string; ligas: string[] } | null>(null)
+  const [recuperado, setRecuperado] = useState<{ mensaje: string; demo: boolean } | null>(null)
   const servidor = hayServidor()
 
   const entrar = (s: SesionPublica) => {
@@ -53,7 +53,7 @@ export function Login() {
     setOcupado(true)
     try {
       const r = await cuentaApi.recuperar(correo)
-      setRecuperado({ mensaje: r.mensaje, ligas: r.ligas ?? [] })
+      setRecuperado({ mensaje: r.mensaje, demo: r.demo })
     } catch (err) {
       setError(err instanceof Error ? err.message : 'No se pudo enviar la liga.')
     } finally {
@@ -99,7 +99,11 @@ export function Login() {
           {recuperado && (
             <div role="status" className="grid gap-3">
               <Notice tone="exito" icon="check">{recuperado.mensaje}</Notice>
-              {recuperado.ligas.map((l) => <LigaDemo key={l} liga={l} titulo="Liga para crear tu contraseña nueva" />)}
+              {recuperado.demo && (
+                <Notice tone="aviso">
+                  Modo demo: este servidor todavía no tiene configurado el envío de correos (RESEND_API_KEY), así que el correo no sale. Por seguridad, la liga nunca se muestra en pantalla.
+                </Notice>
+              )}
             </div>
           )}
           <Button type="submit" disabled={ocupado} icon="enviar">{ocupado ? 'Enviando…' : 'Enviar liga'}</Button>

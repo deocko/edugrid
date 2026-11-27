@@ -93,6 +93,8 @@ export interface Teacher {
   phone: string
   specialty: string
   active: boolean
+  /** Materias que imparte (las elige la dirección en su ficha). Sus grupos quedan en «assignments». */
+  subjectIds?: string[]
   /** Foto de perfil que la persona elige para su cuenta (JPEG reducido, data URL). */
   profilePhoto?: string | null
 }

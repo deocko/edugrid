@@ -12,7 +12,8 @@ import { hashContrasena, verificarContrasena } from '../api/_lib/cuentas'
 import { NOMBRES_TABLAS } from '../api/_lib/tablas'
 import { TODAS_LAS_TABLAS } from '../src/data/escuelaNueva'
 import type { Database } from '../src/data/types'
-import type { InvitacionPublica, ResultadoInvitacion, SesionPublica } from '../src/data/cuentaTipos'
+import type { InvitacionAdmin, InvitacionPublica, ResultadoInvitacion, SesionPublica } from '../src/data/cuentaTipos'
+import { correoDe, CorreoResend, type AdaptadorCorreo, type Mensaje } from '../api/_lib/correo'
 
 const semilla = JSON.parse(readFileSync('src/data/seed.json', 'utf8')) as Database
 const pg = new PGlite()
@@ -24,7 +25,17 @@ const BASE = 'https://edugrid.test/api'
 let pasos = 0
 // El correo demo escribe cada mensaje en el log; aquí se omite para que la salida se lea fácil.
 const log = console.log
+const avisos: string[] = []
 console.log = (...a: unknown[]) => (String(a[0]).startsWith('[edugrid-correo') ? undefined : log(...a))
+console.warn = (...a: unknown[]) => void avisos.push(String(a[0]))
+/** Buzón en memoria: hace de Resend para leer los correos que «llegan». */
+const buzon: Mensaje[] = []
+const buzonPrueba: AdaptadorCorreo = { nombre: 'Buzón de prueba', demo: false, enviar: async (m) => (buzon.push(...m), m.map((x) => ({ para: x.para, enviado: true }))) }
+const ultimoToken = (para: string, ruta: 'invitacion' | 'restablecer') => {
+  const m = [...buzon].reverse().find((x) => x.para === para && x.texto.includes(`/#/${ruta}/`))
+  assert.ok(m, `No llegó correo a ${para} con /${ruta}/`)
+  return decodeURIComponent(m.texto.split(`/#/${ruta}/`)[1]!.split(/\s/)[0]!)
+}
 const ok = (m: string) => console.log(`✓ ${++pasos}. ${m}`)
 
 const cuenta = async (accion: string, cuerpo?: unknown, token?: string, query = '') => {
@@ -152,14 +163,26 @@ r = await cuenta('perfil', { perfilId: fam.perfiles[0]!.id }, fam.token)
 assert.equal((r.body as unknown as SesionPublica).perfil?.tipo, 'docente')
 ok('si el correo ya tiene cuenta, la invitación solo agrega el perfil (una cuenta por correo)')
 
-// 6. Recuperar contraseña
+// 6. Recuperar contraseña: la liga solo llega por correo, nunca a la pantalla
 r = await cuenta('recuperar', { correo: 'nadie@faro.demo' })
 assert.equal(r.status, 200)
-assert.deepEqual(r.body.ligas, [])
+const respuestaNadie = r.body
 r = await cuenta('recuperar', { correo: 'dir@faro.demo' })
-const ligaRec = (r.body.ligas as string[])[0]!
-assert.match(ligaRec, /#\/restablecer\//)
-const tokRec = decodeURIComponent(ligaRec.split('/restablecer/')[1]!)
+assert.deepEqual(r.body, respuestaNadie) // misma respuesta exista o no el correo
+assert.equal(r.body.mensaje, 'Si el correo existe, recibirás una liga para restablecer tu contraseña.')
+assert.equal(r.body.ligas, undefined)
+assert.equal(r.body.demo, true)
+assert.ok(!JSON.stringify(r.body).includes('restablecer/'))
+assert.ok(avisos.some((x) => x.includes('Modo demo') && x.includes('dir@faro.demo')), 'el modo demo queda registrado en el log')
+assert.ok(!avisos.some((x) => x.includes('/#/')), 'el log no guarda ligas')
+entorno.correo = buzonPrueba
+r = await cuenta('recuperar', { correo: 'dir@faro.demo' })
+const tokViejoRec = ultimoToken('dir@faro.demo', 'restablecer')
+r = await cuenta('recuperar', { correo: 'dir@faro.demo' })
+assert.equal(r.body.demo, false)
+const tokRec = ultimoToken('dir@faro.demo', 'restablecer')
+assert.notEqual(tokRec, tokViejoRec)
+assert.equal((await cuenta('restablecer', { token: tokViejoRec, contrasena: 'Nueva-Secreta-2026' })).status, 410) // solo sirve la más reciente
 const viejo = (await cuenta('iniciar', { correo: 'dir@faro.demo', contrasena: 'Secreta-2026' })).body.sesion as SesionPublica
 r = await cuenta('restablecer', { token: tokRec, contrasena: 'Nueva-Secreta-2026' })
 assert.equal(r.status, 200)
@@ -167,13 +190,32 @@ assert.equal((r.body as unknown as SesionPublica).perfil?.tipo, 'administrador')
 assert.equal((await cuenta('sesion', undefined, viejo.token)).status, 401)
 assert.equal((await cuenta('iniciar', { correo: 'dir@faro.demo', contrasena: 'Secreta-2026' })).status, 401)
 assert.equal((await cuenta('iniciar', { correo: 'dir@faro.demo', contrasena: 'Nueva-Secreta-2026' })).status, 200)
-assert.equal((await cuenta('restablecer', { token: tokRec, contrasena: 'Otra-Mas-2026' })).status, 410)
-// En producción y sin Resend no se muestran las ligas en pantalla.
-variables.VERCEL_ENV = 'production'
-r = await cuenta('recuperar', { correo: 'dir@faro.demo' })
-assert.equal(r.body.ligas, undefined)
-delete variables.VERCEL_ENV
-ok('recuperar contraseña genera su liga (solo se muestra en pantalla fuera de producción)')
+assert.equal((await cuenta('restablecer', { token: tokRec, contrasena: 'Otra-Mas-2026' })).status, 410) // un solo uso
+reloj += 61 * 60_000
+await cuenta('recuperar', { correo: 'dir@faro.demo' })
+const tokVence = ultimoToken('dir@faro.demo', 'restablecer')
+reloj += 61 * 60_000
+assert.equal((await cuenta('restablecer', { token: tokVence, contrasena: 'Otra-Mas-2026' })).status, 410) // vence en 1 hora
+ok('recuperar contraseña: la liga llega solo por correo, sirve una vez y vence en 1 hora; la pantalla no revela si el correo existe')
+
+// 6b. Resend: la llave sale de RESEND_API_KEY; sin llave, modo demo
+assert.equal(correoDe({}).demo, true)
+assert.equal(correoDe({ RESEND_API_KEY: '  ' }).demo, true)
+const resend = correoDe({ RESEND_API_KEY: 're_prueba_123', EDUGRID_CORREO_REMITENTE: 'EDUGRID <hola@edugrid.mx>' })
+assert.ok(resend instanceof CorreoResend && !resend.demo)
+const fetchReal = globalThis.fetch
+let peticion: { url: string; init: RequestInit } | null = null
+globalThis.fetch = (async (url: string, init: RequestInit) => ((peticion = { url, init }), new Response('{"data":[]}', { status: 200 }))) as typeof fetch
+const [envio] = await resend.enviar([{ para: 'x@faro.demo', asunto: 'Hola', texto: 't', html: '<p>t</p>' }])
+assert.equal(envio?.enviado, true)
+assert.equal(peticion!.url, 'https://api.resend.com/emails/batch')
+assert.equal((peticion!.init.headers as Record<string, string>).authorization, 'Bearer re_prueba_123')
+assert.deepEqual(JSON.parse(String(peticion!.init.body))[0].to, ['x@faro.demo'])
+assert.equal(JSON.parse(String(peticion!.init.body))[0].from, 'EDUGRID <hola@edugrid.mx>')
+globalThis.fetch = (async () => new Response('{"message":"invalid"}', { status: 422 })) as unknown as typeof fetch
+assert.equal((await resend.enviar([{ para: 'x@faro.demo', asunto: 'Hola', texto: 't', html: '' }]))[0]?.enviado, false) // si Resend falla, no truena
+globalThis.fetch = fetchReal
+ok('con RESEND_API_KEY se envía por Resend (llave solo del entorno); sin llave queda en modo demo; un error de Resend no rompe nada')
 
 // 7. El mismo correo en dos escuelas: se elige la escuela
 r = await cuenta('registro', registro('Colegio Cima DEMO', 'dir@faro.demo'))
@@ -183,8 +225,11 @@ const cima = r.body as unknown as SesionPublica
 r = await cuenta('iniciar', { correo: 'dir@faro.demo', contrasena: 'Secreta-2026' })
 assert.equal((r.body.sesion as SesionPublica).escuela.id, cima.escuela.id)
 // Con la misma contraseña en ambas, se pide elegir.
-const tCima = (await cuenta('recuperar', { correo: 'dir@faro.demo' })).body.ligas as string[]
-for (const l of tCima) await cuenta('restablecer', { token: decodeURIComponent(l.split('/restablecer/')[1]!), contrasena: 'Igual-En-Ambas-1' })
+const antes = buzon.length
+await cuenta('recuperar', { correo: 'dir@faro.demo' })
+const tCima = buzon.slice(antes).map((m) => decodeURIComponent(m.texto.split('/#/restablecer/')[1]!.split(/\s/)[0]!))
+assert.equal(tCima.length, 2) // un correo por escuela
+for (const t of tCima) await cuenta('restablecer', { token: t, contrasena: 'Igual-En-Ambas-1' })
 r = await cuenta('iniciar', { correo: 'dir@faro.demo', contrasena: 'Igual-En-Ambas-1' })
 assert.equal((r.body.elegir as unknown[]).length, 2)
 r = await cuenta('iniciar', { correo: 'dir@faro.demo', contrasena: 'Igual-En-Ambas-1', escuela: a.escuela.id })
@@ -206,14 +251,60 @@ r = await cuenta('invitar', { personas: [
   { tipo: 'alumno', referencia: 'al-h2', correo: 'marta@faro.demo', nombre: 'Iris Ríos' },
 ] }, adm)
 const res = r.body.resultados as ResultadoInvitacion[]
-assert.equal(res.length, 3)
-r = await cuenta('aceptar', { token: decodeURIComponent(res[0]!.liga!.split('/invitacion/')[1]!), contrasena: 'Familia-2026' })
+assert.deepEqual(res.map((x) => x.estado), ['enviada', 'reutilizada', 'reutilizada'])
+const invMarta = async () => (await ejecutor.consulta(`select count(*)::int as n from "invitaciones" where correo = 'marta@faro.demo'`))[0]?.n
+assert.equal(await invMarta(), 1)
+assert.equal(buzon.filter((m) => m.para === 'marta@faro.demo').length, 1)
+// Importar otra vez el mismo correo (como alumno y como familia) no crea otra invitación ni manda otro correo.
+r = await cuenta('invitar', { personas: [
+  { tipo: 'alumno', referencia: 'al-h1', correo: 'marta@faro.demo', nombre: 'Hugo Ríos' },
+  { tipo: 'familia', referencia: 'tu-m', correo: 'marta@faro.demo', nombre: 'Marta Ríos' },
+] }, adm)
+assert.deepEqual((r.body.resultados as ResultadoInvitacion[]).map((x) => x.estado), ['reutilizada', 'reutilizada'])
+assert.equal(await invMarta(), 1)
+assert.equal(buzon.filter((m) => m.para === 'marta@faro.demo').length, 1)
+let lista = (await cuenta('invitaciones', undefined, adm)).body.invitaciones as InvitacionAdmin[]
+let deMarta = lista.filter((i) => i.correo === 'marta@faro.demo')
+assert.equal(deMarta.length, 1)
+assert.equal(deMarta[0]!.estado, 'pendiente')
+assert.deepEqual(deMarta[0]!.perfiles.map((p) => `${p.tipo}:${p.referencia}`), ['familia:tu-m', 'alumno:al-h1', 'alumno:al-h2'])
+r = await cuenta('aceptar', { token: ultimoToken('marta@faro.demo', 'invitacion'), contrasena: 'Familia-2026' })
 const marta = r.body as unknown as SesionPublica
 assert.equal(marta.perfil?.tipo, 'familia')
 assert.deepEqual(marta.perfiles.map((p) => `${p.tipo}:${p.nombre}`), ['familia:Marta Ríos', 'alumno:Hugo Ríos', 'alumno:Iris Ríos'])
-assert.equal((await cuenta('aceptar', { token: decodeURIComponent(res[1]!.liga!.split('/invitacion/')[1]!), contrasena: 'Familia-2026' })).status, 410)
 assert.equal((await ejecutor.consulta(`select count(*)::int as n from "usuarios" where correo = 'marta@faro.demo'`))[0]?.n, 1)
-ok('una mamá con dos hijos acepta una sola invitación y entra con UNA cuenta (familia + cada hijo)')
+lista = (await cuenta('invitaciones', undefined, adm)).body.invitaciones as InvitacionAdmin[]
+deMarta = lista.filter((i) => i.correo === 'marta@faro.demo')
+assert.equal(deMarta[0]!.estado, 'aceptada')
+assert.ok(deMarta[0]!.aceptadaAt)
+assert.equal((await cuenta('reenviar', { id: deMarta[0]!.id }, adm)).status, 409)
+ok('un correo = una invitación: mamá + 2 hijos, aunque se importe dos veces; al aceptarla la lista dice «Aceptada»')
+
+// 8c. Expirada y reenviar
+await datos(adm, { op: 'insert', tabla: 'teachers', filas: [{ id: 't-exp', firstName: 'Eva', lastName: 'Paz', email: 'eva@faro.demo', phone: '', specialty: 'Inglés', active: true }] })
+await cuenta('invitar', { personas: [{ tipo: 'docente', referencia: 't-exp', correo: 'eva@faro.demo', nombre: 'Eva Paz' }] }, adm)
+const tokEva = ultimoToken('eva@faro.demo', 'invitacion')
+reloj += 8 * 86_400_000
+const admTarde = ((await cuenta('iniciar', { correo: 'dir@faro.demo', contrasena: 'Igual-En-Ambas-1', escuela: a.escuela.id })).body.sesion as SesionPublica).token
+lista = (await cuenta('invitaciones', undefined, admTarde)).body.invitaciones as InvitacionAdmin[]
+const eva = lista.find((i) => i.correo === 'eva@faro.demo')!
+assert.equal(eva.estado, 'expirada')
+assert.equal((await cuenta('aceptar', { token: tokEva, contrasena: 'Docente-2026' })).status, 410)
+r = await cuenta('reenviar', { id: eva.id }, admTarde)
+assert.equal((r.body.resultado as ResultadoInvitacion).estado, 'enviada')
+lista = (await cuenta('invitaciones', undefined, admTarde)).body.invitaciones as InvitacionAdmin[]
+assert.equal(lista.filter((i) => i.correo === 'eva@faro.demo').length, 1)
+assert.equal(lista.find((i) => i.correo === 'eva@faro.demo')!.estado, 'pendiente')
+// Otra escuela no ve ni reenvía invitaciones ajenas.
+const listaB = (await cuenta('invitaciones', undefined, b.token)).body.invitaciones as InvitacionAdmin[]
+assert.ok(!listaB.some((i) => i.correo === 'eva@faro.demo' || i.correo === 'marta@faro.demo'))
+assert.equal((await cuenta('reenviar', { id: eva.id }, b.token)).status, 404)
+assert.equal((await cuenta('invitaciones', undefined, marta.token)).status, 403)
+r = await cuenta('aceptar', { token: ultimoToken('eva@faro.demo', 'invitacion'), contrasena: 'Docente-2026' })
+assert.equal(r.status, 200)
+delete entorno.correo
+reloj -= 8 * 86_400_000
+ok('la invitación vencida aparece «Expirada», se reenvía con liga nueva; otra escuela no ve ni reenvía invitaciones ajenas')
 
 // 8. Prueba de 30 días
 // (la sesión dura 14 días: se vuelve a entrar después de adelantar el reloj)

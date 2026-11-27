@@ -77,8 +77,8 @@ Solo si las necesitas, en **Settings → Environment Variables**:
 
 | Variable | Valor | Para qué |
 | --- | --- | --- |
-| `RESEND_API_KEY` | la llave de Resend (márcala **Sensitive**) | Mandar de verdad los correos de invitación y de recuperar contraseña. Sin ella, EDUGRID **no envía nada**: muestra la liga en pantalla (solo fuera de Production) y la anota en el log. |
-| `EDUGRID_CORREO_REMITENTE` | p. ej. `EDUGRID <no-responder@tudominio.mx>` | Remitente de los correos. Debe ser de un dominio verificado en Resend. |
+| `RESEND_API_KEY` | la llave de Resend (márcala **Sensitive**) | Mandar de verdad los correos de invitación y de recuperar contraseña. Sin ella, EDUGRID **no envía nada** y queda en modo demo: lo registra en el log (sin la liga), las invitaciones muestran su liga en pantalla (solo fuera de Production) y la recuperación de contraseña **nunca** la muestra. |
+| `EDUGRID_CORREO_REMITENTE` | p. ej. `EDUGRID <no-responder@tudominio.mx>` | Remitente de los correos. Debe ser de un dominio verificado en Resend. Si falta, se usa `onboarding@resend.dev`, que solo entrega al correo dueño de la cuenta de Resend (sirve para probar). |
 | `EDUGRID_URL_APP` | p. ej. `https://app.tudominio.mx` | Dirección que llevan las ligas de los correos. Si no se pone, se usa la del sitio que hizo la petición. |
 | `EDUGRID_CONTACTO` | un correo o una liga | A dónde lleva el botón «Contactar para contratar» cuando termina la prueba. |
 | `EDUGRID_SIMULAR_PRUEBA` | `si` | Muestra «Solo pruebas: terminar la prueba» en el tablero. En las versiones Preview ya aparece solo; nunca lo actives en Production. |

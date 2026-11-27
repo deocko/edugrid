@@ -4,12 +4,14 @@ import { Avatar, Badge, Button, Card, EmptyState, Field, Input, Modal, Notice, P
 import type { Guardian, Level, Student } from '../../data/types'
 import { formatMoney, nowISO, uid, plural } from '../../lib/format'
 import { studentBalance } from '../../lib/finance'
-import { LEVEL_LABEL, LEVELS, groupLabel, levelOfGroup, studentName } from '../../lib/scope'
+import { LEVEL_LABEL, groupLabel, levelOfGroup, schoolLevels, studentName } from '../../lib/scope'
 import { newQrCode } from '../../lib/qr'
 import { useApp } from '../../state/context'
 import { GuardianPicker } from '../../components/GuardianPicker'
 import { ImportarExcel, ListaInvitaciones } from '../../components/ImportarExcel'
 import { useInvitar } from '../../lib/invitar'
+import { BotonExportar } from '../../components/BotonExportar'
+import { InvitacionesModulo } from '../../components/Invitaciones'
 import type { ResultadoInvitacion } from '../../data/cuentaTipos'
 import { isPreschool } from '../../lib/scope'
 
@@ -47,6 +49,20 @@ export function Students() {
               Inscribir alumno
             </Button>
             <ImportarExcel tipo="alumnos" />
+            <BotonExportar
+              datos={() => ({
+                archivo: showWithdrawn ? 'alumnos-dados-de-baja' : 'alumnos',
+                hoja: 'Alumnos',
+                columnas: ['Alumno', 'Matrícula', 'Grupo', 'Consentimiento', 'Saldo'],
+                filas: list.map((s) => [
+                  studentName(s),
+                  s.enrollmentId,
+                  groupLabel(db, s.groupId),
+                  s.guardianIds.every((gid) => db.guardians.find((g) => g.id === gid)?.consentAt) ? 'Firmado' : 'Pendiente',
+                  studentBalance(db, s.id).balance,
+                ]),
+              })}
+            />
           </>
         }
       />
@@ -72,7 +88,7 @@ export function Students() {
             {(id) => (
               <Select id={id} value={level} onChange={(e) => { setLevel(e.target.value as Level | ''); setGroupId('') }}>
                 <option value="">Todos los niveles</option>
-                {LEVELS.map((l) => (
+                {schoolLevels(db).map((l) => (
                   <option key={l} value={l}>{LEVEL_LABEL[l]}</option>
                 ))}
               </Select>
@@ -91,7 +107,7 @@ export function Students() {
         </div>
         <Switch className="mb-3" checked={showWithdrawn} onChange={setShowWithdrawn} label={`Mostrar alumnos dados de baja (${db.students.filter((s) => s.status === 'baja').length})`} />
         {list.length === 0 ? (
-          <EmptyState icon="buscar" title={showWithdrawn ? 'No hay alumnos dados de baja' : 'No encontramos alumnos'}>{showWithdrawn ? 'Cuando des de baja a un alumno, aparecerá aquí.' : 'Prueba con otro nombre o quita los filtros.'}</EmptyState>
+          <EmptyState icon="buscar" title={showWithdrawn ? 'No hay alumnos dados de baja' : db.students.some((s) => s.status === 'activo') ? 'No encontramos alumnos' : 'Aún no hay alumnos inscritos'}>{showWithdrawn ? 'Cuando des de baja a un alumno, aparecerá aquí.' : db.students.some((s) => s.status === 'activo') ? 'Prueba con otro nombre o quita los filtros.' : 'Inscribe a tu primer alumno o impórtalos desde Excel.'}</EmptyState>
         ) : (
           <Table caption="Lista de alumnos">
             <thead>
@@ -129,6 +145,7 @@ export function Students() {
           </Table>
         )}
       </Card>
+      <InvitacionesModulo tipo="alumno" />
       <Modal open={open} onClose={() => setParams({})} title="Inscribir alumno">
         <EnrollForm
           onDone={(s, r) => {
@@ -200,7 +217,7 @@ function EnrollForm({ onDone }: { onDone: (s: Student, invitadas: ResultadoInvit
             {(id) => (
               <Select id={id} value={form.groupId} onChange={(e) => set('groupId', e.target.value)}>
                 <option value="">Elige un grupo</option>
-                {LEVELS.filter((l) => db.groups.some((g) => levelOfGroup(db, g.id) === l)).map((l) => (
+                {schoolLevels(db).filter((l) => db.groups.some((g) => levelOfGroup(db, g.id) === l)).map((l) => (
                   <optgroup key={l} label={LEVEL_LABEL[l]}>
                     {db.groups.filter((g) => levelOfGroup(db, g.id) === l).map((g) => (
                       <option key={g.id} value={g.id}>{groupLabel(db, g)}</option>
@@ -213,7 +230,7 @@ function EnrollForm({ onDone }: { onDone: (s: Student, invitadas: ResultadoInvit
           {db.groups.length === 0 && (
             <p className="mt-2 text-sm text-warning" role="status">
               Tu escuela todavía no tiene grupos. Créalos en{' '}
-              <Link to="/admin/escuela" className="font-semibold text-link underline">Ciclos y grupos</Link> o importa tus alumnos desde Excel (los grupos se crean solos).
+              <Link to="/admin/escuela" className="font-semibold text-link underline">Ciclos y grupos</Link> o importa tus alumnos desde Excel (la vista previa te avisa antes de crear un grupo).
             </p>
           )}
         </div>

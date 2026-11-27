@@ -34,7 +34,10 @@ EDUGRID es una plataforma web de gestión escolar para escuelas privadas en Méx
 - **Iniciar sesión** (pantalla de inicio): correo y contraseña. La contraseña solo viaja a la API y se guarda como hash; «Olvidé mi contraseña» manda una liga que vence en 1 hora.
 - **Registrar mi escuela** (`#/registro-escuela`): 4 pasos (Escuela, Administrador, Cargar datos desde Excel —opcional—, Resumen). La escuela queda con **30 días de prueba**; al vencer se muestra «Tu prueba terminó».
 - **Excel** en Alumnos, Docentes y Familias: «Descargar plantilla» e «Importar Excel» con vista previa y errores por fila antes de confirmar. Las columnas están en `src/lib/importar.ts` (las usan la plantilla y el importador).
-- **Invitaciones**: cada persona dada de alta con correo recibe una liga para crear su contraseña. Una cuenta por correo: si ya tiene cuenta en esa escuela, solo se agrega el perfil. Sin `RESEND_API_KEY` los correos no se envían y la liga aparece en pantalla.
+- **Invitaciones**: cada persona dada de alta con correo recibe una liga para crear su contraseña. Una cuenta por correo y **una invitación por correo**: si el correo ya tiene una invitación pendiente (como familia o como alumno), el perfil nuevo se agrega a esa misma invitación. Alumnos, Docentes y Familias muestran su lista de invitaciones con estado **Pendiente / Aceptada / Expirada** y un botón «Reenviar» (liga nueva, 7 días más).
+- **Correo**: con `RESEND_API_KEY` se envía de verdad por Resend (remitente `EDUGRID_CORREO_REMITENTE`; si falta, el de prueba de Resend, que solo entrega al dueño de la cuenta). Sin la llave, modo demo: no se envía nada, se registra en el log del servidor (sin ligas) y las invitaciones muestran su liga en pantalla fuera de producción. **Recuperar contraseña nunca muestra la liga**: siempre responde «Si el correo existe, recibirás una liga para restablecer tu contraseña»; la liga sirve una vez y vence en 1 hora.
+- **Exportar** en Alumnos, Docentes, Familias, Calificaciones y Pagos (adeudos): baja un .xlsx con las columnas y los filtros de la lista.
+- **Niveles**: tablero, filtros y Ciclos y grupos muestran solo los niveles que atiende la escuela. Al importar alumnos, la vista previa avisa qué grupos se van a crear antes de confirmar.
 - Todo esto necesita el servidor (Vercel o `npm run servidor`); en GitHub Pages solo existe la demo.
 
 ## Cuentas demo
@@ -127,6 +130,10 @@ Pruebas sin Neon ni internet (Postgres en memoria con PGlite):
 npm run prueba:api                         # API, migraciones, aislamiento entre escuelas y RLS
 npm run build:servidor && npm run servidor # app + API en http://localhost:3000
 node scripts/e2e-base-datos.mjs            # con el servidor anterior: la app guarda y lee de la base
+# Inicio de sesión (Mensaje 10) y correcciones del Mensaje 11, con un buzón local en archivo para leer los correos:
+EDUGRID_SIMULAR_PRUEBA=si EDUGRID_BUZON=qa-output/buzon.jsonl npm run servidor
+EDUGRID_BUZON=qa-output/buzon.jsonl node scripts/e2e-login.mjs
+node scripts/e2e-mensaje-11.mjs              # capturas en qa-output/m11/
 ```
 
 Las fotos se guardan por ahora dentro de los datos; más adelante irán a un almacenamiento de archivos (R2/S3).

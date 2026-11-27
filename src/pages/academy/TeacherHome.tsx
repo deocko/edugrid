@@ -37,7 +37,7 @@ export function TeacherHome() {
       <div className="mt-4 grid gap-4 lg:grid-cols-3">
         <Card title={`Clases del ${DAYS[day]?.toLowerCase()}`} action={classes.length > 0 && <span className="text-sm text-muted">{mine} de {classes.length} las impartes tú</span>} className="lg:col-span-2">
           {classes.length === 0 ? (
-            <EmptyState icon="horario" title="No tienes clases este día" />
+            <EmptyState icon="horario" title={`Aún no hay clases registradas para el ${DAYS[day]?.toLowerCase()}`}>Cuando la dirección cargue el horario de tus grupos, aquí verás las clases del día.</EmptyState>
           ) : (
             <ul className="divide-y divide-line">
               {classes.map((c) => (
@@ -53,6 +53,7 @@ export function TeacherHome() {
           )}
         </Card>
         <Card title="Mis grupos">
+          {groups.length === 0 && <p className="text-sm text-muted">Aún no tienes grupos asignados. La dirección te los asigna en Ciclos y grupos.</p>}
           <ul className="space-y-2">
             {groups.map((g) => (
               <li key={g.id} className="flex items-center justify-between gap-2 rounded-xl bg-surface-2 px-3 py-2 text-sm">
@@ -64,7 +65,7 @@ export function TeacherHome() {
         </Card>
         <Card title="Tareas por entregar" className="lg:col-span-2">
           {homework.length === 0 ? (
-            <EmptyState icon="tareas" title="No hay tareas pendientes" action={<LinkButton to="/docente/tareas" variant="secundario">Dejar una tarea</LinkButton>} />
+            <EmptyState icon="tareas" title="No hay tareas pendientes" action={<LinkButton to="/docente/tareas" variant="secundario">Dejar una tarea</LinkButton>}>Las tareas que dejes a tus grupos aparecerán aquí hasta su fecha de entrega.</EmptyState>
           ) : (
             <ul className="divide-y divide-line">
               {homework.slice(0, 5).map((h) => (
@@ -79,6 +80,7 @@ export function TeacherHome() {
           )}
         </Card>
         <Card title="Avisos recientes" action={<Link to="/avisos" className="-mr-2 inline-flex min-h-11 items-center gap-1 rounded-lg px-2 text-sm font-semibold text-link no-underline hover:bg-info-bg">Ver todos</Link>}>
+          {news.length === 0 && <p className="py-2 text-sm text-muted">Aún no hay avisos de la escuela.</p>}
           <ul className="divide-y divide-line">
             {news.map((a) => (
               <li key={a.id} className="py-2">

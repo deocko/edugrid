@@ -10,6 +10,7 @@ import { Badge, Button, FilePickButton, Modal, Notice } from './ui'
 const ESTADO: Record<ResultadoInvitacion['estado'], { texto: string; tono: 'exito' | 'aviso' | 'peligro' | 'info' }> = {
   enviada: { texto: 'Invitación enviada', tono: 'exito' },
   'no-enviada': { texto: 'Invitación creada', tono: 'aviso' },
+  reutilizada: { texto: 'Misma invitación', tono: 'info' },
   'ya-tiene-perfil': { texto: 'Ya tiene cuenta', tono: 'info' },
   error: { texto: 'No se invitó', tono: 'peligro' },
 }
@@ -24,10 +25,10 @@ export function ListaInvitaciones({ resultados }: { resultados: ResultadoInvitac
       {conLiga && <Notice tone="aviso">Modo demo: los correos no se envían. Abre cada liga para crear la contraseña de esa persona.</Notice>}
       <ul className="grid gap-2">
         {resultados.map((r) => (
-          <li key={`${r.tipo}-${r.referencia}`} className="rounded-xl border border-line bg-surface p-3 text-sm">
+          <li key={`${r.tipo}-${r.referencia}-${r.correo}`} className="rounded-xl border border-line bg-surface p-3 text-sm">
             <span className="flex flex-wrap items-center gap-2">
               <strong className="text-heading">{r.nombre || r.correo}</strong>
-              <span className="text-muted">· {NOMBRE_PERFIL[r.tipo]} · {r.correo}</span>
+              <span className="min-w-0 text-muted">· {NOMBRE_PERFIL[r.tipo]} · <span className="inline-block max-w-full truncate align-bottom" title={r.correo}>{r.correo}</span></span>
               <Badge tone={ESTADO[r.estado].tono}>{ESTADO[r.estado].texto}</Badge>
             </span>
             {r.motivo && r.estado !== 'no-enviada' && <span className="mt-1 block text-xs text-muted">{r.motivo}</span>}
@@ -45,6 +46,10 @@ export function ListaInvitaciones({ resultados }: { resultados: ResultadoInvitac
 
 export interface Reporte {
   importadas: number
+  /** Familias que ya existían con ese correo: se reutilizaron, no se duplicaron. */
+  reutilizadas?: number
+  /** Grupos que se crearon porque no existían (avisados en la vista previa). */
+  gruposNuevos?: string[]
   rechazadas: FilaRevisada[]
   sinCorreo: FilaRevisada[]
   invitaciones: ResultadoInvitacion[]
@@ -59,6 +64,12 @@ export function ReporteImportacion({ tipo, reporte }: { tipo: TipoImportacion; r
       <Notice tone="exito" icon="check">
         {reporte.importadas === 1 ? 'Entró' : 'Entraron'} {plural(reporte.importadas, n.singular, n.plural)}.{reporte.rechazadas.length === 1 ? ' Se rechazó 1 fila.' : reporte.rechazadas.length ? ` Se rechazaron ${reporte.rechazadas.length} filas.` : ''}
       </Notice>
+      {!!reporte.reutilizadas && (
+        <Notice tone="info">{plural(reporte.reutilizadas, 'familia ya existía', 'familias ya existían')} con ese correo: se {reporte.reutilizadas === 1 ? 'reutilizó' : 'reutilizaron'} sin duplicarlas y conservan su misma invitación.</Notice>
+      )}
+      {!!reporte.gruposNuevos?.length && (
+        <Notice tone="info">Se {reporte.gruposNuevos.length === 1 ? 'creó el grupo' : 'crearon los grupos'} {reporte.gruposNuevos.join(', ')}. Ya aparece{reporte.gruposNuevos.length === 1 ? '' : 'n'} en Ciclos y grupos y en el conteo del tablero.</Notice>
+      )}
       {reporte.rechazadas.length > 0 && (
         <div className="rounded-xl border border-danger/40 bg-danger-bg p-3 text-sm text-danger">
           <p className="font-bold">Filas rechazadas</p>
@@ -86,30 +97,50 @@ export function VistaPrevia({ filas }: { filas: FilaRevisada[] }) {
   const reales = filas.filter((f) => !f.ejemplo)
   const malas = reales.filter((f) => f.errores.length)
   const ejemplos = filas.length - reales.length
+  // Grupos (y grados) que todavía no existen: se avisan ANTES de confirmar, nunca se crean en silencio.
+  const gruposNuevos = [...new Set(reales.filter((f) => !f.errores.length && f.grupoNuevo).map((f) => f.grupoNuevo!))]
   return (
     <div className="grid gap-3">
+      {gruposNuevos.length > 0 && (
+        <div data-grupos-nuevos>
+          <Notice tone="aviso">
+            La importación creará {gruposNuevos.length === 1 ? 'el grupo' : 'los grupos'} <strong>{gruposNuevos.join(', ')}</strong> porque todavía no {gruposNuevos.length === 1 ? 'existe' : 'existen'} en el ciclo actual.
+            Si es un error, corrige la columna «Grupo» del Excel antes de importar.
+          </Notice>
+        </div>
+      )}
       <p className="text-sm text-muted" data-resumen-vista-previa>
         {plural(reales.length - malas.length, 'fila lista', 'filas listas')} para importar
         {malas.length ? ` · ${plural(malas.length, 'fila con errores', 'filas con errores')} (no se importan)` : ''}
         {ejemplos ? ` · ${plural(ejemplos, 'fila de ejemplo omitida', 'filas de ejemplo omitidas')}` : ''}
       </p>
       <div className="max-h-[50vh] overflow-auto rounded-xl border border-line">
-        <table className="w-full text-sm">
+        <table className="w-full table-fixed text-sm">
           <caption className="sr-only">Vista previa de la importación</caption>
           <thead className="sticky top-0 bg-surface-2">
             <tr>
-              <th className="px-3 py-2 text-left text-xs font-bold text-muted">Fila</th>
+              <th className="w-12 px-3 py-2 text-left text-xs font-bold text-muted">Fila</th>
               <th className="px-3 py-2 text-left text-xs font-bold text-muted">Nombre</th>
-              <th className="px-3 py-2 text-left text-xs font-bold text-muted">Revisión</th>
+              <th className="w-[38%] px-3 py-2 text-left text-xs font-bold text-muted">Revisión</th>
             </tr>
           </thead>
           <tbody>
             {filas.map((f) => (
               <tr key={f.numero} className="border-t border-line align-top" data-fila={f.numero} data-estado={f.ejemplo ? 'ejemplo' : f.errores.length ? 'error' : 'lista'}>
                 <td className="px-3 py-2 text-muted">{f.numero}</td>
-                <td className="px-3 py-2 break-words text-heading">
-                  {f.nombre || '—'}
-                  {f.datos.correo && <span className="block text-xs break-all text-muted">{f.datos.correo}</span>}
+                <td className="px-3 py-2 text-heading">
+                  <span className="block">{f.nombre || '—'}</span>
+                  {/* Correos sin cortes a mitad de palabra: si no cabe, «…» y completo al pasar el cursor. */}
+                  {f.datos.correo && (
+                    <span className="block truncate text-xs text-muted" title={f.datos.correo} data-correo-vista-previa>
+                      {f.datos.correo}
+                    </span>
+                  )}
+                  {f.datos.tutorCorreo && (
+                    <span className="block truncate text-xs text-muted" title={`Tutor: ${f.datos.tutorCorreo}`} data-correo-vista-previa>
+                      Tutor: {f.datos.tutorCorreo}
+                    </span>
+                  )}
                 </td>
                 <td className="px-3 py-2">
                   {f.ejemplo ? (
@@ -191,7 +222,15 @@ export function ImportarExcel({ tipo }: { tipo: TipoImportacion }) {
     try {
       const plan = planear(db, tipo, filas, { demo: esDemo })
       await act(plan.aplicar, { action: `Importó ${n.plural} desde Excel`, detail: plural(plan.importadas, n.singular, n.plural) })
-      const r: Reporte = { importadas: plan.importadas, rechazadas: filas.filter((f) => !f.ejemplo && f.errores.length), sinCorreo: plan.sinCorreo, invitaciones: [] }
+      const validasFilas = filas.filter((f) => !f.ejemplo && !f.errores.length)
+      const r: Reporte = {
+        importadas: plan.importadas,
+        reutilizadas: plan.reutilizadas,
+        gruposNuevos: [...new Set(validasFilas.filter((f) => f.grupoNuevo).map((f) => f.grupoNuevo!))],
+        rechazadas: filas.filter((f) => !f.ejemplo && f.errores.length),
+        sinCorreo: plan.sinCorreo,
+        invitaciones: [],
+      }
       if (cuenta && plan.invitaciones.length) {
         try {
           r.invitaciones = await enviarInvitaciones(cuenta.token, plan.invitaciones)

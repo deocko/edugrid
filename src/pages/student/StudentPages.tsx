@@ -26,7 +26,7 @@ function HomeworkList({ limit }: { limit?: number }) {
   if (!me) return null
   const today = todayISO()
   const list = db.homework.filter((h) => h.groupId === me.groupId && h.dueDate >= today).sort((a, b) => a.dueDate.localeCompare(b.dueDate)).slice(0, limit)
-  if (list.length === 0) return <EmptyState icon="tareas" title="¡No tienes tareas pendientes!" />
+  if (list.length === 0) return <EmptyState icon="tareas" title="¡No tienes tareas pendientes!">Cuando tus docentes dejen una tarea, aparecerá aquí con su fecha de entrega.</EmptyState>
   return (
     <ul className={simple ? 'space-y-3' : 'divide-y divide-line'}>
       {list.map((h) => (
@@ -64,6 +64,7 @@ export function StudentHome() {
       )}
       <div className="grid gap-4 lg:grid-cols-2">
         <Card title={`Tus clases del ${DAYS[day]?.toLowerCase()}`}>
+          {classes.length === 0 && <EmptyState icon="horario" title={`Aún no hay clases registradas para el ${DAYS[day]?.toLowerCase()}`}>Cuando la escuela cargue tu horario, aquí verás tus clases del día.</EmptyState>}
           <ul className={simple ? 'space-y-2' : 'divide-y divide-line'}>
             {classes.map((c) => (
               <li key={c.id} className={simple ? `flex items-center gap-3 rounded-xl p-3 ${subjectCard(db, c.subjectId)}` : 'flex items-center justify-between gap-2 py-2'}>
@@ -77,6 +78,7 @@ export function StudentHome() {
           <HomeworkList limit={simple ? 3 : 5} />
         </Card>
         <Card title="Avisos" className="lg:col-span-2" action={<Link to="/avisos" className="-mr-2 inline-flex min-h-11 items-center gap-1 rounded-lg px-2 text-sm font-semibold text-link no-underline hover:bg-info-bg">Ver todos</Link>}>
+          {news.length === 0 && <p className="py-2 text-sm text-muted">Aún no hay avisos de la escuela.</p>}
           <ul className="divide-y divide-line">
             {news.map((a) => (
               <li key={a.id} className="py-2">

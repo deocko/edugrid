@@ -4,7 +4,7 @@ import { ColorPicker, SubjectDot } from '../../components/Subject'
 import { subjectCard } from '../../lib/subjects'
 import type { Level, Subject, SubjectColor } from '../../data/types'
 import { formatDate, uid, plural } from '../../lib/format'
-import { LEVEL_LABEL, LEVELS, groupLabel, levelOfGroup, subjectName, teacherName } from '../../lib/scope'
+import { LEVEL_LABEL, groupLabel, homeroomName, levelOfGroup, schoolLevels, subjectName, teacherName } from '../../lib/scope'
 import { SUBJECT_COLORS, suggestColor } from '../../lib/subjects'
 import { useApp } from '../../state/context'
 
@@ -52,14 +52,17 @@ function GroupsView() {
   return (
     <div className="grid gap-4 lg:grid-cols-3">
       <div className="space-y-4 lg:col-span-2">
-        {LEVELS.map((l) => (
+        {/* Solo los niveles que atiende la escuela: sin secciones vacías de niveles que no contrató. */}
+        {schoolLevels(db).length === 0 && <Card><p className="text-sm text-muted">La escuela todavía no tiene grados ni grupos.</p></Card>}
+        {schoolLevels(db).map((l) => (
           <Card key={l} title={LEVEL_LABEL[l]}>
+            {db.groups.every((g) => levelOfGroup(db, g.id) !== l) && <p className="text-sm text-muted">Aún no hay grupos en {LEVEL_LABEL[l]}. Créalos con «Nuevo grupo».</p>}
             <ul className="divide-y divide-line">
               {db.groups.filter((g) => levelOfGroup(db, g.id) === l).map((g) => (
                 <li key={g.id} className="flex flex-wrap items-center justify-between gap-2 py-2 text-sm">
                   <div>
                     <p className="font-semibold text-heading">{groupLabel(db, g)}</p>
-                    <p className="text-muted">Titular: {g.homeroomTeacherId ? teacherName(db, g.homeroomTeacherId) : 'sin asignar'}{g.room ? ` · ${g.room}` : ''}</p>
+                    <p className="text-muted">Titular: {homeroomName(db, g)}{g.room ? ` · ${g.room}` : ''}</p>
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
                     <Badge tone="info">{plural(db.students.filter((s) => s.groupId === g.id && s.status === 'activo').length, 'alumno', 'alumnos')}</Badge>
@@ -154,7 +157,7 @@ function CyclesView() {
 
 function SubjectsView() {
   const { db, act } = useApp()
-  const [level, setLevel] = useState<Level>('primaria')
+  const [level, setLevel] = useState<Level>(schoolLevels(db)[0] ?? 'primaria')
   const [name, setName] = useState('')
   const [color, setColor] = useState<SubjectColor | null>(null)
   const [editing, setEditing] = useState<Subject | null>(null)
@@ -169,8 +172,9 @@ function SubjectsView() {
   return (
     <div className="grid gap-4 lg:grid-cols-3">
       <div className="grid gap-4 sm:grid-cols-2 lg:col-span-2">
-        {LEVELS.map((l) => (
+        {schoolLevels(db).map((l) => (
           <Card key={l} title={LEVEL_LABEL[l]}>
+            {!db.subjects.some((s) => s.level === l) && <p className="text-sm text-muted">Aún no hay materias en {LEVEL_LABEL[l]}.</p>}
             <ul className="flex flex-wrap gap-2">
               {db.subjects.filter((s) => s.level === l).map((s) => (
                 <li key={s.id}>
@@ -195,7 +199,7 @@ function SubjectsView() {
           <Field label="Nivel">
             {(id) => (
               <Select id={id} value={level} onChange={(e) => setLevel(e.target.value as Level)}>
-                {LEVELS.map((l) => <option key={l} value={l}>{LEVEL_LABEL[l]}</option>)}
+                {schoolLevels(db).map((l) => <option key={l} value={l}>{LEVEL_LABEL[l]}</option>)}
               </Select>
             )}
           </Field>
@@ -290,12 +294,15 @@ export function GroupAssignments({ groupId, onDone }: { groupId: string; onDone:
       <Field label="Titular del grupo">
         {(id) => (
           <Select id={id} value={homeroom} onChange={(e) => setHomeroom(e.target.value)}>
+            {!group?.homeroomTeacherId && <option value="">Sin asignar</option>}
             {teachers.map((t) => <option key={t.id} value={t.id}>{t.firstName} {t.lastName}</option>)}
           </Select>
         )}
       </Field>
+      {teachers.length === 0 && <Notice tone="info">Aún no hay docentes activos. Regístralos en Docentes para asignarles grupo y materias.</Notice>}
       <fieldset className="space-y-2">
         <legend className="mb-1 text-sm font-bold text-heading">Docente por materia</legend>
+        {subjects.length === 0 && <p className="text-sm text-muted">Este nivel todavía no tiene materias. Agrégalas en la pestaña Materias.</p>}
         {subjects.map((s) => (
           <Field key={s.id} label={subjectName(db, s.id)}>
             {(id) => (
